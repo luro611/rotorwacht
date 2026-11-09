@@ -1,0 +1,16 @@
+.DS_Store
+.env
+__pycache__/
+*.pyc
+.venv/
+node_modules/
+*.log
+.claude/settings.local.json
+
+# Xcode / Swift
+build/
+DerivedData/
+.build/
+.swiftpm/
+xcuserdata/
+*.xcuserstate
