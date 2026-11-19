@@ -4,8 +4,8 @@ Eigenes Hubschrauber-Rettungsspiel für den Mac, nur zum eigenen Gebrauch. Inspi
 
 ## Stand
 
-- **Phase:** Vorbereitung. Spielkonzept als Vorschlag in `docs/planung/02 Spielkonzept.md`, Entscheidungen E1–E4 offen.
-- **Vor der Freigabe keinen Anwendungscode schreiben.**
+- **Phase:** Bau von Version 0.1. Spielkonzept `docs/planung/02 Spielkonzept.md` am 19.11.2026 freigegeben (E1–E4 wie vorgeschlagen).
+- Nächster Schritt: Xcode-Projekt anlegen und Umfang 0.1 bauen (Abschnitt „Umfang Version 0.1“ im Konzept).
 - Bis 19.11.2026 hieß das Projekt „Wühltisch“ (erster Entwurf mit Kaufhaus-Thema, Missverständnis: gemeint war Choplifter, nicht „Shoplifter“).
 
 ## Planung
@@ -13,7 +13,7 @@ Eigenes Hubschrauber-Rettungsspiel für den Mac, nur zum eigenen Gebrauch. Inspi
 Liegt unter `docs/planung/`:
 
 - `01 Offene Fragen.md`: Fragen zu Spielprinzip, Steuerung, Grafik und Technik
-- `02 Spielkonzept.md`: Vorschlag vom 19.11.2026 (Katastrophenrettung, sechs Einsätze, Umfang 0.1)
+- `02 Spielkonzept.md`: freigegeben 19.11.2026 (Katastrophenrettung, sechs Einsätze, Umfang 0.1)
 
 ## Projekt-Eckdaten
 

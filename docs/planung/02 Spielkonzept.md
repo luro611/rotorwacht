@@ -1,6 +1,6 @@
-# Spielkonzept Rotorwacht (Vorschlag)
+# Spielkonzept Rotorwacht
 
-Stand: Entwurf vom 19.11.2026, zur Freigabe durch Lutz. Ersetzt den ersten Entwurf („Wühltisch“, Kaufhaus), der auf einem Missverständnis beruhte.
+Stand: freigegeben von Lutz am 19.11.2026 (E1–E4 wie vorgeschlagen). Ersetzt den ersten Entwurf („Wühltisch“, Kaufhaus), der auf einem Missverständnis beruhte.
 
 Vorbild ist das Genre von Choplifter (C64, 1982): ein Hubschrauber fliegt seitlich über eine Landschaft, holt Menschen ab und bringt sie zur Basis. **Übernommen wird nur dieses Grundprinzip.** Thema, Figuren, Gegner, Landschaften, Levels, Grafik und Ton sind eigene Erfindung; nichts aus dem Original wird nachgebaut (siehe CLAUDE.md, „Eigenständigkeit“).
 
@@ -80,9 +80,9 @@ Jeder Einsatz in drei Stufen (leicht, mittel, schwer). Sterne je Einsatz für ge
 
 Danach: 0.2 Löschen und Waldbrand, 0.3 Grafik und Effekte ausbauen, 0.4 Nacht, Gewitter, Einsatzkarte, 0.5 restliche Einsätze, 1.0 alle sechs Einsätze in drei Stufen.
 
-## Zur Entscheidung
+## Entscheidungen (freigegeben 19.11.2026)
 
-- E1: Thema Katastrophenrettung ohne Feinde, Leertaste für Löschwasser (statt Schuss)?
-- E2: 12 Plätze an Bord, 3 Hubschrauber pro Einsatz, Haltbarkeit statt Sofort-Absturz?
-- E3: Die sechs Einsätze wie oben?
-- E4: Umfang 0.1 wie oben?
+- E1: Thema Katastrophenrettung ohne Feinde, Leertaste für Löschwasser statt Schuss.
+- E2: 12 Plätze an Bord, 3 Hubschrauber pro Einsatz, Haltbarkeit statt Sofort-Absturz.
+- E3: Die sechs Einsätze wie oben.
+- E4: Umfang 0.1 wie oben.

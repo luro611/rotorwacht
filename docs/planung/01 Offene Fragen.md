@@ -8,10 +8,10 @@ Stand 19.11.2026. Vorschläge stehen in `02 Spielkonzept.md`; eine Frage gilt al
 - Thema Katastrophenrettung, Name Rotorwacht.
 - Steuerung: Pfeiltasten, Leertaste für Abwurf bzw. Aktion.
 - Grafik: detailreiche 2D-Grafik.
+- Spielkonzept freigegeben (E1–E4 in `02 Spielkonzept.md`).
 
 ## Offen
 
-1. Freigabe des Spielkonzepts (E1–E4 in `02 Spielkonzept.md`).
 2. Gamepad zusätzlich zur Tastatur, und ab welcher Version?
 3. Musik: selbst komponiert/erzeugt oder frei lizenzierte Stücke (CC0)?
 4. Grafikquellen: alles im Code erzeugt oder auch frei lizenzierte Bildbausteine?
