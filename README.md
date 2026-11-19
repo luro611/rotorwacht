@@ -7,7 +7,7 @@
 
 Eigenes Hubschrauber-Rettungsspiel für den Mac (Swift, SpriteKit, SwiftUI): nach Naturkatastrophen Menschen von Dächern und Anhöhen holen und ins Lager bringen, bevor Wetter, Wasser oder Treibstoff dir einen Strich durch die Rechnung machen.
 
-**Status:** Version 0.2.0 (Einsatz 1 „Hochwasser im Flusstal“, Einsatz 2 „Waldbrand am Hang“ mit Löschwasser und Feuer). Nur zum eigenen Gebrauch, unnotarisiert.
+**Status:** Version 0.2.1 (Einsatz 1 „Hochwasser im Flusstal“, Einsatz 2 „Waldbrand am Hang“ mit Löschwasser und Feuer). Nur zum eigenen Gebrauch, unnotarisiert.
 
 **Lizenz:** noch nicht festgelegt
 
@@ -24,7 +24,7 @@ scripts/build.sh --run
 
 Das baut `build/Rotorwacht.app` (ad hoc signiert) und startet sie. Beim ersten Start einer unnotarisierten App: Rechtsklick auf die App, „Öffnen“.
 
-Tests (Swift Testing, 58 Tests für Flugphysik, Landen, Ein-/Aussteigen, Tank, Feuer und Autopilot-Proben beider Einsätze):
+Tests (Swift Testing, 64 Tests für Flugphysik, Landen, Ein-/Aussteigen, Tank, Feuer und Autopilot-Proben beider Einsätze):
 
 ```bash
 scripts/test.sh

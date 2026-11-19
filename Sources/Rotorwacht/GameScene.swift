@@ -52,6 +52,9 @@ final class GameScene: SKScene {
     private var heatSmooth: CGFloat = 0
     private var fillSprayTimer = 0.0
     private var hurtSaid: Set<Int> = []
+    private var lostSaid: Set<Int> = []
+    private var waveTimer = 0.0
+    private var lakeTimer = 0.0
     private var fireSaid = false
 
     // State
@@ -413,6 +416,7 @@ final class GameScene: SKScene {
             case .boarded: audio.play(.ding)
             case .rescued: audio.play(.rescued)
             case .lost(_, let pi):
+                guard lostSaid.insert(pi).inserted else { break }
                 audio.play(.alarm)
                 say("Das Wasser hat \(mission.rescuePoints[pi].name) erreicht. Menschen verloren.", seconds: 6)
             case .floodWarning(let pi):
@@ -462,7 +466,7 @@ final class GameScene: SKScene {
         rotorDisc.alpha = engineOn ? 1 : 0.15
         rotorNode.xScale = sideVisible ? 1 : 1.15
 
-        syncLakes()
+        syncLakes(dt: dt)
         syncFire(dt: dt)
         syncDrops()
 
@@ -473,6 +477,9 @@ final class GameScene: SKScene {
         waveFoam.isHidden = water.isHidden
         let left = cam.position.x - 760
         water.position = CGPoint(x: cam.position.x, y: level - 8)
+        waveTimer -= dt
+        if waveTimer <= 0 {
+        waveTimer = 1.0 / 30
         let wave = CGMutablePath()
         let foam = CGMutablePath()
         let t = CGFloat(clock)
@@ -489,6 +496,7 @@ final class GameScene: SKScene {
         wave.closeSubpath()
         waveShape.path = wave
         waveFoam.path = foam
+        }
 
         // People
         for p in sim.people {
@@ -497,6 +505,7 @@ final class GameScene: SKScene {
             switch p.state {
             case .waiting:
                 node.isHidden = false
+                node.alpha = 1
                 node.position = CGPoint(x: p.spotX, y: gy)
                 setWaving(node, true)
                 node.xScale = p.spotX < h.x ? 1 : -1
@@ -618,7 +627,10 @@ final class GameScene: SKScene {
         return (wave, foam)
     }
 
-    private func syncLakes() {
+    private func syncLakes(dt: Double) {
+        lakeTimer -= dt
+        guard lakeTimer <= 0 else { return }
+        lakeTimer = 1.0 / 30
         let t = CGFloat(clock)
         for l in lakeNodes {
             let visible = abs(CGFloat((l.spec.x0 + l.spec.x1) / 2) - cam.position.x) < 1400

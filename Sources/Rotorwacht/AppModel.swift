@@ -29,7 +29,8 @@ final class AppModel: ObservableObject {
 
     func loadMission(_ id: String) -> Mission? {
         do { return try MissionLibrary.load(id) }
-        catch { loadError = "Einsatzdatei nicht gefunden: \(error)"; return nil }
+        catch let e as MissionLibrary.LoadError { loadError = "Einsatzdatei nicht gefunden: \(e)"; return nil }
+        catch { loadError = "Einsatzdatei \(id) ist fehlerhaft: \(error)"; return nil }
     }
 
     /// Loads the missions for the start menu.

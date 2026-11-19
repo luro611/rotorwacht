@@ -4,7 +4,7 @@ Eigenes Hubschrauber-Rettungsspiel für den Mac, nur zum eigenen Gebrauch. Inspi
 
 ## Stand
 
-- **Phase:** Version 0.2.0 gebaut (19.11.2026): Einsatz 1 „Hochwasser im Flusstal“ und Einsatz 2 „Waldbrand am Hang“ (Löschwasser auf der Leertaste, Feuer, Rauch, Einsatzauswahl) von Start bis Wertung spielbar, 58 Tests grün. Tag `v0.1.0` gesetzt, `v0.2.0` noch nicht (erst nach Rückfrage bei Lutz).
+- **Phase:** Version 0.2.1 gebaut (0.2.0 plus Befunde der Opus-Prüfung) (19.11.2026): Einsatz 1 „Hochwasser im Flusstal“ und Einsatz 2 „Waldbrand am Hang“ (Löschwasser auf der Leertaste, Feuer, Rauch, Einsatzauswahl) von Start bis Wertung spielbar, 64 Tests grün. Tag `v0.1.0` gesetzt, `v0.2.0` noch nicht (erst nach Rückfrage bei Lutz).
 - Nächster Schritt: 0.3 Grafik und Effekte ausbauen, siehe `docs/planung/02 Spielkonzept.md`.
 - Bis 19.11.2026 hieß das Projekt „Wühltisch“ (erster Entwurf mit Kaufhaus-Thema, Missverständnis: gemeint war Choplifter, nicht „Shoplifter“).
 

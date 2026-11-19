@@ -74,6 +74,8 @@ public struct MissionSimulation {
     public static let walkTime = 0.8
     public static let crashDelay = 2.5
     public static let finishDelay = 1.5
+    /// Seconds without fuel on firm ground outside the camp until the helicopter is written off.
+    public static let strandedTime = 2.5
     public static let repairPerSecond = 1.5
     /// Highest height above the water at which the tank still fills.
     public static let skimHeight = 55.0
@@ -114,6 +116,7 @@ public struct MissionSimulation {
     private var finishTimer: Double?
     private var warned: Set<Int> = []
     private var cabinFullSent = false
+    private var strandedTimer = 0.0
 
     public init(mission: Mission, spec: HelicopterSpec = .standard) {
         self.mission = mission
@@ -153,7 +156,7 @@ public struct MissionSimulation {
     /// Index of the rescue point the landed helicopter stands on, if any.
     public func rescuePointUnderHelicopter() -> Int? {
         guard heli.onGround, !heli.inWater else { return nil }
-        for (i, p) in mission.rescuePoints.enumerated() where abs(heli.x - p.x) <= p.width / 2 + 20 {
+        for (i, p) in mission.rescuePoints.enumerated() where abs(heli.x - p.x) <= p.width / 2 + spec.halfWidth {
             return i
         }
         return nil
@@ -193,6 +196,19 @@ public struct MissionSimulation {
             waterLevel: mission.waterLevel(from: heli.x - spec.halfWidth, to: heli.x + spec.halfWidth, flood: floodLevel),
             mission: mission, fuelBurnPerSecond: mission.fuel.burnPerSecond, spec: spec)
         events += pe.map { .physics($0) }
+
+        // Out of fuel on the ground away from the camp: no way to take off again, so write it off.
+        if heli.fuel <= 0, heli.onGround, !inBaseZone {
+            strandedTimer += dt
+            if strandedTimer >= Self.strandedTime {
+                strandedTimer = 0
+                heli.durability = 0
+                crash(&events)
+                return
+            }
+        } else {
+            strandedTimer = 0
+        }
 
         stepTank(input: input, dt: dt, &events)
         applyHeat(dt: dt, &events)

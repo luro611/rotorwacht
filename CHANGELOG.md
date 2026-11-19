@@ -2,6 +2,19 @@
 
 Versionen: 0.x bis zum ersten fertigen Stand, dann 1.0.0.
 
+## [0.2.1] – 2026-11-19
+
+Behebung der Befunde aus der Opus-Prüfung von 0.1.0.
+
+- Leerer Tank auf festem Boden außerhalb des Lagers: nach 2,5 s gilt der Hubschrauber als verloren, Ersatz kommt ins Lager (vorher hing das Spiel bis zum Zeitende).
+- Wartende Person blieb nach unterbrochenem Einsteigen halb durchsichtig.
+- Flut-Meldung einmal je Rettungspunkt statt je Person.
+- Landeerkennung am Rettungspunkt bis zur Kufenbreite des Hubschraubers (stand auf dem Dach, aber niemand stieg ein).
+- Texturen für Partikel (Dampf, Regen, Flammen, Tropfen, Brandspuren, Markierung) werden einmal erzeugt statt bei jedem Aufruf; Wellenlinien nur noch mit 30 Hz.
+- Ton: keine Speicherzuteilung mehr auf dem Audio-Thread; Beenden stoppt und löst die Audio-Engine.
+- `Mission.validate()` prüft Einsatzdateien (Böen ohne Dauer, doppelte Geländepunkte, Größen); Fehler im JSON werden nicht mehr als „nicht gefunden“ gemeldet.
+- Neue Tests: Sackgasse, Dachkante, Prüfung der Einsätze, Schrittweiten-Unabhängigkeit (64 Tests).
+
 ## [0.2.0] – 2026-11-19
 
 Löschen und Waldbrand.

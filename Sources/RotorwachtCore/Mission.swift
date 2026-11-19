@@ -208,6 +208,35 @@ public struct Mission: Codable, Equatable, Sendable {
     }
 }
 
+extension Mission {
+    public struct ValidationError: Error, CustomStringConvertible, Equatable {
+        public var message: String
+        public var description: String { message }
+    }
+
+    /// Checks values that would otherwise produce NaN or division by zero later. Throws the first problem found.
+    public func validate() throws {
+        func fail(_ m: String) throws -> Never { throw ValidationError(message: "Einsatz \(id): \(m)") }
+        if world.width <= 0 || world.ceiling <= 0 { try fail("Weltgröße muss größer als 0 sein") }
+        if terrain.count < 2 { try fail("Gelände braucht mindestens zwei Punkte") }
+        for (a, b) in zip(terrain, terrain.dropFirst()) where b.x <= a.x {
+            try fail("Geländepunkte müssen streng von links nach rechts steigen (x=\(b.x) nach x=\(a.x))")
+        }
+        if capacity <= 0 { try fail("capacity muss größer als 0 sein") }
+        if helicopters <= 0 { try fail("helicopters muss größer als 0 sein") }
+        if timeLimit <= 0 { try fail("timeLimit muss größer als 0 sein") }
+        if base.width <= 0 || base.x < 0 || base.x > world.width { try fail("Lager liegt außerhalb der Welt oder hat keine Breite") }
+        if fuel.capacity <= 0 || fuel.burnPerSecond < 0 || fuel.refuelPerSecond <= 0 { try fail("Treibstoffwerte unzulässig") }
+        for g in wind.gusts where g.duration <= 0 { try fail("Böe bei \(g.start) s hat keine Dauer") }
+        for p in rescuePoints where p.width <= 0 || p.people < 0 || p.x < 0 || p.x > world.width {
+            try fail("Rettungspunkt \(p.id) hat unzulässige Werte")
+        }
+        for l in lakeList where l.x1 <= l.x0 { try fail("See \(l.name): x1 muss größer als x0 sein") }
+        if let t = tank, t.capacity <= 0 || t.fillPerSecond <= 0 || t.dropPerSecond <= 0 { try fail("Tankwerte unzulässig") }
+        if let f = fire, f.cellWidth <= 0 || f.burnTime <= 0 { try fail("Feuerwerte unzulässig") }
+    }
+}
+
 public enum MissionLibrary {
     /// Missions offered in the start menu, in order.
     public static let all = ["hochwasser", "waldbrand"]
@@ -224,7 +253,9 @@ public enum MissionLibrary {
         candidates.append(URL(fileURLWithPath: #filePath).deletingLastPathComponent()
             .appendingPathComponent("Missions/\(id).json"))
         for case let url? in candidates where FileManager.default.fileExists(atPath: url.path) {
-            return try JSONDecoder().decode(Mission.self, from: Data(contentsOf: url))
+            let mission = try JSONDecoder().decode(Mission.self, from: Data(contentsOf: url))
+            try mission.validate()
+            return mission
         }
         throw LoadError.notFound(id)
     }

@@ -9,7 +9,12 @@ final class AudioEngine {
     private let engine = AVAudioEngine()
     private var source: AVAudioSourceNode!
     private let lock = NSLock()
-    private var voices: [Voice] = []
+    // Fixed storage: nothing is allocated on the audio thread.
+    private static let maxVoices = 16
+    private var pending = [Voice](repeating: Voice(kind: .ding), count: maxVoices)
+    private var pendingCount = 0
+    private var active = [Voice](repeating: Voice(kind: .ding), count: maxVoices)
+    private var activeCount = 0
     private var sampleRate: Float = 44100
 
     // Written from the main thread, read by the audio thread (single floats; fine for this purpose).
@@ -51,12 +56,17 @@ final class AudioEngine {
         try? engine.start() // No audio device? The game stays silent.
     }
 
-    func stop() { engine.pause() }
+    func stop() {
+        engine.stop()
+        if source != nil { engine.detach(source); source = nil }
+    }
+
+    deinit { stop() }
 
     func play(_ kind: SFX) {
         guard enabled else { return }
         lock.lock(); defer { lock.unlock() }
-        if voices.count < 16 { voices.append(Voice(kind: kind)) }
+        if pendingCount < Self.maxVoices { pending[pendingCount] = Voice(kind: kind); pendingCount += 1 }
     }
 
     private func noise() -> Float {
@@ -72,10 +82,11 @@ final class AudioEngine {
         let targetThrust = thrust, targetWind = enabled ? wind : 0
         let targetFire = enabled ? fire : 0, targetSpray = enabled ? spray : 0, targetFill = enabled ? fill : 0
 
-        lock.lock()
-        var local = voices
-        voices.removeAll()
-        lock.unlock()
+        if lock.try() {
+            for i in 0..<pendingCount where activeCount < Self.maxVoices { active[activeCount] = pending[i]; activeCount += 1 }
+            pendingCount = 0
+            lock.unlock()
+        }
 
         for i in 0..<frames {
             smoothRotor += (targetRotor - smoothRotor) * 0.0004
@@ -116,14 +127,17 @@ final class AudioEngine {
             }
 
             // One-shot voices
-            for v in local.indices {
-                s += sample(&local[v], dt: dt, noise: n)
+            for v in 0..<activeCount {
+                s += sample(&active[v], dt: dt, noise: n)
             }
             data[i] = max(-0.95, min(0.95, s))
         }
-        lock.lock()
-        voices = local.filter { !done($0) } + voices // keep voices added while rendering
-        lock.unlock()
+        var kept = 0
+        for i in 0..<activeCount where !done(active[i]) {
+            if kept != i { active[kept] = active[i] }
+            kept += 1
+        }
+        activeCount = kept
     }
 
     private func duration(_ k: SFX) -> Float {

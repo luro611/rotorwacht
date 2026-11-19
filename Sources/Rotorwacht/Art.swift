@@ -347,7 +347,9 @@ enum Art {
         }
     }
 
-    static func marker() -> SKTexture {
+    private static let cached_marker: SKTexture = make_marker()
+    static func marker() -> SKTexture { cached_marker }
+    private static func make_marker() -> SKTexture {
         texture(CGSize(width: 34, height: 40)) { ctx in
             ctx.setFillColor(c(0xc75d3b))
             ctx.move(to: CGPoint(x: 17, y: 2)); ctx.addLine(to: CGPoint(x: 31, y: 24)); ctx.addLine(to: CGPoint(x: 22, y: 24))
@@ -456,7 +458,9 @@ enum Art {
         }
     }
 
-    static func arm() -> SKTexture {
+    private static let cached_arm: SKTexture = make_arm()
+    static func arm() -> SKTexture { cached_arm }
+    private static func make_arm() -> SKTexture {
         texture(CGSize(width: 4, height: 12)) { ctx in
             ctx.setFillColor(c(0xe2b894)); ctx.fill(CGRect(x: 0, y: 0, width: 4, height: 12))
             ctx.setFillColor(c(0x3d4a5a, 0.0)); ctx.fill(.zero)
@@ -465,11 +469,15 @@ enum Art {
 
     // MARK: effects
 
-    static func puff() -> SKTexture {
+    private static let cached_puff: SKTexture = make_puff()
+    static func puff() -> SKTexture { cached_puff }
+    private static func make_puff() -> SKTexture {
         texture(CGSize(width: 32, height: 32)) { ctx in softCircle(ctx, CGPoint(x: 16, y: 16), 16, 0xffffff, 0.9) }
     }
 
-    static func raindrop() -> SKTexture {
+    private static let cached_raindrop: SKTexture = make_raindrop()
+    static func raindrop() -> SKTexture { cached_raindrop }
+    private static func make_raindrop() -> SKTexture {
         texture(CGSize(width: 3, height: 22)) { ctx in
             fillVertical(ctx, CGRect(x: 0, y: 0, width: 3, height: 22), [(0, 0xdfe9ee, 0.0), (1, 0xdfe9ee, 0.8)])
         }
@@ -487,7 +495,9 @@ enum Art {
 
 extension Art {
     /// A flame tongue: bright core, orange body, soft edge. Tinted per particle.
-    static func flame() -> SKTexture {
+    private static let cached_flame: SKTexture = make_flame()
+    static func flame() -> SKTexture { cached_flame }
+    private static func make_flame() -> SKTexture {
         texture(CGSize(width: 40, height: 56)) { ctx in
             softCircle(ctx, CGPoint(x: 20, y: 18), 20, 0xe8480f, 0.95)
             softCircle(ctx, CGPoint(x: 20, y: 26), 13, 0xff8a1f, 0.9)
@@ -496,7 +506,14 @@ extension Art {
     }
 
     /// Ash and charred ground under a burnt stretch.
+    private static var scorchCache: [CGFloat: SKTexture] = [:]
     static func scorch(width: CGFloat) -> SKTexture {
+        if let t = scorchCache[width] { return t }
+        let t = makeScorch(width: width)
+        scorchCache[width] = t
+        return t
+    }
+    private static func makeScorch(width: CGFloat) -> SKTexture {
         texture(CGSize(width: width, height: 26)) { ctx in
             ctx.saveGState()
             ctx.translateBy(x: width / 2, y: 6)
@@ -507,7 +524,9 @@ extension Art {
     }
 
     /// A droplet of extinguishing water.
-    static func waterDrop() -> SKTexture {
+    private static let cached_waterDrop: SKTexture = make_waterDrop()
+    static func waterDrop() -> SKTexture { cached_waterDrop }
+    private static func make_waterDrop() -> SKTexture {
         texture(CGSize(width: 8, height: 12)) { ctx in
             ctx.setFillColor(c(0xcfe6f2, 0.95))
             ctx.fillEllipse(in: CGRect(x: 1, y: 0.5, width: 6, height: 8))
