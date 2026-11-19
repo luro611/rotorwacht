@@ -437,6 +437,10 @@ public struct MissionSimulation {
             people[i].state = people[i].state == .leaving ? .rescued : .injured
             people[i].progress = 0
         }
+        // The cable goes down with the helicopter: no stale cable or winch bar while the replacement is on its way.
+        hz.winchProgress = Array(repeating: 0, count: mission.rescuePoints.count)
+        hz.winchHolding = false
+        hz.winch = nil
         events.append(.helicopterLost(remaining: helicoptersLeft))
         if helicoptersLeft <= 0 {
             finish(.failed, &events)

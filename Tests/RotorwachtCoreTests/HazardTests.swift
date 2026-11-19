@@ -218,6 +218,17 @@ private func events(_ sim: inout MissionSimulation, seconds: Double, input: Pilo
         #expect(sim.people.filter { $0.state == .aboard }.count == 2)
     }
 
+    @Test func crashClearsTheCable() {
+        var sim = MissionSimulation(mission: winchMission())
+        sim.debugPlaceHelicopter(airborne(500, 170))
+        _ = events(&sim, seconds: 1)
+        #expect(sim.hz.winch != nil)
+        sim.heli.durability = 0
+        _ = events(&sim, seconds: 0.1)
+        #expect(sim.hz.winch == nil && sim.hz.winchProgress.allSatisfy { $0 == 0 })
+        #expect(!sim.people.contains { $0.state == .hoisting })
+    }
+
     @Test func movingFastOrFlyingTooHighHoistsNobody() {
         var sim = MissionSimulation(mission: winchMission())
         sim.debugPlaceHelicopter(airborne(500, 300))      // cable is 120 long

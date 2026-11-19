@@ -13,7 +13,9 @@ public struct AutoPilot {
         for f in sim.mission.flowList {
             let lo = min(f.x0, f.x1), hi = max(f.x0, f.x1)
             guard p.x >= lo - 1, p.x <= hi + 1 else { continue }
-            let eta = f.start + max(0, abs(p.x - p.width / 2 - f.x0)) / f.speed - sim.time
+            // The front arrives at the near edge of the point, seen from where the flow starts.
+            let edge = f.x1 >= f.x0 ? p.x - p.width / 2 : p.x + p.width / 2
+            let eta = f.start + abs(edge - f.x0) / f.speed - sim.time
             if best == nil || eta < best! { best = eta }
         }
         return best
