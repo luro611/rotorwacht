@@ -1,188 +1,192 @@
 {
-  "id": "vulkan",
-  "number": 5,
-  "hazard": "volcano",
-  "look": "volcano",
-  "tagline": "Asche und Lava",
-  "summary": "Asche nimmt die Sicht, Lavabrocken fliegen in Bögen, ein Lavastrom kriecht hangab. Der Treibstoff ist knapp.",
-  "title": "Vulkanausbruch auf der Insel",
-  "briefing": "Der Vulkan ist ausgebrochen. Ascheregen nimmt die Sicht, Lavabrocken fliegen in hohen Bögen aus dem Krater (die Flugbahn wird angezeigt), und ein Lavastrom läuft den Osthang hinab auf die Siedlungen zu. Wo er hinkommt, ist alles verloren, hole zuerst die obersten Orte. Der Treibstoff ist knapp: Auf der Westseite wartet ein Außenposten zum Tanken.",
-  "world": {
-    "width": 7800,
-    "ceiling": 950
+ "id": "vulkan",
+ "number": 5,
+ "hazard": "volcano",
+ "look": "volcano",
+ "tagline": "Asche und Lava",
+ "summary": "Asche nimmt die Sicht, Lavabrocken fliegen in Bögen, ein Lavastrom kriecht hangab. Der Treibstoff ist knapp.",
+ "title": "Vulkanausbruch auf der Insel",
+ "briefing": "Der Vulkan ist ausgebrochen. Ascheregen nimmt die Sicht, Lavabrocken fliegen in hohen Bögen aus dem Krater (die Flugbahn wird angezeigt), und ein Lavastrom läuft den Osthang hinab auf die Siedlungen zu. Wo er hinkommt, ist alles verloren, hole zuerst die obersten Orte. Der Treibstoff ist knapp: Auf der Westseite wartet ein Außenposten zum Tanken.",
+ "world": {
+  "width": 7800,
+  "ceiling": 950
+ },
+ "terrain": [
+  [0, -60],
+  [500, -60],
+  [800, 60],
+  [1000, 110],
+  [1295.0, 110.0],
+  [1340.0, 110],
+  [1500.0, 110],
+  [1545.0, 110.0],
+  [1750, 110],
+  [2000, 220],
+  [2300, 420],
+  [2550, 600],
+  [2700, 540],
+  [2850, 600],
+  [3100, 480],
+  [3500, 340],
+  [3600, 330],
+  [3800, 330],
+  [3900, 260],
+  [4300, 210],
+  [4500, 210],
+  [4700, 170],
+  [4900, 150],
+  [5100, 150],
+  [6000, 130],
+  [7800, 130]
+ ],
+ "base": {
+  "x": 6900,
+  "width": 420
+ },
+ "rescuePoints": [
+  {
+   "id": "dorf",
+   "name": "Fischerdorf",
+   "kind": "roof",
+   "x": 1150,
+   "width": 160,
+   "top": 150,
+   "people": 4
   },
-  "terrain": [
-    [0, -60],
-    [500, -60],
-    [800, 60],
-    [1000, 110],
-    [1750, 110],
-    [2000, 220],
-    [2300, 420],
-    [2550, 600],
-    [2700, 540],
-    [2850, 600],
-    [3100, 480],
-    [3500, 340],
-    [3600, 330],
-    [3800, 330],
-    [3900, 260],
-    [4300, 210],
-    [4500, 210],
-    [4700, 170],
-    [4900, 150],
-    [5100, 150],
-    [6000, 130],
-    [7800, 130]
-  ],
-  "base": {
-    "x": 6900,
-    "width": 420
+  {
+   "id": "hafen",
+   "name": "Hafen",
+   "kind": "island",
+   "x": 1420,
+   "width": 160,
+   "top": 110,
+   "people": 3
   },
-  "rescuePoints": [
-    {
-      "id": "dorf",
-      "name": "Fischerdorf",
-      "kind": "roof",
-      "x": 1150,
-      "width": 130,
-      "top": 150,
-      "people": 4
-    },
-    {
-      "id": "hafen",
-      "name": "Hafen",
-      "kind": "island",
-      "x": 1420,
-      "width": 150,
-      "top": 110,
-      "people": 3
-    },
-    {
-      "id": "warte",
-      "name": "Vulkanwarte",
-      "kind": "roof",
-      "x": 3700,
-      "width": 150,
-      "top": 330,
-      "people": 3
-    },
-    {
-      "id": "station",
-      "name": "Bergstation",
-      "kind": "roof",
-      "x": 4400,
-      "width": 140,
-      "top": 210,
-      "people": 4
-    },
-    {
-      "id": "siedlung",
-      "name": "Siedlung",
-      "kind": "roof",
-      "x": 5000,
-      "width": 150,
-      "top": 150,
-      "people": 4
-    }
-  ],
-  "helicopters": 3,
-  "capacity": 12,
-  "timeLimit": 540,
-  "fuel": {
-    "capacity": 100,
-    "burnPerSecond": 1.0,
-    "refuelPerSecond": 12
+  {
+   "id": "warte",
+   "name": "Vulkanwarte",
+   "kind": "roof",
+   "x": 3700,
+   "width": 160,
+   "top": 330,
+   "people": 3
   },
-  "flood": {
-    "startLevel": 0,
-    "risePerSecond": 0,
-    "maxLevel": 0
+  {
+   "id": "station",
+   "name": "Bergstation",
+   "kind": "roof",
+   "x": 4400,
+   "width": 160,
+   "top": 210,
+   "people": 4
   },
-  "wind": {
-    "base": 10,
-    "gusts": [
-      {
-        "start": 60,
-        "duration": 9,
-        "strength": 60
-      },
-      {
-        "start": 170,
-        "duration": 9,
-        "strength": -60
-      }
-    ]
-  },
-  "atmosphere": {
-    "sky": "ash",
-    "precipitation": "ash",
-    "ash": {
-      "base": 0.12,
-      "pulses": [
-        {
-          "start": 20,
-          "duration": 18,
-          "strength": 0.5
-        },
-        {
-          "start": 90,
-          "duration": 20,
-          "strength": 0.55
-        },
-        {
-          "start": 180,
-          "duration": 20,
-          "strength": 0.55
-        },
-        {
-          "start": 280,
-          "duration": 20,
-          "strength": 0.5
-        }
-      ]
-    }
-  },
-  "outposts": [
-    {
-      "name": "Außenposten West",
-      "x": 1650,
-      "width": 110
-    }
-  ],
-  "flows": [
-    {
-      "id": "lava",
-      "kind": "lava",
-      "start": 40,
-      "warn": 8,
-      "x0": 2850,
-      "x1": 6000,
-      "speed": 22,
-      "damagePerSecond": 22,
-      "clearance": 60
-    }
-  ],
-  "volleys": [
-    {
-      "kind": "lavaBomb",
-      "start": 18,
-      "interval": 9,
-      "repeats": 50,
-      "count": 3,
-      "stagger": 0.7,
-      "x0": 2740,
-      "x1": 2820,
-      "spawnY": 600,
-      "speedMin": 380,
-      "speedMax": 520,
-      "angleMin": 55,
-      "angleMax": 125,
-      "gravity": 300,
-      "warn": 2.5,
-      "radius": 22,
-      "damage": 14,
-      "blockTime": 14
-    }
+  {
+   "id": "siedlung",
+   "name": "Siedlung",
+   "kind": "roof",
+   "x": 5000,
+   "width": 160,
+   "top": 150,
+   "people": 4
+  }
+ ],
+ "helicopters": 3,
+ "capacity": 12,
+ "timeLimit": 540,
+ "fuel": {
+  "capacity": 100,
+  "burnPerSecond": 1.0,
+  "refuelPerSecond": 12
+ },
+ "flood": {
+  "startLevel": 0,
+  "risePerSecond": 0,
+  "maxLevel": 0
+ },
+ "wind": {
+  "base": 10,
+  "gusts": [
+   {
+    "start": 60,
+    "duration": 9,
+    "strength": 60
+   },
+   {
+    "start": 170,
+    "duration": 9,
+    "strength": -60
+   }
   ]
+ },
+ "atmosphere": {
+  "sky": "ash",
+  "precipitation": "ash",
+  "ash": {
+   "base": 0.12,
+   "pulses": [
+    {
+     "start": 20,
+     "duration": 18,
+     "strength": 0.5
+    },
+    {
+     "start": 90,
+     "duration": 20,
+     "strength": 0.55
+    },
+    {
+     "start": 180,
+     "duration": 20,
+     "strength": 0.55
+    },
+    {
+     "start": 280,
+     "duration": 20,
+     "strength": 0.5
+    }
+   ]
+  }
+ },
+ "outposts": [
+  {
+   "name": "Außenposten West",
+   "x": 1650,
+   "width": 110
+  }
+ ],
+ "flows": [
+  {
+   "id": "lava",
+   "kind": "lava",
+   "start": 40,
+   "warn": 8,
+   "x0": 2850,
+   "x1": 6000,
+   "speed": 22,
+   "damagePerSecond": 22,
+   "clearance": 60
+  }
+ ],
+ "volleys": [
+  {
+   "kind": "lavaBomb",
+   "start": 18,
+   "interval": 9,
+   "repeats": 50,
+   "count": 3,
+   "stagger": 0.7,
+   "x0": 2740,
+   "x1": 2820,
+   "spawnY": 600,
+   "speedMin": 380,
+   "speedMax": 520,
+   "angleMin": 55,
+   "angleMax": 125,
+   "gravity": 300,
+   "warn": 2.5,
+   "radius": 22,
+   "damage": 14,
+   "blockTime": 14
+  }
+ ]
 }

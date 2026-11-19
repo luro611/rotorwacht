@@ -1,0 +1,20 @@
+{
+ "ppm": 64,
+ "frameW": 1.9,
+ "frameH": 2.5,
+ "footV": 0.02,
+ "types": [
+  "helfer",
+  "frau",
+  "kind",
+  "opa",
+  "wanderer"
+ ],
+ "anims": {
+  "wave": 8,
+  "stand": 1,
+  "walk": 8,
+  "climb": 4,
+  "hoist": 1
+ }
+}

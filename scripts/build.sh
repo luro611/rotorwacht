@@ -20,7 +20,7 @@ swiftc -O -parse-as-library -target arm64-apple-macos14.0 -I "$OUT" -module-name
   -o "$APP/Contents/MacOS/Rotorwacht"
 
 echo "• Bundle"
-cp -R Sources/Rotorwacht/Fonts Sources/Rotorwacht/Images "$APP/Contents/Resources/"
+cp -R Sources/Rotorwacht/Fonts Sources/Rotorwacht/Images Sources/Rotorwacht/Renders "$APP/Contents/Resources/"
 cp -R Sources/RotorwachtCore/Missions "$APP/Contents/Resources/"
 cat > "$APP/Contents/Info.plist" <<PLIST
 <?xml version="1.0" encoding="UTF-8"?>

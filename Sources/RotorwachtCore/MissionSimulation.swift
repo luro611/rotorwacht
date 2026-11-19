@@ -150,14 +150,21 @@ public struct MissionSimulation {
         var list: [Person] = []
         var id = 0
         for (pi, p) in mission.rescuePoints.enumerated() {
-            let usable = max(0, p.width - 40)
+            // The waiting stand at the two edges of the pad, clear of the skids, one after the other towards the middle.
             for k in 0..<p.people {
-                let offset = p.people == 1 ? 0 : (Double(k) + 0.5) / Double(p.people) * usable - usable / 2
-                list.append(Person(id: id, pointIndex: pi, spotX: p.x + offset))
+                list.append(Person(id: id, pointIndex: pi, spotX: p.x + Self.spotOffset(index: k, width: p.width)))
                 id += 1
             }
         }
         self.people = list
+    }
+
+    /// Offset from the pad centre where person `index` waits: alternately left and right, outermost first.
+    public static func spotOffset(index k: Int, width: Double) -> Double {
+        let side: Double = k % 2 == 0 ? -1 : 1
+        let step = Double(k / 2) * 13
+        let edge = width / 2 - 14
+        return side * max(edge - step, 20)
     }
 
     // MARK: Queries

@@ -17,12 +17,9 @@ final class GameScene: SKScene {
     // Nodes
     private let cam = SKCameraNode()
     private var heliRoot = SKNode()      // position + tilt
-    private var heliFlip = SKNode()      // facing (xScale)
-    private var heliSide: SKSpriteNode!
-    private var heliFront: SKSpriteNode!
-    private var rotorNode = SKNode()
-    private var blades: [SKSpriteNode] = []
-    private var rotorDisc: SKSpriteNode!
+    private let heliSprite = HeliSprite()
+    private let heliShadow = SKSpriteNode()
+    private var spool: CGFloat = 0
     private var water = SKSpriteNode()
     private var waveShape = SKShapeNode()
     private var waveFoam = SKShapeNode()
@@ -81,9 +78,9 @@ final class GameScene: SKScene {
     private var windStreakTimer = 0.0
 
     final class PersonNode: SKNode {
-        let body = SKSpriteNode()
-        let arm = SKSpriteNode()
-        var waving = false
+        let fig: FigureSprite
+        init(id: Int) { fig = FigureSprite(id: id); super.init(); addChild(fig) }
+        required init?(coder: NSCoder) { fatalError() }
     }
 
     init(mission: Mission) {
@@ -220,33 +217,10 @@ final class GameScene: SKScene {
             x += chunk
         }
 
-        // Buildings and markers at the rescue points
+        // Landing pads (rendered per rescue point) and markers
         for (i, p) in mission.rescuePoints.enumerated() {
-            if p.kind == "island" || p.kind == "ledge" {
-                // Terrain only. A winch ledge gets a small marker flag so it stands out from the rock.
-                if p.kind == "ledge" {
-                    let flag = SKSpriteNode(color: SKColor(red: 0.78, green: 0.36, blue: 0.23, alpha: 1), size: CGSize(width: 14, height: 9))
-                    flag.anchorPoint = CGPoint(x: 0, y: 1)
-                    flag.position = CGPoint(x: p.x - 36, y: p.top + 44)
-                    flag.zPosition = -8
-                    let pole = SKSpriteNode(color: SKColor(white: 0.9, alpha: 1), size: CGSize(width: 2, height: 44))
-                    pole.anchorPoint = CGPoint(x: 0.5, y: 0)
-                    pole.position = CGPoint(x: p.x - 36, y: p.top)
-                    pole.zPosition = -8
-                    addChild(pole); addChild(flag)
-                }
-            } else {
-                let tex: SKTexture
-                var anchorY: CGFloat = 1
-                switch p.kind {
-                case "boat": tex = Art.boat(width: CGFloat(p.width), top: 80); anchorY = 1
-                case "lighthouse": tex = Art.lighthouse(width: CGFloat(p.width), top: CGFloat(p.top), seed: UInt64(40 + i))
-                case "roof" where look.town: tex = Art.rooftopPad(width: CGFloat(p.width))
-                default: tex = Art.building(kind: p.kind, width: CGFloat(p.width), top: CGFloat(p.top), seed: UInt64(40 + i))
-                }
-                let n = SKSpriteNode(texture: tex)
-                n.anchorPoint = CGPoint(x: 0.5, y: anchorY)
-                n.position = CGPoint(x: p.x, y: p.kind == "roof" && look.town ? p.top - 6 : p.top)
+            if let n = Render.padSprite("pad-\(mission.id)-\(p.id)") {
+                n.position = CGPoint(x: p.x, y: p.top)
                 n.zPosition = p.kind == "boat" ? 4.9 : -10
                 addChild(n)
             }
@@ -288,31 +262,21 @@ final class GameScene: SKScene {
 
         // People
         for person in sim.people {
-            let node = PersonNode()
-            node.body.texture = Art.person(variant: person.id)
-            node.body.size = CGSize(width: 18, height: 30)
-            node.body.anchorPoint = CGPoint(x: 0.5, y: 0)
-            node.arm.texture = Art.arm()
-            node.arm.size = CGSize(width: 4, height: 12)
-            node.arm.anchorPoint = CGPoint(x: 0.5, y: 0.95)
-            node.arm.position = CGPoint(x: 6, y: 20)
-            node.addChild(node.body)
-            node.addChild(node.arm)
+            let node = PersonNode(id: person.id)
             node.zPosition = 2
             addChild(node)
             personNodes[person.id] = node
         }
 
         // Camp
-        let campWidth = CGFloat(mission.base.width)
-        let camp = SKSpriteNode(texture: Art.camp(width: campWidth))
-        camp.anchorPoint = CGPoint(x: 0.5, y: 0)
-        camp.position = CGPoint(x: mission.base.x, y: mission.baseSurface)
-        camp.zPosition = -9
-        addChild(camp)
+        if let camp = Render.padSprite("pad-camp") {
+            camp.position = CGPoint(x: mission.base.x, y: mission.baseSurface)
+            camp.zPosition = -9
+            addChild(camp)
+        }
         sock = SKSpriteNode(texture: Art.sock())
         sock.anchorPoint = CGPoint(x: 0, y: 0.5)
-        sock.position = CGPoint(x: mission.base.x - 2, y: mission.baseSurface + 100)
+        sock.position = CGPoint(x: mission.base.x + mission.base.width / 2 - 48, y: mission.baseSurface + 100)
         sock.zPosition = -8
         addChild(sock)
 
@@ -355,26 +319,14 @@ final class GameScene: SKScene {
     }
 
     private func buildHelicopter() {
+        heliShadow.texture = Art.puff()
+        heliShadow.color = SKColor(white: 0, alpha: 1)
+        heliShadow.colorBlendFactor = 1
+        heliShadow.zPosition = 3
+        addChild(heliShadow)
         heliRoot.zPosition = 10
         addChild(heliRoot)
-        heliRoot.addChild(heliFlip)
-        heliSide = SKSpriteNode(texture: Art.helicopterSide(), size: CGSize(width: 132, height: 60))
-        heliSide.anchorPoint = CGPoint(x: 0.5, y: 0)
-        heliSide.position = CGPoint(x: -4, y: 0)
-        heliFlip.addChild(heliSide)
-        heliFront = SKSpriteNode(texture: Art.helicopterFront(), size: CGSize(width: 74, height: 60))
-        heliFront.anchorPoint = CGPoint(x: 0.5, y: 0)
-        heliRoot.addChild(heliFront)
-        rotorDisc = SKSpriteNode(texture: Art.rotorDisc(), size: CGSize(width: 150, height: 14))
-        rotorNode.addChild(rotorDisc)
-        for _ in 0..<2 {
-            let b = SKSpriteNode(texture: Art.rotorBlade(), size: CGSize(width: 150, height: 6))
-            blades.append(b)
-            rotorNode.addChild(b)
-        }
-        rotorNode.position = CGPoint(x: 0, y: 59)
-        rotorNode.zPosition = 1
-        heliRoot.addChild(rotorNode)
+        heliRoot.addChild(heliSprite)
     }
 
     private func buildWeather() {
@@ -594,24 +546,15 @@ final class GameScene: SKScene {
         heliRoot.isHidden = crashed || (finished && sim.heli.durability <= 0)
         heliRoot.position = CGPoint(x: h.x, y: h.y)
         heliRoot.zRotation = CGFloat(-h.tilt)
-        // Facing: blend between front view and side view.
-        let f = CGFloat(h.facing)
-        let sideVisible = abs(f) > 0.45
-        heliSide.isHidden = !sideVisible
-        heliFront.isHidden = sideVisible
-        heliFlip.xScale = f == 0 ? 1 : (f > 0 ? 1 : -1) * max(abs(f), 0.5)
-        heliFront.xScale = 1
-
-        // Rotor
         let engineOn = h.fuel > 0 && !crashed
-        let spin: CGFloat = engineOn ? 52 : 8
-        rotorPhase += spin * CGFloat(dt)
-        for (i, b) in blades.enumerated() {
-            let p = rotorPhase + CGFloat(i) * .pi / 2
-            b.xScale = abs(cos(p)) * 0.9 + 0.1
-        }
-        rotorDisc.alpha = engineOn ? 1 : 0.15
-        rotorNode.xScale = sideVisible ? 1 : 1.15
+        spool += ((engineOn ? 1 : 0) - spool) * CGFloat(min(1, dt * (engineOn ? 1.6 : 0.5)))
+        heliSprite.update(facing: h.facing, engineOn: engineOn, spool: spool, time: clock)
+        // Shadow on whatever is below: stays on the surface, fades and widens with height.
+        let under = max(mission.maxSurface(from: h.x - 40, to: h.x + 40), mission.waterLevel(from: h.x - 40, to: h.x + 40, flood: sim.floodLevel))
+        let alt = max(0, h.y - under)
+        heliShadow.position = CGPoint(x: h.x, y: under + 1)
+        heliShadow.size = CGSize(width: 150 + alt * 0.25, height: 16 + alt * 0.03)
+        heliShadow.alpha = max(0, 0.42 - alt / 520) * (crashed ? 0 : 1)
 
         syncLakes(dt: dt)
         syncFire(dt: dt)
@@ -649,31 +592,32 @@ final class GameScene: SKScene {
         waveFoam.path = foam
         }
 
-        // People
+        // People: feet always on the surface of their pad
         for p in sim.people {
             guard let node = personNodes[p.id] else { continue }
             let gy = CGFloat(mission.surfaceHeight(at: p.spotX))
+            let fig = node.fig
             switch p.state {
             case .waiting:
                 node.isHidden = false
                 node.alpha = 1
                 node.position = CGPoint(x: p.spotX, y: gy)
-                setWaving(node, true)
+                fig.show("wave", phase: clock * 1.15 + Double(p.id) * 0.37)
                 node.xScale = p.spotX < h.x ? 1 : -1
             case .boarding:
                 node.isHidden = false
                 let t = CGFloat(p.progress)
                 node.position = CGPoint(x: p.spotX + (CGFloat(h.x) - CGFloat(p.spotX)) * t, y: gy)
-                node.alpha = 1 - t * t
-                setWaving(node, false)
-                node.xScale = CGFloat(h.x) > CGFloat(p.spotX) ? -1 : 1
+                if t < 0.8 { fig.show("walk", phase: Double(t) * 3.6) } else { fig.show("climb", phase: Double((t - 0.8) / 0.2) * 0.99) }
+                node.alpha = 1 - max(0, (t - 0.88) / 0.12)
+                node.xScale = CGFloat(h.x) > CGFloat(p.spotX) ? 1 : -1
             case .hoisting:
                 node.isHidden = false
                 let t = CGFloat(p.progress)
                 let hy = CGFloat(h.y) + 8
-                node.position = CGPoint(x: p.spotX + (CGFloat(h.x) - CGFloat(p.spotX)) * t, y: gy + (hy - gy - 26) * t)
+                node.position = CGPoint(x: p.spotX + (CGFloat(h.x) - CGFloat(p.spotX)) * t, y: gy + (hy - gy - 40) * t)
                 node.alpha = 1
-                setWaving(node, false)
+                fig.show("hoist", phase: 0)
                 node.xScale = 1
             case .aboard, .injured:
                 node.isHidden = true
@@ -681,16 +625,17 @@ final class GameScene: SKScene {
                 node.isHidden = false
                 let t = CGFloat(p.progress)
                 let targetX = CGFloat(mission.base.x - mission.base.width / 2 + 40 + CGFloat(p.id % 5) * 12)
-                node.position = CGPoint(x: CGFloat(h.x) + (targetX - CGFloat(h.x)) * t, y: CGFloat(mission.baseSurface) + 8)
+                node.position = CGPoint(x: CGFloat(h.x) + (targetX - CGFloat(h.x)) * t, y: CGFloat(mission.baseSurface))
                 node.alpha = 1
-                setWaving(node, false)
-                node.xScale = targetX > CGFloat(h.x) ? -1 : 1
+                fig.show("walk", phase: Double(t) * 3.6)
+                node.xScale = targetX > CGFloat(h.x) ? 1 : -1
             case .rescued:
                 node.isHidden = false
                 let targetX = CGFloat(mission.base.x - mission.base.width / 2 + 40 + CGFloat(p.id % 5) * 12)
-                node.position = CGPoint(x: targetX, y: CGFloat(mission.baseSurface) + 8)
+                node.position = CGPoint(x: targetX, y: CGFloat(mission.baseSurface))
                 node.alpha = 1
-                setWaving(node, p.id % 2 == 0)
+                if p.id % 2 == 0 { fig.show("wave", phase: clock * 1.15 + Double(p.id) * 0.37) } else { fig.show("stand", phase: 0) }
+                node.xScale = 1
             case .lost:
                 node.isHidden = true
             }
@@ -705,7 +650,7 @@ final class GameScene: SKScene {
         if let w = sim.hz.winch, let p = sim.people.first(where: { $0.id == w.personID }), let node = personNodes[p.id] {
             let path = CGMutablePath()
             path.move(to: CGPoint(x: h.x, y: h.y + 6))
-            path.addLine(to: CGPoint(x: node.position.x, y: node.position.y + 30))
+            path.addLine(to: CGPoint(x: node.position.x, y: node.position.y + 36))
             cable.path = path
             cable.strokeColor = w.steady ? SKColor(red: 0.95, green: 0.9, blue: 0.8, alpha: 1) : SKColor(red: 1, green: 0.5, blue: 0.3, alpha: 1)
             cable.isHidden = false
@@ -781,17 +726,6 @@ final class GameScene: SKScene {
             say("Treibstoff knapp. Zurück ins Lager!")
         }
         if h.fuel > mission.fuel.capacity * 0.5 { lowFuelWarned = false }
-    }
-
-    private func setWaving(_ node: PersonNode, _ on: Bool) {
-        if node.waving == on { return }
-        node.waving = on
-        node.arm.removeAllActions()
-        if on {
-            node.arm.run(.repeatForever(.sequence([.rotate(toAngle: 2.6, duration: 0.28), .rotate(toAngle: 3.5, duration: 0.28)])))
-        } else {
-            node.arm.zRotation = 0
-        }
     }
 
     // MARK: Lakes, fire, water drops
