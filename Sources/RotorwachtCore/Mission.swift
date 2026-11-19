@@ -40,6 +40,12 @@ public struct RescuePointSpec: Codable, Equatable, Sendable {
     /// Height of the landing surface.
     public var top: Double
     public var people: Int
+    /// nil = land on it; "winch" = hover above and hoist people (no landing needed).
+    public var access: String? = nil
+    /// Length of the winch cable (world units).
+    public var cable: Double? = nil
+    public var isWinch: Bool { access == "winch" }
+    public var cableLength: Double { cable ?? 130 }
 }
 
 public struct FuelSpec: Codable, Equatable, Sendable {
@@ -52,6 +58,8 @@ public struct FloodSpec: Codable, Equatable, Sendable {
     public var startLevel: Double
     public var risePerSecond: Double
     public var maxLevel: Double
+    /// Sea swell on top of the level (optional).
+    public var swell: SwellSpec? = nil
 }
 
 public struct GustSpec: Codable, Equatable, Sendable {
@@ -134,6 +142,19 @@ public struct Mission: Codable, Equatable, Sendable {
     public var tank: TankSpec? = nil
     public var lakes: [LakeSpec]? = nil
     public var fire: FireSpec? = nil
+    public var atmosphere: AtmosphereSpec? = nil
+    public var storms: [StormCell]? = nil
+    public var volleys: [Volley]? = nil
+    public var flows: [Flow]? = nil
+    public var outposts: [Outpost]? = nil
+    /// Landscape style for the picture: "valley" (default), "coast", "town", "volcano", "alpine".
+    public var look: String? = nil
+
+    public var stormList: [StormCell] { storms ?? [] }
+    public var volleyList: [Volley] { volleys ?? [] }
+    public var flowList: [Flow] { flows ?? [] }
+    public var outpostList: [Outpost] { outposts ?? [] }
+    public var isNight: Bool { atmosphere?.night ?? false }
 
     public var isFire: Bool { hazard == "fire" }
     public var tankSpec: TankSpec { tank ?? .standard }
@@ -185,7 +206,25 @@ public struct Mission: Codable, Equatable, Sendable {
     // MARK: Weather and water
 
     public func floodLevel(at time: Double) -> Double {
-        min(flood.maxLevel, flood.startLevel + flood.risePerSecond * time)
+        var level = min(flood.maxLevel, flood.startLevel + flood.risePerSecond * time)
+        if let s = flood.swell, s.period > 0 {
+            let w = 2 * Double.pi * time / s.period
+            level += s.amplitude * (sin(w) * 0.75 + 0.25 * sin(w * 2.7 + 1))
+        }
+        return level
+    }
+
+    /// Highest the sea can get (level plus full swell), for placing rescue points above it.
+    public var highestWater: Double { flood.maxLevel + (flood.swell?.amplitude ?? 0) }
+
+    /// Ash in the air at a time, 0...1 (takes away sight).
+    public func ashDensity(at time: Double) -> Double {
+        guard let a = atmosphere?.ash else { return 0 }
+        var v = a.base
+        for g in a.pulses where time >= g.start && time <= g.start + g.duration {
+            v += g.strength * sin(Double.pi * (time - g.start) / g.duration)
+        }
+        return min(1, max(0, v))
     }
 
     /// Open water level under a span: the flood or a lake, whichever stands higher there.
@@ -234,12 +273,21 @@ extension Mission {
         for l in lakeList where l.x1 <= l.x0 { try fail("See \(l.name): x1 muss größer als x0 sein") }
         if let t = tank, t.capacity <= 0 || t.fillPerSecond <= 0 || t.dropPerSecond <= 0 { try fail("Tankwerte unzulässig") }
         if let f = fire, f.cellWidth <= 0 || f.burnTime <= 0 { try fail("Feuerwerte unzulässig") }
+        for s in stormList where s.x1 <= s.x0 || s.interval <= 0 || s.warn < 0 || s.radius <= 0 { try fail("Gewitterzelle unzulässig") }
+        for v in volleyList where v.count <= 0 || v.repeats <= 0 || v.x1 < v.x0 || v.stagger < 0 || v.radius <= 0
+            || !["debris", "lavaBomb", "rock"].contains(v.kind) { try fail("Salve \(v.kind) unzulässig") }
+        for f in flowList where f.speed <= 0 || f.warn < 0 || (f.length ?? 1) <= 0 || !["lava", "avalanche"].contains(f.kind) {
+            try fail("Strom \(f.id) unzulässig")
+        }
+        for o in outpostList where o.width <= 0 { try fail("Außenposten \(o.name) unzulässig") }
+        if let s = flood.swell, s.period <= 0 { try fail("Wellenperiode muss größer als 0 sein") }
+        for p in rescuePoints where p.isWinch && p.cableLength <= 0 { try fail("Seil von \(p.id) unzulässig") }
     }
 }
 
 public enum MissionLibrary {
     /// Missions offered in the start menu, in order.
-    public static let all = ["hochwasser", "waldbrand"]
+    public static let all = ["hochwasser", "waldbrand", "kueste", "altstadt", "vulkan", "gebirge"]
 
     public enum LoadError: Error { case notFound(String) }
 

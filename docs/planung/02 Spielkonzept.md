@@ -78,7 +78,15 @@ Jeder Einsatz in drei Stufen (leicht, mittel, schwer). Sterne je Einsatz für ge
 - Steigende Flut und Böen; noch kein Feuer und kein Löschwasser.
 - Einfache, aber schon hochauflösende Platzhaltergrafik mit Parallax; Grundgeräusche.
 
-Danach: 0.2 Löschen und Waldbrand (gebaut 19.11.2026), 0.3 Grafik und Effekte ausbauen, 0.4 Nacht, Gewitter, Einsatzkarte, 0.5 restliche Einsätze, 1.0 alle sechs Einsätze in drei Stufen.
+Fahrplan (angepasst 19.11.2026, auf Wunsch von Lutz zuerst weitere Level):
+
+- 0.2 Löschen und Waldbrand (gebaut 19.11.2026).
+- 0.3 Einsätze 3 bis 6 (Sturmnacht, Erdbeben, Vulkan, Lawinen) mit Nacht, Gewitter, Seilwinde, Lava, Lawinen, Außenposten; Einsatzauswahl für alle sechs mit Freischalten; drei Stufen; lokaler Fortschritt (gebaut 19.11.2026).
+- 0.4 Grafik und Effekte ausbauen (Parallax mit mehr Ebenen, Licht und Spiegelungen, Figuren-Animationen, Kamera), Feinschliff der Einsätze nach Spieltests (Schwierigkeit, Zeiten, Landeplätze).
+- 0.5 Ton und Musik ausbauen, Einstellungen, Gamepad.
+- 1.0 alles rund, drei Stufen abgestimmt, Lizenz festlegen.
+
+Nicht umgesetzt aus der Konzeptliste: „dünne Luft“ in Einsatz 6 (Steigleistung nimmt mit der Höhe ab), Nebelbänke, Strommasten und Kräne als Hindernisse; offen für 0.4.
 
 ## Entscheidungen (freigegeben 19.11.2026)
 

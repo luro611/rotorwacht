@@ -1,0 +1,210 @@
+{
+  "id": "gebirge",
+  "number": 6,
+  "hazard": "avalanche",
+  "look": "alpine",
+  "tagline": "Seilwinde im Sturm",
+  "summary": "Menschen auf schmalen Felsvorsprüngen: schweben statt landen, die Seilwinde zieht sie hoch. Wind und Lawinen.",
+  "title": "Lawinen im Hochgebirge",
+  "briefing": "Im Hochgebirge sitzen Menschen auf Felsvorsprüngen fest, viel zu schmal zum Landen. Schwebe über dem Vorsprung, nicht höher als die Seillänge, und halte den Hubschrauber ruhig: Die Seilwinde zieht dann eine Person nach der anderen hoch. Mit Pfeil runter holst du das Seil näher heran. Starker Wind drückt dich zur Seite, und von oben kündigen sich Lawinen an. Wen sie erreicht, ist verloren.",
+  "world": {
+    "width": 7600,
+    "ceiling": 1100
+  },
+  "terrain": [
+    [0, 800],
+    [350, 860],
+    [800, 700],
+    [1050, 540],
+    [1150, 480],
+    [1250, 480],
+    [1400, 360],
+    [1700, 420],
+    [1900, 300],
+    [2150, 560],
+    [2350, 420],
+    [2450, 360],
+    [2550, 360],
+    [2700, 230],
+    [3100, 330],
+    [3300, 500],
+    [3500, 380],
+    [3650, 300],
+    [3750, 300],
+    [3900, 220],
+    [4300, 260],
+    [4600, 420],
+    [4800, 300],
+    [4900, 240],
+    [5000, 240],
+    [5200, 200],
+    [5600, 190],
+    [7600, 190]
+  ],
+  "base": {
+    "x": 6800,
+    "width": 420
+  },
+  "rescuePoints": [
+    {
+      "id": "vorsprung1",
+      "name": "Westgrat",
+      "kind": "ledge",
+      "x": 1200,
+      "width": 100,
+      "top": 480,
+      "people": 3,
+      "access": "winch",
+      "cable": 130
+    },
+    {
+      "id": "vorsprung2",
+      "name": "Eisrinne",
+      "kind": "ledge",
+      "x": 2500,
+      "width": 100,
+      "top": 360,
+      "people": 3,
+      "access": "winch",
+      "cable": 130
+    },
+    {
+      "id": "vorsprung3",
+      "name": "Gipfelscharte",
+      "kind": "ledge",
+      "x": 3700,
+      "width": 100,
+      "top": 300,
+      "people": 3,
+      "access": "winch",
+      "cable": 130
+    },
+    {
+      "id": "vorsprung4",
+      "name": "Steilwand",
+      "kind": "ledge",
+      "x": 4950,
+      "width": 100,
+      "top": 240,
+      "people": 3,
+      "access": "winch",
+      "cable": 130
+    },
+    {
+      "id": "huette",
+      "name": "Schutzhütte",
+      "kind": "roof",
+      "x": 5600,
+      "width": 140,
+      "top": 230,
+      "people": 3
+    }
+  ],
+  "helicopters": 3,
+  "capacity": 12,
+  "timeLimit": 600,
+  "fuel": {
+    "capacity": 100,
+    "burnPerSecond": 0.5,
+    "refuelPerSecond": 12
+  },
+  "flood": {
+    "startLevel": -300,
+    "risePerSecond": 0,
+    "maxLevel": -300
+  },
+  "wind": {
+    "base": -45,
+    "gusts": [
+      {
+        "start": 25,
+        "duration": 10,
+        "strength": -130
+      },
+      {
+        "start": 75,
+        "duration": 10,
+        "strength": 150
+      },
+      {
+        "start": 130,
+        "duration": 10,
+        "strength": -140
+      },
+      {
+        "start": 190,
+        "duration": 10,
+        "strength": 150
+      },
+      {
+        "start": 250,
+        "duration": 10,
+        "strength": -140
+      },
+      {
+        "start": 320,
+        "duration": 10,
+        "strength": 150
+      },
+      {
+        "start": 390,
+        "duration": 10,
+        "strength": -140
+      }
+    ]
+  },
+  "atmosphere": {
+    "sky": "alpine",
+    "precipitation": "snow"
+  },
+  "flows": [
+    {
+      "id": "lawine1",
+      "kind": "avalanche",
+      "start": 60,
+      "warn": 8,
+      "x0": 800,
+      "x1": 1500,
+      "speed": 110,
+      "length": 220,
+      "damagePerSecond": 30,
+      "clearance": 80
+    },
+    {
+      "id": "lawine2",
+      "kind": "avalanche",
+      "start": 95,
+      "warn": 8,
+      "x0": 2150,
+      "x1": 2750,
+      "speed": 110,
+      "length": 220,
+      "damagePerSecond": 30,
+      "clearance": 80
+    },
+    {
+      "id": "lawine3",
+      "kind": "avalanche",
+      "start": 130,
+      "warn": 8,
+      "x0": 3300,
+      "x1": 3950,
+      "speed": 110,
+      "length": 220,
+      "damagePerSecond": 30,
+      "clearance": 80
+    },
+    {
+      "id": "lawine4",
+      "kind": "avalanche",
+      "start": 165,
+      "warn": 8,
+      "x0": 4600,
+      "x1": 5250,
+      "speed": 110,
+      "length": 220,
+      "damagePerSecond": 30,
+      "clearance": 80
+    }
+  ]
+}

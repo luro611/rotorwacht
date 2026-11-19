@@ -3,6 +3,7 @@ import Foundation
 public enum PersonState: Equatable, Sendable {
     case waiting
     case boarding   // walking to the helicopter, `progress` 0...1
+    case hoisting   // on the winch cable, `progress` 0...1
     case aboard
     case leaving    // walking from the helicopter to the camp
     case rescued
@@ -35,6 +36,21 @@ public enum SimEvent: Equatable, Sendable {
     case helicopterLost(remaining: Int)
     case respawned
     case finished
+    // Hazard building blocks
+    case strikeWarning(x: Double)
+    case lightning(x: Double, hit: Bool)
+    case tremor(kind: String, seconds: Double)
+    case objectLaunched(kind: String)
+    case impact(kind: String, x: Double, blockedPoint: Int?)
+    case struckByObject(kind: String, damage: Double)
+    case padBlocked(pointIndex: Int)
+    case padCleared(pointIndex: Int)
+    case flowWarning(flowIndex: Int, pointIndex: Int?)
+    case flowStarted(flowIndex: Int)
+    case flowScorched(flowIndex: Int)
+    case winchStarted(pointIndex: Int)
+    case winchSlipped
+    case refueling
 }
 
 public enum MissionOutcome: Equatable, Sendable {
@@ -87,8 +103,8 @@ public struct MissionSimulation {
 
     public let mission: Mission
     public let spec: HelicopterSpec
-    public private(set) var heli: HelicopterState
-    public private(set) var people: [Person]
+    public internal(set) var heli: HelicopterState
+    public internal(set) var people: [Person]
     public private(set) var time = 0.0
     public private(set) var floodLevel: Double
     public private(set) var wind = 0.0
@@ -102,6 +118,7 @@ public struct MissionSimulation {
     public private(set) var dropping = false
     /// Seconds each rescue point has been close to a fire (0 when safe).
     public private(set) var fireExposure: [Double]
+    public internal(set) var hz: HazardState
     private var dropAccumulator = 0.0
     private var nextDropID = 0
     private var tankWasFull = true
@@ -115,7 +132,7 @@ public struct MissionSimulation {
     private var disembarkTimer = 0.0
     private var finishTimer: Double?
     private var warned: Set<Int> = []
-    private var cabinFullSent = false
+    var cabinFullSent = false
     private var strandedTimer = 0.0
 
     public init(mission: Mission, spec: HelicopterSpec = .standard) {
@@ -123,6 +140,7 @@ public struct MissionSimulation {
         self.spec = spec
         self.floodLevel = mission.floodLevel(at: 0)
         self.fire = FireField(mission: mission)
+        self.hz = HazardState(mission: mission)
         self.fireExposure = Array(repeating: 0, count: mission.rescuePoints.count)
         self.helicoptersLeft = mission.helicopters
         self.heli = HelicopterState(
@@ -144,7 +162,7 @@ public struct MissionSimulation {
 
     // MARK: Queries
 
-    public var aboardCount: Int { people.filter { $0.state == .aboard || $0.state == .boarding }.count }
+    public var aboardCount: Int { people.filter { $0.state == .aboard || $0.state == .boarding || $0.state == .hoisting }.count }
     public var rescuedCount: Int { people.filter { $0.state == .rescued || $0.state == .leaving }.count }
     public var lostCount: Int { people.filter { $0.state == .lost }.count }
     public var injuredCount: Int { people.filter { $0.state == .injured }.count }
@@ -156,7 +174,7 @@ public struct MissionSimulation {
     /// Index of the rescue point the landed helicopter stands on, if any.
     public func rescuePointUnderHelicopter() -> Int? {
         guard heli.onGround, !heli.inWater else { return nil }
-        for (i, p) in mission.rescuePoints.enumerated() where abs(heli.x - p.x) <= p.width / 2 + spec.halfWidth {
+        for (i, p) in mission.rescuePoints.enumerated() where !p.isWinch && abs(heli.x - p.x) <= p.width / 2 + spec.halfWidth {
             return i
         }
         return nil
@@ -174,6 +192,7 @@ public struct MissionSimulation {
 
         updateFlood(&events)
         updateFire(dt: dt, &events)
+        updateHazards(dt: dt, &events)
 
         switch phase {
         case .crashed(let left):
@@ -198,7 +217,7 @@ public struct MissionSimulation {
         events += pe.map { .physics($0) }
 
         // Out of fuel on the ground away from the camp: no way to take off again, so write it off.
-        if heli.fuel <= 0, heli.onGround, !inBaseZone {
+        if heli.fuel <= 0, heli.onGround, !inBaseZone, outpostUnderHelicopter() == nil {
             strandedTimer += dt
             if strandedTimer >= Self.strandedTime {
                 strandedTimer = 0
@@ -212,6 +231,7 @@ public struct MissionSimulation {
 
         stepTank(input: input, dt: dt, &events)
         applyHeat(dt: dt, &events)
+        stepWinch(dt: dt, &events)
 
         if heli.durability <= 0 {
             crash(&events)
@@ -242,7 +262,12 @@ public struct MissionSimulation {
                 disembarkTimer = 0
             }
             cabinFullSent = false
-        } else if let pi = rescuePointUnderHelicopter() {
+            hz.refuelSaid = false
+        } else if let oi = outpostUnderHelicopter() {
+            _ = oi
+            heli.fuel = min(mission.fuel.capacity, heli.fuel + mission.fuel.refuelPerSecond * 0.8 * dt)
+            if !hz.refuelSaid { hz.refuelSaid = true; events.append(.refueling) }
+        } else if let pi = rescuePointUnderHelicopter(), !isBlocked(pi) {
             boardTimer += dt
             if boardTimer >= Self.boardInterval {
                 if aboardCount < mission.capacity {
@@ -407,7 +432,7 @@ public struct MissionSimulation {
     private mutating func crash(_ events: inout [SimEvent]) {
         helicoptersLeft -= 1
         for i in people.indices where people[i].state == .aboard || people[i].state == .boarding
-            || people[i].state == .leaving {
+            || people[i].state == .leaving || people[i].state == .hoisting {
             // Those already stepping out at the camp count as rescued; the rest are injured.
             people[i].state = people[i].state == .leaving ? .rescued : .injured
             people[i].progress = 0
@@ -425,6 +450,9 @@ public struct MissionSimulation {
             x: mission.base.x, y: mission.baseSurface,
             fuel: mission.fuel.capacity, durability: spec.maxDurability)
         heli.water = mission.tankSpec.capacity
+        hz.winchProgress = Array(repeating: 0, count: mission.rescuePoints.count)
+        hz.winchHolding = false
+        hz.winch = nil
         boardTimer = 0
         disembarkTimer = 0
         phase = .flying
@@ -433,13 +461,13 @@ public struct MissionSimulation {
 
     private mutating func checkFinish(dt: Double, _ events: inout [SimEvent]) {
         if isFinished { return }
-        let open = people.contains { [.waiting, .boarding, .aboard, .leaving].contains($0.state) }
+        let open = people.contains { [.waiting, .boarding, .aboard, .leaving, .hoisting].contains($0.state) }
         if !open {
             finishTimer = (finishTimer ?? Self.finishDelay) - dt
             if let t = finishTimer, t <= 0 { finish(.completed, &events) }
         } else if time >= mission.timeLimit {
             // Whoever is still aboard at the horn is counted as not rescued.
-            for i in people.indices where people[i].state == .aboard { people[i].state = .injured }
+            for i in people.indices where people[i].state == .aboard || people[i].state == .hoisting { people[i].state = .injured }
             finish(.timeUp, &events)
         }
     }
@@ -448,7 +476,7 @@ public struct MissionSimulation {
         let total = people.count
         let rescued = rescuedCount
         let lost = lostCount
-        let injured = injuredCount + people.filter { [.waiting, .aboard, .boarding].contains($0.state) }.count
+        let injured = injuredCount + people.filter { [.waiting, .aboard, .boarding, .hoisting].contains($0.state) }.count
         let heliLost = mission.helicopters - helicoptersLeft
         var score = rescued * 100 - heliLost * 50
         if outcome == .completed { score += Int(timeLeft) }

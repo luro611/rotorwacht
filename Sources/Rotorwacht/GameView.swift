@@ -87,6 +87,12 @@ struct HUDView: View {
             }
             MiniMap(hud: hud).padding(.top, 10)
             Spacer()
+            if hud.winch >= 0 {
+                VStack(spacing: 4) {
+                    Bar(label: hud.winchSteady ? "Seilwinde · ruhig halten" : "Seilwinde · zu unruhig", value: hud.winch, warnBelow: 0, tint: hud.winchSteady ? Theme.accent : Theme.accentStrong)
+                }
+                .padding(.bottom, 8)
+            }
             VStack(spacing: 6) {
                 ForEach(Array(hud.messages.enumerated()), id: \.offset) { _, m in
                     Text(m).font(Theme.textMedium(14)).foregroundColor(Theme.ink)
@@ -124,6 +130,13 @@ struct MiniMap: View {
                 let col = p.endangered ? Theme.accentStrong : Theme.accent
                 ctx.fill(Path(ellipseIn: CGRect(x: x(p.x) - 5, y: midY - 5, width: 10, height: 10)), with: .color(col))
                 ctx.draw(Text("\(p.waiting)").font(Theme.mono(9)).foregroundColor(Theme.muted), at: CGPoint(x: x(p.x), y: midY - 13))
+            }
+            for sp in hud.spans {
+                let r = CGRect(x: x(sp.lo), y: midY - 4, width: max(3, x(sp.hi) - x(sp.lo)), height: 8)
+                ctx.fill(Path(r), with: .color(sp.lava ? Theme.accentStrong : Theme.muted))
+            }
+            for ox in hud.outposts {
+                ctx.stroke(Path(CGRect(x: x(ox) - 5, y: midY - 5, width: 10, height: 10)), with: .color(Theme.ink), lineWidth: 1.2)
             }
             for fx in hud.fires {
                 ctx.fill(Path(CGRect(x: x(fx) - 2, y: midY - 9, width: 4, height: 7)), with: .color(Theme.accentStrong))
@@ -168,6 +181,16 @@ struct ResultOverlay: View {
     let result: MissionResult
     var mission: Mission? = nil
     private var fireMission: Bool { mission?.isFire ?? false }
+    /// What takes the people who are not rescued: "Vom Wasser erreicht" etc. nil = not shown separately.
+    private var lostLabel: String? {
+        switch mission?.hazard {
+        case "fire": return nil
+        case "volcano": return "Von der Lava erreicht"
+        case "avalanche": return "Von Lawinen erfasst"
+        case "storm", "quake": return nil
+        default: return "Vom Wasser erreicht"
+        }
+    }
 
     private var headline: (String, String) {
         switch result.outcome {
@@ -191,7 +214,7 @@ struct ResultOverlay: View {
         ZStack {
             Color.black.opacity(0.45)
             VStack(alignment: .leading, spacing: 12) {
-                Eyebrow("Einsatz \(mission?.number ?? 1) · \(mission?.title ?? "Hochwasser im Flusstal")")
+                Eyebrow("Einsatz \(mission?.number ?? 1) · \(mission?.title ?? "Hochwasser im Flusstal") · \(model.difficulty.label)")
                 AccentTitle(plain: headline.0, accent: headline.1, size: 44)
                 HStack(spacing: 4) {
                     ForEach(0..<3, id: \.self) { i in
@@ -201,8 +224,8 @@ struct ResultOverlay: View {
                 }
                 VStack(spacing: 0) {
                     row("Gerettet", "\(result.rescued) von \(result.total)")
-                    if !fireMission { row("Vom Wasser erreicht", "\(result.lost)") }
-                    row(fireMission ? "Vom Feuer verletzt oder nicht abgeholt" : "Verletzt oder nicht abgeholt", "\(result.injured)")
+                    if let l = lostLabel { row(l, "\(result.lost)") }
+                    row(fireMission ? "Vom Feuer verletzt oder nicht abgeholt" : "Verletzt oder nicht abgeholt", "\(result.injured + (lostLabel == nil && !fireMission ? result.lost : 0))")
                     row("Hubschrauber verloren", "\(result.helicoptersLost)")
                     row("Zeit", String(format: "%d:%02d", Int(result.timeUsed) / 60, Int(result.timeUsed) % 60))
                 }

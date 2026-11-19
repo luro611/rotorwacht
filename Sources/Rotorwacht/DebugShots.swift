@@ -16,9 +16,19 @@ enum DebugShots {
         try? FileManager.default.createDirectory(atPath: dir, withIntermediateDirectories: true)
         t0 = Date()
         let pilot = AutoPilot(fireFirst: missionID == "waldbrand")
+        // ROTORWACHT_HOVER=x,y: fly there and stay, to look at a hazard from close by.
+        let hover = ProcessInfo.processInfo.environment["ROTORWACHT_HOVER"]?.split(separator: ",").compactMap { Double($0) }
         script = { _ in
             guard let sim = model.scene?.sim else { return PilotInput() }
-            return pilot.input(for: sim)
+            guard let hv = hover, hv.count == 2 else { return pilot.input(for: sim) }
+            let h = sim.heli
+            var input = PilotInput()
+            let vx = max(-230, min(230, (hv[0] - h.x) * 0.8))
+            if h.vx < vx - 12 { input.right = true } else if h.vx > vx + 12 { input.left = true }
+            let wantY = abs(hv[0] - h.x) > 80 ? max(hv[1], 460) : hv[1]   // over the roofs first, then down
+            let vy = max(-100, min(100, (wantY - h.y) * 1.4))
+            if vy > h.vy + 8 { input.up = true } else if vy < h.vy - 8 { input.down = true }
+            return input
         }
         DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
             snap(dir, "0-start", window: true, model: model)
@@ -36,13 +46,16 @@ enum DebugShots {
         DispatchQueue.main.asyncAfter(deadline: .now() + 3.0) {
             MainActor.assumeIsolated { model.startMission(missionID) }
         }
-        let times: [(Double, String)] = missionID == "waldbrand"
-            ? [14, 17, 20, 23, 26, 29, 33, 37, 42, 50, 60].map { (Double($0), "t\($0)") }
-            : [(4, "1-liftoff"), (14, "2-flying"), (26, "3-rescue"), (60, "4-return"), (95, "5-later")]
-        for (t, name) in times {
-            DispatchQueue.main.asyncAfter(deadline: .now() + 3.0 + t) { snap(dir, name, window: false, model: model) }
+        let defaults: [String: [Double]] = [
+            "hochwasser": [4, 14, 26, 60, 95],
+            "waldbrand": [14, 17, 20, 23, 26, 29, 33, 37, 42, 50, 60],
+        ]
+        let custom = ProcessInfo.processInfo.environment["ROTORWACHT_TIMES"]?.split(separator: ",").compactMap { Double($0) }
+        let list = custom ?? defaults[missionID] ?? [6, 20, 30, 45, 60, 80]
+        for t in list {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 3.0 + t) { snap(dir, "\(missionID)-t\(Int(t))", window: false, model: model) }
         }
-        DispatchQueue.main.asyncAfter(deadline: .now() + 3.0 + (missionID == "waldbrand" ? 112.0 : 97.0)) { NSApp.terminate(nil) }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 3.0 + (list.max() ?? 90) + 4) { NSApp.terminate(nil) }
     }
 
     static var elapsed: Double { Date().timeIntervalSince(t0) - 3.0 }

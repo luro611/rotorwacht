@@ -7,12 +7,17 @@
 
 Eigenes Hubschrauber-Rettungsspiel für den Mac (Swift, SpriteKit, SwiftUI): nach Naturkatastrophen Menschen von Dächern und Anhöhen holen und ins Lager bringen, bevor Wetter, Wasser oder Treibstoff dir einen Strich durch die Rechnung machen.
 
-**Status:** Version 0.2.1 (Einsatz 1 „Hochwasser im Flusstal“, Einsatz 2 „Waldbrand am Hang“ mit Löschwasser und Feuer). Nur zum eigenen Gebrauch, unnotarisiert.
+**Status:** Version 0.3.0 (alle sechs Einsätze: Hochwasser, Waldbrand, Sturmnacht an der Küste, Erdbeben in der Altstadt, Vulkanausbruch, Lawinen im Hochgebirge; drei Stufen, Freischalten, Fortschritt). Nur zum eigenen Gebrauch, unnotarisiert.
 
 **Lizenz:** noch nicht festgelegt
 
 ![Einsatz 1: Rettung vom Dach](docs/bilder/flug-0.1.png)
 ![Einsatz 2: Löschflug am Waldbrand](docs/bilder/loeschen-0.2.png)
+![Startbildschirm mit sechs Einsätzen, Stufen und Sperren](docs/bilder/start-0.3.png)
+![Einsatz 3: Blitz in der Sturmnacht](docs/bilder/sturmnacht-blitz-0.3.png)
+![Einsatz 4: Gassen der Altstadt](docs/bilder/altstadt-0.3.png)
+![Einsatz 5: Lavabrocken auf gestrichelter Flugbahn](docs/bilder/vulkan-lavabrocken-0.3.png)
+![Einsatz 6: Seilwinde am Felsvorsprung](docs/bilder/gebirge-seilwinde-0.3.png)
 
 ## Starten
 
@@ -24,7 +29,7 @@ scripts/build.sh --run
 
 Das baut `build/Rotorwacht.app` (ad hoc signiert) und startet sie. Beim ersten Start einer unnotarisierten App: Rechtsklick auf die App, „Öffnen“.
 
-Tests (Swift Testing, 64 Tests für Flugphysik, Landen, Ein-/Aussteigen, Tank, Feuer und Autopilot-Proben beider Einsätze):
+Tests (Swift Testing, 94 Tests für Flugphysik, Landen, Ein-/Aussteigen, Tank, Feuer, Blitz, Trümmer, Lava, Lawinen, Seilwinde, Fortschritt und Autopilot-Proben aller sechs Einsätze auf allen Stufen):
 
 ```bash
 scripts/test.sh
@@ -43,12 +48,18 @@ Mit einem vollständigen Toolchain (Xcode) geht auch `swift build` und `swift te
 
 Landen: sanft aufsetzen (unter etwa 75 Einheiten Sinkgeschwindigkeit, wenig Seitenfahrt, gerade). Gelandet steigen Menschen von selbst ein; im Lager am rechten Rand steigen sie aus, und der Hubschrauber tankt und wird langsam repariert. Im Wasser landen kostet Haltbarkeit.
 
+Einsätze und Stufen: Auf dem Startbildschirm wählst du Leicht, Mittel oder Schwer und den Einsatz. Der erste ist offen, jeder weitere, sobald der vorige mit mindestens einem Stern geschafft ist. Sterne und Bestwerte bleiben gespeichert.
+
+Neue Gefahren: Blitze kündigen sich mit rotem Strahl und Kreis an, dann zur Seite fliegen. Nachbeben lassen Trümmer fallen und sperren Landeplätze für eine Weile. Lavabrocken fliegen auf gestrichelten Bahnen, der Lavastrom und Lawinen nehmen Rettungspunkte. Außenposten (Symbol in der Übersichtsleiste) betanken den Hubschrauber.
+
+Seilwinde (Einsatz 6): Auf Felsvorsprüngen nicht landen. Schwebe ruhig über dem Vorsprung, nicht höher als das Seil (Pfeil runter holt es näher): Die Winde zieht eine Person nach der anderen hoch. Zu viel Bewegung lässt das Seil die Person wieder verlieren.
+
 Löschen: Den Tank füllst du im Tiefflug über See, Fluss oder Flut (und im Lager). Die Leertaste wirft Tropfen ab, die deine Fluggeschwindigkeit mitnehmen. Wasser löscht Flammen und macht den Boden nass; nasser Boden brennt nicht, ein Streifen vor der Flammenfront hält das Feuer auf. Feuer läuft bergauf und mit dem Wind schneller, bedroht Wartende, Rauch nimmt die Sicht und Hitze kostet Haltbarkeit.
 
 ## Aufbau
 
-- `Sources/RotorwachtCore`: Spiellogik ohne Oberfläche (Flugphysik, Regeln, Einsatzdaten). Von den Tests geprüft.
-- `Sources/RotorwachtCore/Missions/*.json`: Einsätze als Daten (Gelände, Rettungspunkte, Flut, Seen, Brandzonen, Böen, Treibstoff, Tank).
+- `Sources/RotorwachtCore`: Spiellogik ohne Oberfläche (Flugphysik, Regeln, Einsatzdaten, Gefahren-Bausteine, Stufen, Fortschritt). Von den Tests geprüft.
+- `Sources/RotorwachtCore/Missions/*.json`: Einsätze als Daten (Gelände, Rettungspunkte, Flut und Seegang, Seen, Brandzonen, Böen, Treibstoff, Tank, Gewitterzellen, Salven, Lava und Lawinen, Außenposten, Atmosphäre).
 - `Sources/Rotorwacht`: die Mac-App (SpriteKit-Szene, SwiftUI-Menüs und Anzeige, synthetisierter Ton).
 - `scripts/`: `build.sh` (App bauen), `test.sh` (Tests).
 - `docs/planung/`: Spielkonzept und offene Fragen.

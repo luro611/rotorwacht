@@ -2,6 +2,21 @@
 
 Versionen: 0.x bis zum ersten fertigen Stand, dann 1.0.0.
 
+## [0.3.0] – 2026-11-19
+
+Die Einsätze 3 bis 6 und die Kampagne.
+
+- **Einsatz 3 „Sturmnacht an der Küste“:** Nacht mit Scheinwerferkegel am Hubschrauber und Leuchtfeuern an den Rettungspunkten, Gewitterzellen mit Blitzschlag (roter Strahl und Kreis kündigen jeden Blitz vorher an), Seegang mit Wellen und Gischt, Rettungspunkte auf Klippen, einem Fischkutter und dem Leuchtturm.
+- **Einsatz 4 „Erdbeben in der Altstadt“:** enge Plätze und Gassen zwischen Häuserzeilen, Dachlandeplätze; Nachbeben kündigen sich mit Grollen und Kamerawackeln an, Trümmer fallen, treffen den Hubschrauber und sperren Landeplätze, bis der Schutt geräumt ist; Staubwolken.
+- **Einsatz 5 „Vulkanausbruch auf der Insel“:** Ascheregen nimmt die Sicht, Lavabrocken fliegen auf angezeigten gestrichelten Flugbahnen, ein Lavastrom läuft den Hang hinab und nimmt Rettungspunkte, knapper Treibstoff mit Außenposten zum Tanken.
+- **Einsatz 6 „Lawinen im Hochgebirge“:** Seilwinde statt Landen auf Felsvorsprüngen (über dem Vorsprung schweben, ruhig halten, nicht höher als das Seil; Pfeil runter holt das Seil näher, keine neue Taste), starker Wind, Lawinen als Gefahr.
+- **Neue Gefahren als wiederverwendbare Bausteine** in `RotorwachtCore` (`Hazards.swift`, `SimHazards.swift`), in den Einsatzdateien frei kombinierbar: Gewitterzelle (`storms`), fallende und fliegende Objekte (`volleys`: Trümmer, Lavabrocken, Felsen), Bodenströme (`flows`: Lava, Lawine), Seilwinde (`access: "winch"`), Außenposten (`outposts`), Seegang (`flood.swell`), Atmosphäre (`atmosphere`: Nacht, Asche, Schnee, Staub) und Landschaftsstil (`look`).
+- **Drei Stufen** (leicht, mittel, schwer) je Einsatz: skalieren Zeit, Hubschrauber (4/3/2), Treibstoffverbrauch, Wind, Flut- und Feuertempo, Schaden und Tempo der Gefahren sowie die Vorwarnzeit. Mittel ist der Wert der Datei.
+- **Einsatzauswahl für alle sechs:** der nächste Einsatz wird frei, sobald der vorige mit mindestens einem Stern geschafft ist (auf irgendeiner Stufe). Sterne und Punkte je Einsatz und Stufe werden lokal gespeichert (`~/Library/Application Support/Rotorwacht/progress.json`).
+- Autopilot kann jetzt Seilwinde, Außenposten, Blitze und gesperrte Plätze (für die Tests und Bildschirmfotos).
+- Ton: Donner, Grollen, Lavaknall. Anzeige: Seilwinden-Balken, Lava- und Lawinenstrecken und Außenposten in der Übersichtsleiste.
+- 30 neue Tests (Blitz, Salven und Nachbeben, Flugbahn, Lava, Lawine, Seilwinde, Außenposten, Seegang, Asche, Stufen, Fortschritt und Freischalten, Laden und Autopilot aller sechs Einsätze auf allen drei Stufen); zusammen 94.
+
 ## [0.2.1] – 2026-11-19
 
 Behebung der Befunde aus der Opus-Prüfung von 0.1.0.

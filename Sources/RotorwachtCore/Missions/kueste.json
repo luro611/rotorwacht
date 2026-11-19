@@ -1,0 +1,149 @@
+{
+  "id": "kueste",
+  "number": 3,
+  "hazard": "storm",
+  "look": "coast",
+  "tagline": "Nacht und Gewitter",
+  "summary": "Nacht, Sturm und Blitze: Dein Scheinwerfer ist das einzige Licht. Rote Strahlen kündigen jeden Blitz an.",
+  "title": "Sturmnacht an der Küste",
+  "briefing": "Ein Sturm hat die Küste getroffen. Es ist Nacht, nur dein Scheinwerfer leuchtet den Weg. Menschen warten auf Klippen, auf einem Boot und am Leuchtturm. Gewitterzellen ziehen über das Meer: Ein roter Strahl kündigt jeden Blitz kurz vorher an, flieg dann zur Seite. Die Wellen sind hoch, bleib über dem Wasser nicht zu tief.",
+  "world": {
+    "width": 7600,
+    "ceiling": 950
+  },
+  "terrain": [
+    [0, -80],
+    [700, -80],
+    [800, 120],
+    [1000, 230],
+    [1250, 230],
+    [1350, 100],
+    [1450, -60],
+    [2400, -60],
+    [2500, 140],
+    [2700, 300],
+    [2950, 300],
+    [3100, 160],
+    [3200, -60],
+    [4400, -60],
+    [4600, 60],
+    [4900, 140],
+    [5400, 150],
+    [5800, 220],
+    [6300, 240],
+    [7600, 240]
+  ],
+  "base": {
+    "x": 6900,
+    "width": 420
+  },
+  "rescuePoints": [
+    {
+      "id": "klippe1",
+      "name": "Nordklippe",
+      "kind": "island",
+      "x": 1125,
+      "width": 190,
+      "top": 230,
+      "people": 4
+    },
+    {
+      "id": "klippe2",
+      "name": "Möwenfelsen",
+      "kind": "island",
+      "x": 2825,
+      "width": 190,
+      "top": 300,
+      "people": 4
+    },
+    {
+      "id": "boot",
+      "name": "Fischkutter",
+      "kind": "boat",
+      "x": 3800,
+      "width": 170,
+      "top": 90,
+      "people": 3
+    },
+    {
+      "id": "turm",
+      "name": "Leuchtturm",
+      "kind": "lighthouse",
+      "x": 5150,
+      "width": 120,
+      "top": 215,
+      "people": 3
+    }
+  ],
+  "helicopters": 3,
+  "capacity": 12,
+  "timeLimit": 480,
+  "fuel": {
+    "capacity": 100,
+    "burnPerSecond": 0.5,
+    "refuelPerSecond": 12
+  },
+  "flood": {
+    "startLevel": 20,
+    "risePerSecond": 0,
+    "maxLevel": 20,
+    "swell": {
+      "amplitude": 14,
+      "period": 6.5
+    }
+  },
+  "wind": {
+    "base": -25,
+    "gusts": [
+      {
+        "start": 30,
+        "duration": 9,
+        "strength": -80
+      },
+      {
+        "start": 90,
+        "duration": 10,
+        "strength": 90
+      },
+      {
+        "start": 160,
+        "duration": 10,
+        "strength": -100
+      },
+      {
+        "start": 240,
+        "duration": 10,
+        "strength": 90
+      },
+      {
+        "start": 320,
+        "duration": 10,
+        "strength": -90
+      }
+    ]
+  },
+  "atmosphere": {
+    "sky": "night",
+    "precipitation": "rain"
+  },
+  "storms": [
+    {
+      "x0": 1500,
+      "x1": 3300,
+      "start": 28,
+      "interval": 13,
+      "warn": 2.6,
+      "radius": 170,
+      "damage": 18
+    },
+    {
+      "x0": 3400,
+      "x1": 5500,
+      "start": 45,
+      "interval": 15,
+      "warn": 2.6,
+      "radius": 170,
+      "damage": 18
+    }
+  ]
+}

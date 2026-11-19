@@ -1,0 +1,38 @@
+import Foundation
+
+/// Three levels per Einsatz. They scale numbers of the mission data; the data files stay "medium".
+public enum Difficulty: String, Codable, CaseIterable, Sendable {
+    case easy, medium, hard
+
+    public var label: String {
+        switch self { case .easy: "Leicht"; case .medium: "Mittel"; case .hard: "Schwer" }
+    }
+
+    /// Time allowed.
+    var time: Double { switch self { case .easy: 1.3; case .medium: 1; case .hard: 0.85 } }
+    /// Fuel burn, wind, flood and fire speed, hazard damage and flow speed.
+    var pressure: Double { switch self { case .easy: 0.8; case .medium: 1; case .hard: 1.2 } }
+    /// Warning times (longer when easy).
+    var warning: Double { switch self { case .easy: 1.3; case .medium: 1; case .hard: 0.8 } }
+    var helicopters: Int { switch self { case .easy: 4; case .medium: 3; case .hard: 2 } }
+}
+
+extension Mission {
+    /// The mission as played on a level. Medium returns the data unchanged.
+    public func scaled(for level: Difficulty) -> Mission {
+        guard level != .medium else { return self }
+        var m = self
+        let p = level.pressure
+        m.timeLimit *= level.time
+        m.helicopters = level.helicopters
+        m.fuel.burnPerSecond *= p
+        m.wind.base *= p
+        m.wind.gusts = m.wind.gusts.map { var g = $0; g.strength *= p; return g }
+        m.flood.risePerSecond *= p
+        if var f = m.fire { f.spreadRate *= p; m.fire = f }
+        m.storms = m.storms?.map { var s = $0; s.damage *= p; s.warn *= level.warning; return s }
+        m.volleys = m.volleys?.map { var v = $0; v.damage *= p; v.warn *= level.warning; return v }
+        m.flows = m.flows?.map { var f = $0; f.speed *= p; f.damagePerSecond *= p; f.warn *= level.warning; return f }
+        return m
+    }
+}

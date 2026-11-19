@@ -7,24 +7,120 @@ public struct AutoPilot {
     public var fireFirst = false
     public init(fireFirst: Bool = false) { self.fireFirst = fireFirst }
 
+    /// Seconds until a ground flow (lava, avalanche) reaches a rescue point, nil if none is on its way.
+    private func flowEta(_ sim: MissionSimulation, point p: RescuePointSpec) -> Double? {
+        var best: Double?
+        for f in sim.mission.flowList {
+            let lo = min(f.x0, f.x1), hi = max(f.x0, f.x1)
+            guard p.x >= lo - 1, p.x <= hi + 1 else { continue }
+            let eta = f.start + max(0, abs(p.x - p.width / 2 - f.x0)) / f.speed - sim.time
+            if best == nil || eta < best! { best = eta }
+        }
+        return best
+    }
+
+    /// Nearest place to refuel (camp or outpost) and its pad height.
+    private func refuelPlace(_ sim: MissionSimulation, from x: Double) -> (x: Double, top: Double, outpost: Bool) {
+        let m = sim.mission
+        var best = (x: m.base.x, top: m.baseSurface, outpost: false)
+        for o in m.outpostList where abs(o.x - x) < abs(best.x - x) {
+            best = (o.x, m.groundHeight(at: o.x), true)
+        }
+        return best
+    }
+
     private func pickTarget(_ sim: MissionSimulation) -> (x: Double, top: Double, pointIndex: Int?) {
         let m = sim.mission
         let heli = sim.heli
-        let full = sim.aboardCount >= m.capacity
+        // People hoisted by the cable are not counted until they are aboard (else the pilot would give up mid-hoist).
+        let settled = sim.people.filter { $0.state == .aboard || $0.state == .boarding }.count
+        let full = settled >= m.capacity
         // Points with waiting people that are not yet lost.
         let open = m.rescuePoints.enumerated().filter { i, _ in
-            sim.people.contains { $0.pointIndex == i && $0.state == .waiting }
+            sim.people.contains { $0.pointIndex == i && ($0.state == .waiting || $0.state == .hoisting) }
         }
-        if full || open.isEmpty || (sim.aboardCount > 0 && sim.aboardCount >= max(1, m.capacity - 1)) {
-            return (m.base.x, m.baseSurface, nil)
+        let usable = open.filter { !sim.isBlocked($0.offset) }
+        if full || open.isEmpty {
+            return refuelOr(sim, (m.base.x, m.baseSurface, nil))
         }
-        // The point that floods first, among those not too far (simple urgency rule).
-        let best = open.min { a, b in
-            let da = abs(a.element.x - heli.x) * 0.002 + a.element.top * 0.01
-            let db = abs(b.element.x - heli.x) * 0.002 + b.element.top * 0.01
-            return da < db
+        // Blocked points are visited only when nothing else is left.
+        let pool = usable.isEmpty ? open : usable
+        // The point that is in most danger first: by the time a flow arrives, else flood height and distance.
+        let best = pool.min { a, b in
+            func score(_ e: (offset: Int, element: RescuePointSpec)) -> Double {
+                let travel = abs(e.element.x - heli.x) / 200
+                if let eta = flowEta(sim, point: e.element) {
+                    // Reachable points by urgency; unreachable ones last.
+                    return eta > travel ? eta : 10_000 + eta
+                }
+                return abs(e.element.x - heli.x) * 0.002 + e.element.top * 0.01 + (m.flowList.isEmpty ? 0 : 5_000)
+            }
+            return score(a) < score(b)
         }!
-        return (best.element.x, best.element.top, best.offset)
+        // Nearly full and the next stop has more people than there is room for: fly home first.
+        let room = m.capacity - settled
+        let waitingThere = sim.people.filter { $0.pointIndex == best.offset && $0.state == .waiting }.count
+        if settled > 0, room <= 1, waitingThere > room, best.offset != sim.hz.winch?.pointIndex {
+            return refuelOr(sim, (m.base.x, m.baseSurface, nil))
+        }
+        return refuelOr(sim, (best.element.x, best.element.top, best.offset))
+    }
+
+    /// With outposts on the map the fuel is scarce: refuel first when it would not last to the target and back.
+    private func refuelOr(_ sim: MissionSimulation, _ t: (x: Double, top: Double, pointIndex: Int?)) -> (x: Double, top: Double, pointIndex: Int?) {
+        let m = sim.mission
+        guard !m.outpostList.isEmpty, sim.heli.fuel < m.fuel.capacity * 0.9 else { return t }
+        let burn = m.fuel.burnPerSecond * 1.4
+        let toTarget = abs(t.x - sim.heli.x) / 190 * burn
+        let back = refuelPlace(sim, from: t.x)
+        let backCost = abs(back.x - t.x) / 190 * burn + 10
+        if sim.heli.fuel - toTarget > backCost { return t }
+        let r = refuelPlace(sim, from: sim.heli.x)
+        return (r.x, r.top, nil)
+    }
+
+    /// Hover above a winch point and hold still while the cable works.
+    private func winchInput(_ sim: MissionSimulation, point p: RescuePointSpec) -> PilotInput {
+        let h = sim.heli, m = sim.mission
+        let dx = p.x - h.x
+        var input = PilotInput()
+        let near = abs(dx) < 140
+        if near {
+            // Critically damped hover with the wind worked out: thrust = wanted acceleration - what wind and drag do anyway.
+            let wanted = 1.44 * dx - 2.4 * h.vx
+            let thrust = wanted - (sim.wind - 0.5 * h.vx)
+            if thrust > 35 { input.right = true } else if thrust < -35 { input.left = true }
+        } else {
+            let desiredVx = max(-230, min(230, dx * 0.9))
+            if h.vx < desiredVx - 12 { input.right = true } else if h.vx > desiredVx + 12 { input.left = true }
+        }
+        let floor = m.maxSurface(from: h.x - 60, to: h.x + 60) + 40
+        let wantY: Double
+        if abs(dx) > 160 {
+            let lo = min(h.x, p.x) - 80, hi = max(h.x, p.x) + 80
+            wantY = max(m.maxSurface(from: lo, to: hi) + 90, p.top + 90)
+        } else {
+            wantY = max(floor, p.top + p.cableLength * 0.5)
+        }
+        let desiredVy = max(-100, min(100, (wantY - h.y) * 1.4))
+        if desiredVy > h.vy + 6 { input.up = true } else if desiredVy < h.vy - 6 { input.down = true }
+        return input
+    }
+
+    /// Step aside from an announced lightning strike.
+    private func dodge(_ sim: MissionSimulation) -> PilotInput? {
+        for s in sim.hz.strikes where s.age == nil {
+            guard let cell = sim.mission.stormList.first(where: { s.x >= $0.x0 - 1 && s.x <= $0.x1 + 1 }) else { continue }
+            let d = sim.heli.x - s.x
+            if abs(d) < cell.radius + 60 {
+                var input = PilotInput()
+                if d >= 0 { input.right = true } else { input.left = true }
+                let want = sim.mission.maxSurface(from: sim.heli.x - 70, to: sim.heli.x + 70) + 60
+                if sim.heli.y < want { input.up = true }
+                return input
+            }
+        }
+        return nil
     }
 
     // MARK: Fire fighting
@@ -88,13 +184,19 @@ public struct AutoPilot {
         let m = sim.mission
         let h = sim.heli
         guard case .flying = sim.phase else { return PilotInput() }
+        if let d = dodge(sim) { return d }
         if !h.onGround, let f = fightInput(sim) { return f }
         let target = pickTarget(sim)
+        if let pi = target.pointIndex, m.rescuePoints[pi].isWinch, !(h.onGround && !h.inWater && sim.people.contains { $0.state == .boarding || $0.state == .leaving }) {
+            if h.onGround { return PilotInput(up: true) }
+            return winchInput(sim, point: m.rescuePoints[pi])
+        }
 
         // Landed: stay while people walk, otherwise lift off when work is done here.
         if h.onGround && !h.inWater {
             let busy = sim.people.contains { $0.state == .boarding || $0.state == .leaving }
             if busy { return PilotInput() }
+            if sim.outpostUnderHelicopter() != nil, h.fuel < m.fuel.capacity * 0.97 { return PilotInput() }
             if sim.inBaseZone {
                 let aboard = sim.aboardCount > 0
                 let needFuel = h.fuel < m.fuel.capacity * 0.97
@@ -102,7 +204,7 @@ public struct AutoPilot {
             }
             if let pi = sim.rescuePointUnderHelicopter() {
                 let waiting = sim.people.contains { $0.pointIndex == pi && $0.state == .waiting }
-                if waiting && sim.aboardCount < m.capacity { return PilotInput() }
+                if waiting && sim.aboardCount < m.capacity && !sim.isBlocked(pi) { return PilotInput() }
             }
             return PilotInput(up: true)
         }
@@ -126,7 +228,8 @@ public struct AutoPilot {
             let height = h.y - surfaceHere
             desiredVy = -max(18, min(70, height * 1.0))
         } else {
-            let wantY = abs(dx) < 300 ? max(target.top + 70, surfaceHere + 40) : cruise
+            let corridor = m.maxSurface(from: min(h.x, target.x) - 70, to: max(h.x, target.x) + 70) + 60
+            let wantY = abs(dx) < 300 ? max(target.top + 70, surfaceHere + 40, corridor) : cruise
             desiredVy = max(-110, min(110, (wantY - h.y) * 1.4))
         }
         if desiredVy > h.vy + 8 { input.up = true }

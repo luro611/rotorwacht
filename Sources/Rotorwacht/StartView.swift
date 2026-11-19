@@ -25,6 +25,18 @@ struct DefaultActionIf: ViewModifier {
     }
 }
 
+struct LevelButtonStyle: ButtonStyle {
+    let selected: Bool
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .font(Theme.label(12))
+            .foregroundColor(selected ? Theme.accentStrong : Theme.muted)
+            .padding(.horizontal, 12).padding(.vertical, 5)
+            .overlay(RoundedRectangle(cornerRadius: Theme.radius).stroke(selected ? Theme.accent : Theme.line, lineWidth: 1))
+            .opacity(configuration.isPressed ? 0.7 : 1)
+    }
+}
+
 struct StartView: View {
     @EnvironmentObject var model: AppModel
 
@@ -32,25 +44,31 @@ struct StartView: View {
         VStack(spacing: 0) {
             Spacer(minLength: 8)
             VStack(spacing: 12) {
-                Siegel(size: 100)
+                Siegel(size: 64)
                 Eyebrow("Rettungsstaffel · Version \(appVersion)")
-                AccentTitle(plain: "Rotor", accent: "wacht", size: 76)
-                Text("Fliege nach der Katastrophe ins Unglücksgebiet, hole Menschen von Dächern und Anhöhen und bringe sie sicher ins Lager.")
-                    .font(Theme.text(16)).foregroundColor(Theme.muted)
-                    .multilineTextAlignment(.center).frame(maxWidth: 520).fixedSize(horizontal: false, vertical: true)
+                AccentTitle(plain: "Rotor", accent: "wacht", size: 48)
             }
 
-            HStack(alignment: .top, spacing: 20) {
+            HStack(spacing: 10) {
+                Eyebrow("Stufe")
+                ForEach(Difficulty.allCases, id: \.self) { level in
+                    Button(level.label) { model.difficulty = level }
+                        .buttonStyle(LevelButtonStyle(selected: model.difficulty == level))
+                }
+            }
+            .padding(.top, 16)
+
+            LazyVGrid(columns: Array(repeating: GridItem(.fixed(300), spacing: 16, alignment: .top), count: 3), spacing: 16) {
                 ForEach(model.missions, id: \.id) { m in missionCard(m) }
             }
-            .padding(.top, 20)
+            .padding(.top, 14)
 
             HStack(spacing: 28) {
                 key("← → ↑ ↓", "Fliegen")
                 key("Esc", "Pause")
                 key("Leertaste", "Löschwasser")
             }
-            .padding(.top, 16)
+            .padding(.top, 14)
 
             Spacer(minLength: 8)
             footer
@@ -69,23 +87,39 @@ struct StartView: View {
     private func missionCard(_ m: Mission) -> some View {
         let first = m.id == model.missions.first?.id
         let (plain, accent) = split(m.title)
-        return VStack(alignment: .leading, spacing: 10) {
+        let open = model.isUnlocked(m.id)
+        let best = model.best(m.id)
+        return VStack(alignment: .leading, spacing: 8) {
             Eyebrow("Einsatz \(m.number ?? 1) · \(m.tagline ?? "")")
-            AccentTitle(plain: plain, accent: accent, size: 30)
+            AccentTitle(plain: plain, accent: accent, size: 24)
             Text(m.summary ?? m.briefing)
-                .font(Theme.text(14)).foregroundColor(Theme.muted).fixedSize(horizontal: false, vertical: true)
+                .font(Theme.text(12)).foregroundColor(Theme.muted).fixedSize(horizontal: false, vertical: true)
+                .lineLimit(4)
             Spacer(minLength: 0)
             HStack {
-                Button("Einsatz starten") { model.startMission(m.id) }
-                    .buttonStyle(PrimaryButtonStyle())
-                    .modifier(DefaultActionIf(first))
-                if first { Text("Eingabetaste").font(Theme.mono(11)).foregroundColor(Theme.muted) }
+                if open {
+                    Button("Einsatz starten") { model.startMission(m.id) }
+                        .buttonStyle(PrimaryButtonStyle())
+                        .modifier(DefaultActionIf(first))
+                    if first { Text("Eingabetaste").font(Theme.mono(10)).foregroundColor(Theme.muted) }
+                } else {
+                    Text("Gesperrt · schaffe zuerst Einsatz \((m.number ?? 2) - 1)")
+                        .font(Theme.mono(10)).foregroundColor(Theme.muted)
+                }
+                Spacer()
+                if let b = best {
+                    HStack(spacing: 2) {
+                        ForEach(0..<3, id: \.self) { i in
+                            Text("★").font(.system(size: 15)).foregroundColor(i < b.stars ? Theme.accent : Theme.line)
+                        }
+                    }
+                }
             }
-            .padding(.top, 6)
         }
-        .padding(22)
-        .frame(width: 440, height: 250, alignment: .leading)
+        .padding(18)
+        .frame(width: 300, height: 180, alignment: .leading)
         .background(Theme.surface)
+        .opacity(open ? 1 : 0.55)
         .overlay(RoundedRectangle(cornerRadius: Theme.radius).stroke(Theme.line, lineWidth: 1))
         .clipShape(RoundedRectangle(cornerRadius: Theme.radius))
     }

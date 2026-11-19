@@ -64,11 +64,20 @@ enum Art {
 
     // MARK: sky
 
-    static func sky(size: CGSize) -> SKTexture {
+    static func sky(size: CGSize, look: Look = .valley) -> SKTexture {
         texture(size) { ctx in
             let r = CGRect(origin: .zero, size: size)
-            fillVertical(ctx, r, [(0, 0x5e7388, 1), (0.45, 0x93a6b4, 1), (0.78, 0xcdd0cb, 1), (1, 0xe9dcc6, 1)])
-            softCircle(ctx, CGPoint(x: size.width * 0.72, y: size.height * 0.30), 300, 0xfff0cf, 0.55)
+            fillVertical(ctx, r, look.sky)
+            if let g = look.glow { softCircle(ctx, CGPoint(x: size.width * g.x, y: size.height * g.y), g.r, g.hex, g.a) }
+            if look.stars {
+                var rng = RNG(7)
+                for _ in 0..<110 {
+                    let x = rng.range(0, Double(size.width)), y = rng.range(Double(size.height) * 0.25, Double(size.height))
+                    ctx.setFillColor(c(0xf4f1e6, CGFloat(rng.range(0.25, 0.9))))
+                    let d = CGFloat(rng.range(0.8, 2.0))
+                    ctx.fillEllipse(in: CGRect(x: x, y: y, width: Double(d), height: Double(d)))
+                }
+            }
         }
     }
 
@@ -88,9 +97,9 @@ enum Art {
     // MARK: parallax layers (drawn in chunks so no texture gets huge)
 
     /// Far mountains: two hazy ridges. Chunk covers layer-x in [x0, x0+w).
-    static func mountainChunk(x0: CGFloat, w: CGFloat, h: CGFloat) -> SKTexture {
+    static func mountainChunk(x0: CGFloat, w: CGFloat, h: CGFloat, look: Look = .valley) -> SKTexture {
         texture(CGSize(width: w, height: h)) { ctx in
-            for (i, layer) in [(0.62, 0x9aaab7 as UInt32, 0.9), (0.42, 0x7f929f, 1.0)].enumerated() {
+            for (i, layer) in [(0.62, look.far[0], 0.9), (0.42, look.far[1], 1.0)].enumerated() {
                 let top = h * CGFloat(layer.0)
                 let path = CGMutablePath()
                 path.move(to: CGPoint(x: 0, y: 0))
@@ -106,7 +115,7 @@ enum Art {
                 ctx.addPath(path)
                 ctx.clip()
                 fillVertical(ctx, CGRect(x: 0, y: 0, width: w, height: h),
-                             [(0, layer.1, 1), (0.55, layer.1, 1), (1, 0xcfd3d0, CGFloat(layer.2) * 0.9)])
+                             [(0, layer.1, 1), (0.55, layer.1, 1), (1, look.mist, CGFloat(layer.2) * 0.9)])
                 ctx.restoreGState()
             }
             // Mist at the foot.
@@ -115,7 +124,7 @@ enum Art {
     }
 
     /// Mid-distance wooded hills.
-    static func hillChunk(x0: CGFloat, w: CGFloat, h: CGFloat) -> SKTexture {
+    static func hillChunk(x0: CGFloat, w: CGFloat, h: CGFloat, look: Look = .valley) -> SKTexture {
         texture(CGSize(width: w, height: h)) { ctx in
             let top = h * 0.55
             let path = CGMutablePath()
@@ -130,7 +139,7 @@ enum Art {
             ctx.saveGState()
             ctx.addPath(path)
             ctx.clip()
-            fillVertical(ctx, CGRect(x: 0, y: 0, width: w, height: h), [(0, 0x5c7466, 1), (0.6, 0x62806c, 1), (1, 0x8fa092, 1)])
+            fillVertical(ctx, CGRect(x: 0, y: 0, width: w, height: h), look.hill)
             ctx.restoreGState()
             // Conifers along the ridge, positions derived from absolute x so chunks line up.
             let step: CGFloat = 26
@@ -141,7 +150,7 @@ enum Art {
                 let th = CGFloat(rng.range(34, 70))
                 let tx = gx - x0 + CGFloat(rng.range(-6, 6))
                 let ty = ry - CGFloat(rng.range(4, 24))
-                if rng.next() > 0.18 {
+                if look.hillTrees, rng.next() > 0.18 {
                     ctx.setFillColor(c(rng.next() > 0.5 ? 0x4a6354 : 0x43594b))
                     for k in 0..<3 {
                         let kk = CGFloat(k)
@@ -164,6 +173,7 @@ enum Art {
     /// Terrain chunk covering world x in [x0, x0+w), world y in [yMin, yMax].
     static func terrainChunk(mission: Mission, x0: CGFloat, w: CGFloat, yMin: CGFloat, yMax: CGFloat) -> SKTexture {
         let h = yMax - yMin
+        let look = Look.of(mission)
         return texture(CGSize(width: w, height: h)) { ctx in
             func pt(_ x: CGFloat) -> CGPoint { CGPoint(x: x, y: CGFloat(mission.groundHeight(at: Double(x + x0))) - yMin) }
             let path = CGMutablePath()
@@ -176,7 +186,7 @@ enum Art {
             ctx.addPath(path)
             ctx.clip()
             fillVertical(ctx, CGRect(x: 0, y: 0, width: w, height: h),
-                         [(0, 0x82744f, 1), (0.55, 0x6a5841, 1), (1, 0x3b2f27, 1)])
+                         look.ground)
             // Strata lines for texture.
             ctx.setStrokeColor(c(0x2e241d, 0.18))
             ctx.setLineWidth(1)
@@ -199,8 +209,10 @@ enum Art {
             x = -2
             edge.move(to: pt(x))
             while x <= w + 6 { edge.addLine(to: pt(x)); x += 6 }
-            ctx.addPath(edge); ctx.setStrokeColor(c(0x4f6334)); ctx.setLineWidth(9); ctx.setLineJoin(.round); ctx.strokePath()
-            ctx.addPath(edge); ctx.setStrokeColor(c(0x8fa05a)); ctx.setLineWidth(4); ctx.strokePath()
+            if look.town { drawTownFacades(ctx, mission: mission, x0: x0, w: w, yMin: yMin) }
+            ctx.addPath(edge); ctx.setStrokeColor(c(look.edgeDark)); ctx.setLineWidth(look.edgeWide); ctx.setLineJoin(.round); ctx.strokePath()
+            ctx.addPath(edge); ctx.setStrokeColor(c(look.edgeLight)); ctx.setLineWidth(look.edgeWide * 0.45); ctx.strokePath()
+            guard look.trees else { return }
 
             // Trees on dry-ish ground, away from buildings and the camp.
             var gx = (x0 / 38).rounded(.down) * 38

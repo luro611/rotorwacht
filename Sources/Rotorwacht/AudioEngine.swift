@@ -1,6 +1,6 @@
 import AVFoundation
 
-enum SFX { case ding, rescued, thump(Float), alarm, splash, warn, crash, ignite, hiss }
+enum SFX { case ding, rescued, thump(Float), alarm, splash, warn, crash, ignite, hiss, thunder(Float), rumble, pop }
 
 /// Synthesised sound: rotor, wind and short signal tones. No sound files, nothing to license.
 final class AudioEngine {
@@ -151,6 +151,9 @@ final class AudioEngine {
         case .crash: return 1.4
         case .ignite: return 0.7
         case .hiss: return 0.5
+        case .thunder: return 2.6
+        case .rumble: return 1.8
+        case .pop: return 0.3
         }
     }
     private func done(_ v: Voice) -> Bool { v.t > duration(v.kind) }
@@ -190,6 +193,16 @@ final class AudioEngine {
             return n * env * 0.3 + sinf(2 * .pi * 70 * t) * env * 0.12
         case .hiss:
             return n * expf(-t * 7) * 0.12
+        case .thunder(let a):
+            // A crack, then a long low rumble.
+            let crack = n * expf(-t * 30) * 0.5
+            let rumble = (sinf(2 * .pi * 34 * t) * 0.5 + sinf(2 * .pi * 51 * t + 1) * 0.3 + n * 0.25) * min(1, t / 0.08) * expf(-t * 1.6)
+            return (crack + rumble * 0.6) * a
+        case .rumble:
+            let env = min(1, t / 0.3) * expf(-t * 1.2)
+            return (sinf(2 * .pi * 29 * t) * 0.35 + sinf(2 * .pi * 43 * t) * 0.2 + n * 0.12) * env * 0.6
+        case .pop:
+            return (sinf(2 * .pi * 150 * t * expf(-t * 6)) * expf(-t * 14) * 0.4 + n * expf(-t * 30) * 0.15)
         case .crash:
             return (sinf(2 * .pi * 42 * t) * expf(-t * 3) * 0.7 + n * expf(-t * 4) * 0.35)
         }

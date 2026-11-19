@@ -6,6 +6,12 @@ struct MiniMapPoint: Equatable {
     var endangered: Bool
 }
 
+struct MiniMapSpan: Equatable {
+    var lo: Double
+    var hi: Double
+    var lava: Bool
+}
+
 /// What the on-screen display shows; the scene fills it a few times per second.
 struct HUDSnapshot: Equatable {
     var fuel = 1.0
@@ -30,6 +36,12 @@ struct HUDSnapshot: Equatable {
     var points: [MiniMapPoint] = []
     /// x positions of burning stretches, for the overview bar.
     var fires: [Double] = []
+    /// Stretches covered by lava or an avalanche.
+    var spans: [MiniMapSpan] = []
+    var outposts: [Double] = []
+    /// Winch progress 0...1, -1 when no cable is in use.
+    var winch = -1.0
+    var winchSteady = true
     var messages: [String] = []
     var crashed = false
 }

@@ -56,6 +56,14 @@ final class GameScene: SKScene {
     private var waveTimer = 0.0
     private var lakeTimer = 0.0
     private var fireSaid = false
+    private var hazards: HazardLayer?
+    private var atmosphere: AtmosphereLayer?
+    private let cable = SKShapeNode()
+    private var beacons: [Int: SKSpriteNode] = [:]
+    private var said: Set<String> = []
+    private var surfTimer = 0.0
+    private var cableHint = 0.0
+    private lazy var look = Look.of(mission)
 
     // State
     private var built = false
@@ -99,6 +107,15 @@ final class GameScene: SKScene {
         buildWorld()
         buildHelicopter()
         buildWeather()
+        let hl = HazardLayer(mission: mission)
+        hl.onThunder = { [weak self] x in self?.thunder(at: x) }
+        addChild(hl)
+        hazards = hl
+        cable.strokeColor = SKColor(red: 0.95, green: 0.9, blue: 0.8, alpha: 1)
+        cable.lineWidth = 2
+        cable.zPosition = 9
+        cable.isHidden = true
+        addChild(cable)
         flameLayer.zPosition = 3.5
         addChild(flameLayer)
         smokeLayer.zPosition = 11.5
@@ -108,7 +125,9 @@ final class GameScene: SKScene {
         let s = sim.heli
         camPos = CGPoint(x: min(max(s.x, 640), mission.world.width - 640), y: 360 + 80)
         applyCamera()
-        if mission.isFire {
+        if let intro = introMessage() {
+            say(intro, seconds: 10)
+        } else if mission.isFire {
             say("Pfeil hoch startet. Tief über dem See füllt sich der Tank, die Leertaste wirft Löschwasser ab.", seconds: 10)
         } else {
             say("Pfeil hoch startet den Hubschrauber. Hole die Menschen von den Dächern.", seconds: 9)
@@ -118,9 +137,31 @@ final class GameScene: SKScene {
 
     func shutdown() { audio.stop() }
 
+    /// First hint of a newer Einsatz, shown on the ground before take-off.
+    private func introMessage() -> String? {
+        switch mission.hazard {
+        case "storm": return "Pfeil hoch startet. Dein Scheinwerfer leuchtet nach vorn. Ein roter Strahl kündigt einen Blitz an: flieg zur Seite."
+        case "quake": return "Pfeil hoch startet. Die Gassen sind eng: flieg über die Häuser und lande senkrecht auf den Plätzen."
+        case "volcano": return "Pfeil hoch startet. Lavabrocken fliegen auf gestrichelten Bahnen. Außenposten tanken: lande auf einem."
+        case "avalanche": return "Pfeil hoch startet. An Felsvorsprüngen nicht landen: schwebe ruhig darüber, Pfeil runter holt das Seil näher."
+        default: return nil
+        }
+    }
+
+    private func sayOnce(_ key: String, _ text: String, seconds: Double = 6) {
+        if said.insert(key).inserted { say(text, seconds: seconds) }
+    }
+
+    private func thunder(at x: CGFloat) {
+        atmosphere?.flash(0.85)
+        let near = 1 - min(1, abs(x - CGFloat(sim.heli.x)) / 1400)
+        audio.play(.thunder(Float(0.35 + 0.65 * near)))
+        shake = max(shake, 4 + 6 * near)
+    }
+
     private func buildBackground() {
         let size = Self.viewSize
-        skyNode = SKSpriteNode(texture: Art.sky(size: size), size: size)
+        skyNode = SKSpriteNode(texture: Art.sky(size: size, look: look), size: size)
         skyNode.zPosition = -100
         cam.addChild(skyNode)
 
@@ -136,8 +177,8 @@ final class GameScene: SKScene {
         }
 
         // Layers: far mountains (0.12), wooded hills (0.35)
-        addParallax(factor: 0.12, z: -90, height: 460) { x0, w, h in Art.mountainChunk(x0: x0, w: w, h: h) }
-        addParallax(factor: 0.35, z: -80, height: 400) { x0, w, h in Art.hillChunk(x0: x0, w: w, h: h) }
+        addParallax(factor: 0.12, z: -90, height: 460) { x0, w, h in Art.mountainChunk(x0: x0, w: w, h: h, look: look) }
+        addParallax(factor: 0.35, z: -80, height: 400) { x0, w, h in Art.hillChunk(x0: x0, w: w, h: h, look: look) }
     }
 
     private func addParallax(factor f: CGFloat, z: CGFloat, height: CGFloat,
@@ -165,7 +206,9 @@ final class GameScene: SKScene {
         terrain.zPosition = -20
         addChild(terrain)
         let chunk: CGFloat = 1024
-        let yMin: CGFloat = -120, yMax: CGFloat = 480
+        // Tall mountains need a taller picture; the view never reaches below world y = 0.
+        let lowest = CGFloat(mission.terrain.map(\.y).min() ?? 0), highest = CGFloat(mission.terrain.map(\.y).max() ?? 0)
+        let yMin: CGFloat = max(-120, min(0, lowest - 10)), yMax: CGFloat = max(480, highest + 40)
         var x: CGFloat = 0
         while x < CGFloat(mission.world.width) {
             let w = min(chunk, CGFloat(mission.world.width) - x)
@@ -179,12 +222,32 @@ final class GameScene: SKScene {
 
         // Buildings and markers at the rescue points
         for (i, p) in mission.rescuePoints.enumerated() {
-            if p.kind != "island" {
-                let tex = Art.building(kind: p.kind, width: CGFloat(p.width), top: CGFloat(p.top), seed: UInt64(40 + i))
+            if p.kind == "island" || p.kind == "ledge" {
+                // Terrain only. A winch ledge gets a small marker flag so it stands out from the rock.
+                if p.kind == "ledge" {
+                    let flag = SKSpriteNode(color: SKColor(red: 0.78, green: 0.36, blue: 0.23, alpha: 1), size: CGSize(width: 14, height: 9))
+                    flag.anchorPoint = CGPoint(x: 0, y: 1)
+                    flag.position = CGPoint(x: p.x - 36, y: p.top + 44)
+                    flag.zPosition = -8
+                    let pole = SKSpriteNode(color: SKColor(white: 0.9, alpha: 1), size: CGSize(width: 2, height: 44))
+                    pole.anchorPoint = CGPoint(x: 0.5, y: 0)
+                    pole.position = CGPoint(x: p.x - 36, y: p.top)
+                    pole.zPosition = -8
+                    addChild(pole); addChild(flag)
+                }
+            } else {
+                let tex: SKTexture
+                var anchorY: CGFloat = 1
+                switch p.kind {
+                case "boat": tex = Art.boat(width: CGFloat(p.width), top: 80); anchorY = 1
+                case "lighthouse": tex = Art.lighthouse(width: CGFloat(p.width), top: CGFloat(p.top), seed: UInt64(40 + i))
+                case "roof" where look.town: tex = Art.rooftopPad(width: CGFloat(p.width))
+                default: tex = Art.building(kind: p.kind, width: CGFloat(p.width), top: CGFloat(p.top), seed: UInt64(40 + i))
+                }
                 let n = SKSpriteNode(texture: tex)
-                n.anchorPoint = CGPoint(x: 0.5, y: 1)
-                n.position = CGPoint(x: p.x, y: p.top)
-                n.zPosition = -10
+                n.anchorPoint = CGPoint(x: 0.5, y: anchorY)
+                n.position = CGPoint(x: p.x, y: p.kind == "roof" && look.town ? p.top - 6 : p.top)
+                n.zPosition = p.kind == "boat" ? 4.9 : -10
                 addChild(n)
             }
             let m = SKSpriteNode(texture: Art.marker())
@@ -193,6 +256,34 @@ final class GameScene: SKScene {
             m.run(.repeatForever(.sequence([.moveBy(x: 0, y: 8, duration: 0.6), .moveBy(x: 0, y: -8, duration: 0.6)])))
             addChild(m)
             markers[i] = m
+            if mission.isNight {
+                let g = SKSpriteNode(texture: Art.beaconGlow(), size: CGSize(width: 150, height: 150))
+                g.position = CGPoint(x: p.x, y: p.top + 14)
+                g.zPosition = 26
+                g.blendMode = .add
+                g.run(.repeatForever(.sequence([.fadeAlpha(to: 0.55, duration: 0.7), .fadeAlpha(to: 1, duration: 0.7)])))
+                addChild(g)
+                beacons[i] = g
+            }
+        }
+
+        // Outposts for refuelling
+        for o in mission.outpostList {
+            let n = SKSpriteNode(texture: Art.outpost(width: CGFloat(o.width)))
+            n.anchorPoint = CGPoint(x: 0.5, y: 0)
+            n.position = CGPoint(x: o.x, y: mission.groundHeight(at: o.x))
+            n.zPosition = -9
+            addChild(n)
+        }
+        if mission.isNight {
+            for x in [mission.base.x] + mission.outpostList.map(\.x) {
+                let g = SKSpriteNode(texture: Art.beaconGlow(), size: CGSize(width: 320, height: 200))
+                g.position = CGPoint(x: x, y: mission.groundHeight(at: x) + 20)
+                g.zPosition = 26
+                g.blendMode = .add
+                g.alpha = 0.7
+                addChild(g)
+            }
         }
 
         // People
@@ -299,6 +390,13 @@ final class GameScene: SKScene {
         heatOverlay.zPosition = 32
         cam.addChild(heatOverlay)
 
+        if mission.atmosphere != nil {
+            let a = AtmosphereLayer(mission: mission, size: Self.viewSize)
+            cam.addChild(a)
+            atmosphere = a
+            return
+        }
+
         if mission.isFire {
             let haze = SKSpriteNode(color: SKColor(red: 0.95, green: 0.62, blue: 0.30, alpha: 0.10), size: Self.viewSize)
             haze.zPosition = 29
@@ -369,6 +467,7 @@ final class GameScene: SKScene {
 
     private func handle(_ events: [SimEvent]) {
         for e in events {
+            hazards?.handle(e, sim: sim)
             switch e {
             case .physics(let p):
                 switch p {
@@ -418,7 +517,12 @@ final class GameScene: SKScene {
             case .lost(_, let pi):
                 guard lostSaid.insert(pi).inserted else { break }
                 audio.play(.alarm)
-                say("Das Wasser hat \(mission.rescuePoints[pi].name) erreicht. Menschen verloren.", seconds: 6)
+                let name = mission.rescuePoints[pi].name
+                switch mission.hazard {
+                case "volcano": say("Die Lava hat \(name) erreicht. Menschen verloren.", seconds: 6)
+                case "avalanche": say("Die Lawine hat \(name) erfasst. Menschen verloren.", seconds: 6)
+                default: say("Das Wasser hat \(name) erreicht. Menschen verloren.", seconds: 6)
+                }
             case .floodWarning(let pi):
                 audio.play(.warn)
                 say("Wasser steigt: \(mission.rescuePoints[pi].name) bald überflutet.", seconds: 6)
@@ -434,6 +538,49 @@ final class GameScene: SKScene {
                 say("Ersatzhubschrauber im Lager bereit.")
                 lowFuelWarned = false
             case .finished: break
+            case .strikeWarning:
+                audio.play(.warn)
+                sayOnce("strike", "Blitz im Anmarsch: Verlasse den roten Kreis, bevor der Strahl einschlägt.", seconds: 7)
+            case .lightning(_, let hit):
+                if hit { sayOnce("hit\(Int(clock))", "Blitzschlag! Die Haltbarkeit sinkt.", seconds: 4) }
+            case .tremor(let kind, _):
+                audio.play(.rumble)
+                if kind == "lavaBomb" { sayOnce("bombs", "Der Vulkan grollt: Lavabrocken. Achte auf die gestrichelten Flugbahnen.", seconds: 7) }
+                else { say("Nachbeben! Trümmer fallen gleich: Weg von den Plätzen.", seconds: 5) }
+            case .objectLaunched(let kind):
+                if kind == "lavaBomb" { audio.play(.pop) }
+            case .impact(let kind, _, let blocked):
+                audio.play(kind == "lavaBomb" ? .ignite : .thump(0.5))
+                if let pi = blocked {
+                    say(kind == "lavaBomb" ? "Lavabrocken versperrt \(mission.rescuePoints[pi].name)." : "\(mission.rescuePoints[pi].name): Landeplatz von Trümmern blockiert.", seconds: 6)
+                }
+            case .struckByObject(let kind, let d):
+                if kind != "lightning" { audio.play(.thump(0.9)) }
+                shake = max(shake, min(16, CGFloat(d) / 1.5 + 4))
+                if kind != "lightning" { say("Getroffen! \(Int(d.rounded())) % Haltbarkeit verloren.", seconds: 4) }
+            case .padBlocked: break
+            case .padCleared(let pi):
+                say("\(mission.rescuePoints[pi].name) ist wieder frei.", seconds: 4)
+            case .flowStarted(let fi):
+                audio.play(.rumble)
+                if mission.flowList[fi].kind == "avalanche" { say("Eine Lawine geht ab!", seconds: 4) }
+            case .flowWarning(let fi, let pi):
+                audio.play(.warn)
+                let lava = mission.flowList[fi].kind == "lava"
+                if let pi = pi {
+                    say(lava ? "Lava nähert sich: \(mission.rescuePoints[pi].name)!" : "Lawine auf Kurs: \(mission.rescuePoints[pi].name)!", seconds: 6)
+                } else {
+                    say(lava ? "Ein Lavastrom setzt sich in Bewegung. Hole die Menschen weiter oben zuerst." : "Eine Lawine löst sich gleich. Wen sie erreicht, ist verloren.", seconds: 7)
+                }
+            case .flowScorched(let fi):
+                shake = max(shake, 5)
+                say(mission.flowList[fi].kind == "lava" ? "Hitze der Lava! Flieg höher." : "Die Lawine reißt am Hubschrauber! Flieg höher.", seconds: 4)
+            case .winchStarted:
+                sayOnce("winch", "Seilwinde läuft: Halte den Hubschrauber ruhig über dem Vorsprung.", seconds: 5)
+            case .winchSlipped:
+                if clock - cableHint > 8 { cableHint = clock; say("Zu unruhig: Das Seil verliert die Person. Ruhig halten, nicht höher als das Seil.", seconds: 5) }
+            case .refueling:
+                say("Außenposten: Der Hubschrauber tankt.", seconds: 4)
             }
         }
     }
@@ -469,6 +616,9 @@ final class GameScene: SKScene {
         syncLakes(dt: dt)
         syncFire(dt: dt)
         syncDrops()
+        hazards?.sync(sim: sim, dt: dt, camX: cam.position.x)
+        atmosphere?.sync(sim: sim, heli: CGPoint(x: h.x - cam.position.x, y: h.y - cam.position.y), dt: dt)
+        if sim.hz.tremor > 0, !gamePaused { shake = max(shake, CGFloat(sim.hz.tremor) * 5) }
 
         // Water
         let level = CGFloat(sim.floodLevel)
@@ -483,10 +633,11 @@ final class GameScene: SKScene {
         let wave = CGMutablePath()
         let foam = CGMutablePath()
         let t = CGFloat(clock)
+        let amp: CGFloat = mission.flood.swell != nil ? 2.4 : 1
         var x = left
         var first = true
         while x <= left + 1520 {
-            let y = level + 3.2 * sin(x * 0.02 + t * 1.6) + 2.0 * sin(x * 0.045 - t * 2.3)
+            let y = level + amp * (3.2 * sin(x * 0.02 + t * 1.6) + 2.0 * sin(x * 0.045 - t * 2.3))
             if first { wave.move(to: CGPoint(x: x, y: y)); foam.move(to: CGPoint(x: x, y: y)); first = false }
             else { wave.addLine(to: CGPoint(x: x, y: y)); foam.addLine(to: CGPoint(x: x, y: y)) }
             x += 20
@@ -516,6 +667,14 @@ final class GameScene: SKScene {
                 node.alpha = 1 - t * t
                 setWaving(node, false)
                 node.xScale = CGFloat(h.x) > CGFloat(p.spotX) ? -1 : 1
+            case .hoisting:
+                node.isHidden = false
+                let t = CGFloat(p.progress)
+                let hy = CGFloat(h.y) + 8
+                node.position = CGPoint(x: p.spotX + (CGFloat(h.x) - CGFloat(p.spotX)) * t, y: gy + (hy - gy - 26) * t)
+                node.alpha = 1
+                setWaving(node, false)
+                node.xScale = 1
             case .aboard, .injured:
                 node.isHidden = true
             case .leaving:
@@ -537,8 +696,34 @@ final class GameScene: SKScene {
             }
         }
         for (i, m) in markers {
-            let waiting = sim.people.contains { $0.pointIndex == i && ($0.state == .waiting || $0.state == .boarding) }
-            m.isHidden = !waiting
+            let waiting = sim.people.contains { $0.pointIndex == i && ($0.state == .waiting || $0.state == .boarding || $0.state == .hoisting) }
+            m.isHidden = !waiting || sim.isBlocked(i)
+            beacons[i]?.isHidden = !waiting
+        }
+
+        // Winch cable
+        if let w = sim.hz.winch, let p = sim.people.first(where: { $0.id == w.personID }), let node = personNodes[p.id] {
+            let path = CGMutablePath()
+            path.move(to: CGPoint(x: h.x, y: h.y + 6))
+            path.addLine(to: CGPoint(x: node.position.x, y: node.position.y + 30))
+            cable.path = path
+            cable.strokeColor = w.steady ? SKColor(red: 0.95, green: 0.9, blue: 0.8, alpha: 1) : SKColor(red: 1, green: 0.5, blue: 0.3, alpha: 1)
+            cable.isHidden = false
+        } else {
+            cable.isHidden = true
+        }
+
+        // Spray from stormy sea
+        surfTimer -= dt
+        if mission.flood.swell != nil, surfTimer <= 0, !gamePaused {
+            surfTimer = 0.07
+            let sx = cam.position.x + CGFloat.random(in: -680...680)
+            let sp = SKSpriteNode(texture: Art.puff(), size: CGSize(width: 22, height: 22))
+            sp.alpha = 0.55
+            sp.position = CGPoint(x: sx, y: CGFloat(sim.floodLevel) + 4)
+            sp.zPosition = 5.3
+            addChild(sp)
+            sp.run(.sequence([.group([.moveBy(x: CGFloat.random(in: -30...30) + CGFloat(sim.wind) * 0.2, y: CGFloat.random(in: 20...60), duration: 0.8), .fadeOut(withDuration: 0.8), .scale(to: 1.8, duration: 0.8)]), .removeFromParent()]))
         }
 
         // Windsock
@@ -869,6 +1054,9 @@ final class GameScene: SKScene {
             return MiniMapPoint(x: p.x, waiting: waiting,
                                 endangered: sim.floodLevel > p.top - 35 || sim.fireExposure[i] > 0.5)
         }
+        snap.spans = mission.flowList.indices.compactMap { i in sim.hz.flows[i].span.map { MiniMapSpan(lo: $0.lo, hi: $0.hi, lava: mission.flowList[i].kind == "lava") } }
+        snap.outposts = mission.outpostList.map(\.x)
+        if let w = sim.hz.winch { snap.winch = w.progress; snap.winchSteady = w.steady } else { snap.winch = -1 }
         snap.messages = messages.map { $0.text }
         if case .crashed = sim.phase { snap.crashed = true }
         onHUD?(snap)

@@ -15,8 +15,23 @@ final class AppModel: ObservableObject {
     /// Which mission is running or was played last (for "Noch einmal").
     private(set) var missionID = MissionLibrary.all[0]
     @Published var missions: [Mission] = []
+    /// Stars and scores so far, stored locally.
+    @Published private(set) var progress: PlayerProgress
+    @Published var difficulty: Difficulty {
+        didSet { UserDefaults.standard.set(difficulty.rawValue, forKey: "difficulty") }
+    }
+    /// Developer aid: `ROTORWACHT_UNLOCK_ALL=1` opens every Einsatz.
+    private let unlockAll = ProcessInfo.processInfo.environment["ROTORWACHT_UNLOCK_ALL"] != nil
+
+    static var progressURL: URL {
+        FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
+            .appendingPathComponent("Rotorwacht/progress.json")
+    }
 
     init() {
+        // Screenshot runs must not touch the player's progress.
+        progress = DebugShots.active ? PlayerProgress() : PlayerProgress.load(from: Self.progressURL)
+        difficulty = Difficulty(rawValue: UserDefaults.standard.string(forKey: "difficulty") ?? "") ?? .medium
         InputController.shared.start()
         DispatchQueue.main.async { DebugShots.runIfRequested(model: self) }
         InputController.shared.onEscape = { [weak self] in
@@ -38,9 +53,16 @@ final class AppModel: ObservableObject {
         if missions.isEmpty { missions = MissionLibrary.all.compactMap { loadMission($0) } }
     }
 
+    func isUnlocked(_ id: String) -> Bool {
+        unlockAll || progress.isUnlocked(id, order: MissionLibrary.all)
+    }
+
+    func best(_ id: String) -> MissionRecord? { progress.best(id, difficulty) }
+
     func startMission(_ id: String? = nil) {
         let id = id ?? missionID
-        guard let m = loadMission(id) else { return }
+        guard isUnlocked(id), let base = loadMission(id) else { return }
+        let m = base.scaled(for: difficulty)
         missionID = id
         mission = m
         let s = GameScene(mission: m)
@@ -72,6 +94,10 @@ final class AppModel: ObservableObject {
 
     private func finish(_ r: MissionResult) {
         result = r
+        if !DebugShots.active {
+            progress.record(missionID: missionID, level: difficulty, result: r)
+            progress.save(to: Self.progressURL)
+        }
         InputController.shared.capturing = false
         InputController.shared.releaseAll()
         // A short beat so the last rescue can be seen before the result card appears.
