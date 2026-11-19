@@ -3,7 +3,9 @@ import Foundation
 /// A simple scripted pilot. Used by tests to prove a mission can be won, and by the screenshot helper.
 /// Not part of normal play.
 public struct AutoPilot {
-    public init() {}
+    /// Fight fires before rescuing anybody (used for demonstration screenshots).
+    public var fireFirst = false
+    public init(fireFirst: Bool = false) { self.fireFirst = fireFirst }
 
     private func pickTarget(_ sim: MissionSimulation) -> (x: Double, top: Double, pointIndex: Int?) {
         let m = sim.mission
@@ -25,10 +27,68 @@ public struct AutoPilot {
         return (best.element.x, best.element.top, best.offset)
     }
 
+    // MARK: Fire fighting
+
+    /// Rescue points with waiting people and the distance to the nearest flame (only those within reach).
+    private func threatened(_ sim: MissionSimulation) -> [(index: Int, distance: Double, cell: Int)] {
+        guard sim.mission.fire != nil else { return [] }
+        var out: [(Int, Double, Int)] = []
+        for (pi, p) in sim.mission.rescuePoints.enumerated()
+        where sim.people.contains(where: { $0.pointIndex == pi && $0.state == .waiting }) {
+            var best: (Double, Int)?
+            for (ci, c) in sim.fire.cells.enumerated() where c.burning {
+                let d = abs(sim.fire.center(of: ci) - p.x)
+                if best == nil || d < best!.0 { best = (d, ci) }
+            }
+            if let b = best, b.0 < (fireFirst ? 900 : 460) { out.append((pi, b.0, b.1)) }
+        }
+        return out.sorted { $0.1 < $1.1 }
+    }
+
+    private func cruise(_ sim: MissionSimulation, x targetX: Double, hoverY: Double, maxSpeed: Double = 230) -> PilotInput {
+        let h = sim.heli, m = sim.mission
+        let dx = targetX - h.x
+        var input = PilotInput()
+        var desiredVx = max(-maxSpeed, min(maxSpeed, dx * 0.9))
+        if abs(dx) < 250 { desiredVx = max(-110, min(110, dx * 0.7)) }
+        if h.vx < desiredVx - 12 { input.right = true } else if h.vx > desiredVx + 12 { input.left = true }
+        let lo = min(h.x, targetX) - 80, hi = max(h.x, targetX) + 80
+        let clear = abs(dx) > 250 ? m.maxSurface(from: lo, to: hi) + 90 : m.maxSurface(from: h.x - 70, to: h.x + 70) + 45
+        let wantY = max(clear, hoverY)
+        let desiredVy = max(-110, min(110, (wantY - h.y) * 1.4))
+        if desiredVy > h.vy + 8 { input.up = true } else if desiredVy < h.vy - 8 { input.down = true }
+        return input
+    }
+
+    /// Fire mission: fly to the flames closest to people and drop water, or refill at a lake.
+    private func fightInput(_ sim: MissionSimulation) -> PilotInput? {
+        let m = sim.mission
+        let h = sim.heli
+        let threats = threatened(sim)
+        guard let worst = threats.first else { return nil }
+        // Someone is about to be hurt: collect them if there is room, instead of fighting on.
+        if !fireFirst {
+            if sim.fireExposure[worst.index] > 4.5, sim.aboardCount < m.capacity { return nil }
+            if sim.aboardCount >= m.capacity - 1 { return nil }
+        }
+        if h.water < 18 || (sim.filling && h.water < 90) {
+            guard let lake = m.lakeList.min(by: { abs(($0.x0 + $0.x1) / 2 - h.x) < abs(($1.x0 + $1.x1) / 2 - h.x) }) else { return nil }
+            let cx = (lake.x0 + lake.x1) / 2
+            return cruise(sim, x: cx, hoverY: lake.level + 28, maxSpeed: 200)
+        }
+        let tx = sim.fire.center(of: worst.cell)
+        var input = cruise(sim, x: tx, hoverY: m.groundHeight(at: tx) + 85)
+        // Sweep: drop while above the burning stretch near the people.
+        let over = sim.fire.maxIntensity(from: h.x - 70, to: h.x + 70) > 0.1
+        input.drop = over && h.y - m.surfaceHeight(at: h.x) < 230
+        return input
+    }
+
     public func input(for sim: MissionSimulation) -> PilotInput {
         let m = sim.mission
         let h = sim.heli
         guard case .flying = sim.phase else { return PilotInput() }
+        if !h.onGround, let f = fightInput(sim) { return f }
         let target = pickTarget(sim)
 
         // Landed: stay while people walk, otherwise lift off when work is done here.

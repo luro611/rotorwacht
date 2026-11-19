@@ -29,8 +29,10 @@ public struct HelicopterSpec: Sendable {
 
 public struct PilotInput: Equatable, Sendable {
     public var left = false, right = false, up = false, down = false
-    public init(left: Bool = false, right: Bool = false, up: Bool = false, down: Bool = false) {
-        self.left = left; self.right = right; self.up = up; self.down = down
+    /// Release the extinguishing water.
+    public var drop = false
+    public init(left: Bool = false, right: Bool = false, up: Bool = false, down: Bool = false, drop: Bool = false) {
+        self.left = left; self.right = right; self.up = up; self.down = down; self.drop = drop
     }
     /// -1, 0 or 1.
     public var horizontal: Double { (right ? 1 : 0) - (left ? 1 : 0) }
@@ -48,6 +50,8 @@ public struct HelicopterState: Equatable, Sendable {
     public var facing = 1.0
     public var fuel: Double
     public var durability: Double
+    /// Extinguishing water in the tank.
+    public var water = 0.0
     public var onGround = true
     public var inWater = false
     /// Last non-zero horizontal direction the pilot asked for.

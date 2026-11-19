@@ -23,7 +23,13 @@ struct HUDSnapshot: Equatable {
     var heliX = 0.0
     var worldWidth = 1.0
     var baseX = 0.0
+    var water = 0.0
+    var smoke = 0.0
+    var heat = 0.0
+    var filling = false
     var points: [MiniMapPoint] = []
+    /// x positions of burning stretches, for the overview bar.
+    var fires: [Double] = []
     var messages: [String] = []
     var crashed = false
 }

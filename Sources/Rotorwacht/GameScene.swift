@@ -33,6 +33,26 @@ final class GameScene: SKScene {
     private var clouds: [(node: SKSpriteNode, base: CGFloat, speed: CGFloat, parallax: CGFloat)] = []
     private var parallaxLayers: [(node: SKNode, factor: CGFloat)] = []
     private let effects = SKNode()
+    private let flameLayer = SKNode()
+    private let smokeLayer = SKNode()
+    private var lakeNodes: [(spec: LakeSpec, body: SKSpriteNode, shape: SKShapeNode, foam: SKShapeNode)] = []
+    private final class FireNode {
+        let flame: SKEmitterNode
+        let smoke: SKEmitterNode
+        let scorch: SKSpriteNode
+        init(flame: SKEmitterNode, smoke: SKEmitterNode, scorch: SKSpriteNode) {
+            self.flame = flame; self.smoke = smoke; self.scorch = scorch
+        }
+    }
+    private var fireNodes: [Int: FireNode] = [:]
+    private var dropNodes: [Int: SKSpriteNode] = [:]
+    private let smokeOverlay = SKSpriteNode()
+    private let heatOverlay = SKSpriteNode()
+    private var smokeSmooth: CGFloat = 0
+    private var heatSmooth: CGFloat = 0
+    private var fillSprayTimer = 0.0
+    private var hurtSaid: Set<Int> = []
+    private var fireSaid = false
 
     // State
     private var built = false
@@ -76,12 +96,20 @@ final class GameScene: SKScene {
         buildWorld()
         buildHelicopter()
         buildWeather()
+        flameLayer.zPosition = 3.5
+        addChild(flameLayer)
+        smokeLayer.zPosition = 11.5
+        addChild(smokeLayer)
         addChild(effects)
         effects.zPosition = 12
         let s = sim.heli
         camPos = CGPoint(x: min(max(s.x, 640), mission.world.width - 640), y: 360 + 80)
         applyCamera()
-        say("Pfeil hoch startet den Hubschrauber. Hole die Menschen von den Dächern.", seconds: 9)
+        if mission.isFire {
+            say("Pfeil hoch startet. Tief über dem See füllt sich der Tank, die Leertaste wirft Löschwasser ab.", seconds: 10)
+        } else {
+            say("Pfeil hoch startet den Hubschrauber. Hole die Menschen von den Dächern.", seconds: 9)
+        }
         audio.start()
     }
 
@@ -208,6 +236,28 @@ final class GameScene: SKScene {
         waveFoam.lineWidth = 2
         waveFoam.zPosition = 5.2
         addChild(waveFoam)
+
+        // Lakes: still water at a fixed level.
+        for l in mission.lakeList {
+            let w = CGFloat(l.x1 - l.x0)
+            let body = SKSpriteNode(texture: Art.waterBody(height: 700))
+            body.anchorPoint = CGPoint(x: 0.5, y: 1)
+            body.size = CGSize(width: w, height: 700)
+            body.position = CGPoint(x: CGFloat((l.x0 + l.x1) / 2), y: CGFloat(l.level) - 8)
+            body.zPosition = 5
+            addChild(body)
+            let shape = SKShapeNode()
+            shape.fillColor = SKColor(red: 0.37, green: 0.55, blue: 0.60, alpha: 0.72)
+            shape.strokeColor = .clear
+            shape.zPosition = 5.1
+            addChild(shape)
+            let foam = SKShapeNode()
+            foam.strokeColor = SKColor(white: 1, alpha: 0.5)
+            foam.lineWidth = 2
+            foam.zPosition = 5.2
+            addChild(foam)
+            lakeNodes.append((l, body, shape, foam))
+        }
     }
 
     private func buildHelicopter() {
@@ -234,6 +284,25 @@ final class GameScene: SKScene {
     }
 
     private func buildWeather() {
+        // Smoke and heat over the whole picture (invisible until there is fire nearby).
+        smokeOverlay.color = SKColor(red: 0.20, green: 0.17, blue: 0.15, alpha: 1)
+        smokeOverlay.size = Self.viewSize
+        smokeOverlay.alpha = 0
+        smokeOverlay.zPosition = 31
+        cam.addChild(smokeOverlay)
+        heatOverlay.color = SKColor(red: 1.0, green: 0.42, blue: 0.12, alpha: 1)
+        heatOverlay.size = Self.viewSize
+        heatOverlay.alpha = 0
+        heatOverlay.zPosition = 32
+        cam.addChild(heatOverlay)
+
+        if mission.isFire {
+            let haze = SKSpriteNode(color: SKColor(red: 0.95, green: 0.62, blue: 0.30, alpha: 0.10), size: Self.viewSize)
+            haze.zPosition = 29
+            cam.addChild(haze)
+            return
+        }
+
         let rain = SKEmitterNode()
         rain.particleTexture = Art.raindrop()
         rain.particleBirthRate = 260
@@ -321,6 +390,26 @@ final class GameScene: SKScene {
                     audio.play(.alarm)
                     say("Treibstoff leer. Notlandung!", seconds: 6)
                 }
+            case .fireStarted:
+                audio.play(.ignite)
+                say(fireSaid ? "Ein neues Feuer ist ausgebrochen." : "Feuer! Es läuft bergauf auf die Wartenden zu. Lösche mit der Leertaste.", seconds: 7)
+                fireSaid = true
+            case .fireWarning(let pi):
+                audio.play(.warn)
+                say("Feuer nähert sich: \(mission.rescuePoints[pi].name). Löschen oder abholen!", seconds: 6)
+            case .hurtByFire(_, let pi):
+                if hurtSaid.insert(pi).inserted {
+                    audio.play(.alarm)
+                    say("\(mission.rescuePoints[pi].name): Menschen vom Feuer verletzt.", seconds: 6)
+                }
+            case .scorched:
+                shake = max(shake, 3)
+                say("Hitze! Die Haltbarkeit sinkt. Flieg höher oder lösche die Flammen.", seconds: 4)
+            case .tankFull:
+                audio.play(.ding)
+                say("Tank voll.", seconds: 2)
+            case .tankEmpty:
+                say("Tank leer. Tief über See oder Fluss füllen, oder im Lager.", seconds: 5)
             case .boarded: audio.play(.ding)
             case .rescued: audio.play(.rescued)
             case .lost(_, let pi):
@@ -373,8 +462,15 @@ final class GameScene: SKScene {
         rotorDisc.alpha = engineOn ? 1 : 0.15
         rotorNode.xScale = sideVisible ? 1 : 1.15
 
+        syncLakes()
+        syncFire(dt: dt)
+        syncDrops()
+
         // Water
         let level = CGFloat(sim.floodLevel)
+        water.isHidden = level < -20
+        waveShape.isHidden = water.isHidden
+        waveFoam.isHidden = water.isHidden
         let left = cam.position.x - 760
         water.position = CGPoint(x: cam.position.x, y: level - 8)
         let wave = CGMutablePath()
@@ -446,11 +542,13 @@ final class GameScene: SKScene {
 
         // Rotor wash near the floor
         spawnTimer -= dt
-        let floor = max(mission.maxSurface(from: h.x - 40, to: h.x + 40), sim.floodLevel)
+        let surfaceUnder = mission.maxSurface(from: h.x - 40, to: h.x + 40)
+        let waterUnder = mission.waterLevel(from: h.x - 40, to: h.x + 40, flood: sim.floodLevel)
+        let floor = max(surfaceUnder, waterUnder)
         let above = h.y - floor
         if !h.onGround || above < 4, engineOn, above < 110, spawnTimer <= 0, !gamePaused {
             spawnTimer = 0.04
-            let wet = sim.floodLevel > mission.maxSurface(from: h.x - 40, to: h.x + 40)
+            let wet = waterUnder > surfaceUnder
             spawnWash(x: h.x, y: floor, wet: wet, power: 1 - above / 110)
         }
 
@@ -476,6 +574,13 @@ final class GameScene: SKScene {
         audio.thrust = min(1, thrustSmooth)
         audio.rotorSpeed = engineOn ? 1 : 0.1
         audio.wind = Float(min(1, abs(sim.wind) / 200)) * 0.8 + 0.12
+        audio.spray = sim.dropping ? 1 : 0
+        audio.fill = sim.filling ? 1 : 0
+        fillSprayTimer -= dt
+        if sim.filling, fillSprayTimer <= 0, !gamePaused {
+            fillSprayTimer = 0.05
+            spawnSpray(count: 3, strong: false, y: mission.waterLevel(from: h.x - 40, to: h.x + 40, flood: sim.floodLevel))
+        }
         if h.fuel < mission.fuel.capacity * 0.2, h.fuel > 0, !lowFuelWarned, !h.onGround {
             lowFuelWarned = true
             audio.play(.warn)
@@ -492,6 +597,151 @@ final class GameScene: SKScene {
             node.arm.run(.repeatForever(.sequence([.rotate(toAngle: 2.6, duration: 0.28), .rotate(toAngle: 3.5, duration: 0.28)])))
         } else {
             node.arm.zRotation = 0
+        }
+    }
+
+    // MARK: Lakes, fire, water drops
+
+    private func wavePath(x0: CGFloat, x1: CGFloat, level: CGFloat, t: CGFloat) -> (CGPath, CGPath) {
+        let wave = CGMutablePath(), foam = CGMutablePath()
+        var x = x0
+        var first = true
+        while x <= x1 {
+            let y = level + 2.4 * sin(x * 0.025 + t * 1.2) + 1.6 * sin(x * 0.05 - t * 1.9)
+            if first { wave.move(to: CGPoint(x: x, y: y)); foam.move(to: CGPoint(x: x, y: y)); first = false }
+            else { wave.addLine(to: CGPoint(x: x, y: y)); foam.addLine(to: CGPoint(x: x, y: y)) }
+            x += 20
+        }
+        wave.addLine(to: CGPoint(x: x1, y: level - 14))
+        wave.addLine(to: CGPoint(x: x0, y: level - 14))
+        wave.closeSubpath()
+        return (wave, foam)
+    }
+
+    private func syncLakes() {
+        let t = CGFloat(clock)
+        for l in lakeNodes {
+            let visible = abs(CGFloat((l.spec.x0 + l.spec.x1) / 2) - cam.position.x) < 1400
+            l.body.isHidden = !visible; l.shape.isHidden = !visible; l.foam.isHidden = !visible
+            guard visible else { continue }
+            let (wave, foam) = wavePath(x0: CGFloat(l.spec.x0), x1: CGFloat(l.spec.x1), level: CGFloat(l.spec.level), t: t)
+            l.shape.path = wave
+            l.foam.path = foam
+        }
+    }
+
+    private func makeFireNode(cell i: Int) -> FireNode {
+        let x = CGFloat(sim.fire.center(of: i))
+        let y = CGFloat(mission.surfaceHeight(at: Double(x)))
+
+        let flame = SKEmitterNode()
+        flame.particleTexture = Art.flame()
+        flame.particleBirthRate = 0
+        flame.particleLifetime = 0.9
+        flame.particleLifetimeRange = 0.4
+        flame.particlePositionRange = CGVector(dx: 34, dy: 4)
+        flame.emissionAngle = .pi / 2
+        flame.emissionAngleRange = 0.4
+        flame.particleSpeed = 45
+        flame.particleSpeedRange = 25
+        flame.particleSize = CGSize(width: 30, height: 42)
+        flame.particleScaleRange = 0.5
+        flame.particleScaleSpeed = -0.45
+        flame.particleAlpha = 0.55
+        flame.particleAlphaSpeed = -1.0
+        flame.particleBlendMode = .add
+        flame.position = CGPoint(x: x, y: y + 2)
+        flameLayer.addChild(flame)
+
+        let smoke = SKEmitterNode()
+        smoke.particleTexture = Art.puff()
+        smoke.particleBirthRate = 0
+        smoke.particleLifetime = 4.2
+        smoke.particleLifetimeRange = 1.5
+        smoke.particlePositionRange = CGVector(dx: 30, dy: 6)
+        smoke.emissionAngle = .pi / 2
+        smoke.emissionAngleRange = 0.5
+        smoke.particleSpeed = 40
+        smoke.particleSpeedRange = 18
+        smoke.particleSize = CGSize(width: 36, height: 36)
+        smoke.particleScaleSpeed = 0.5
+        smoke.particleColor = SKColor(red: 0.20, green: 0.18, blue: 0.17, alpha: 1)
+        smoke.particleColorBlendFactor = 1
+        smoke.particleAlpha = 0.34
+        smoke.particleAlphaSpeed = -0.075
+        smoke.position = CGPoint(x: x, y: y + 30)
+        smokeLayer.addChild(smoke)
+
+        let scorch = SKSpriteNode(texture: Art.scorch(width: CGFloat(sim.fire.cellWidth) + 26))
+        scorch.size = CGSize(width: CGFloat(sim.fire.cellWidth) + 26, height: 26)
+        scorch.anchorPoint = CGPoint(x: 0.5, y: 0.2)
+        scorch.position = CGPoint(x: x, y: y)
+        scorch.zPosition = -7
+        addChild(scorch)
+        return FireNode(flame: flame, smoke: smoke, scorch: scorch)
+    }
+
+    private func syncFire(dt: Double) {
+        guard mission.fire != nil else { return }
+        let h = sim.heli
+        var loud = 0.0
+        for (i, c) in sim.fire.cells.enumerated() {
+            guard c.burning || c.charred else { continue }
+            let node = fireNodes[i] ?? { let n = makeFireNode(cell: i); fireNodes[i] = n; return n }()
+            let near = abs(CGFloat(sim.fire.center(of: i)) - cam.position.x) < 900
+            node.flame.isHidden = !near
+            node.smoke.isHidden = !near
+            node.scorch.isHidden = !near
+            guard near else { continue }
+            if c.burning {
+                node.flame.particleBirthRate = CGFloat(26 * c.intensity)
+                node.flame.particleScale = CGFloat(0.5 + 0.8 * c.intensity)
+                node.smoke.particleBirthRate = c.intensity > 0.3 ? CGFloat(5 * c.intensity) : 0
+                node.smoke.xAcceleration = CGFloat(sim.wind) * 0.25
+                loud += c.intensity * max(0, 1 - abs(sim.fire.center(of: i) - h.x) / 700)
+            } else {
+                node.flame.particleBirthRate = 0
+                node.smoke.particleBirthRate = 0
+            }
+            node.scorch.alpha = c.fuel <= 0 ? 0.95 : 0.55
+        }
+        audio.fire = Float(min(1, loud * 0.12))
+        smokeSmooth += (CGFloat(sim.smoke) * 0.72 - smokeSmooth) * CGFloat(min(1, dt * 3))
+        heatSmooth += (CGFloat(sim.heat) * 0.4 - heatSmooth) * CGFloat(min(1, dt * 6))
+        smokeOverlay.alpha = smokeSmooth
+        heatOverlay.alpha = heatSmooth
+    }
+
+    private func syncDrops() {
+        var alive = Set<Int>()
+        for d in sim.drops {
+            alive.insert(d.id)
+            let n = dropNodes[d.id] ?? {
+                let s = SKSpriteNode(texture: Art.waterDrop(), size: CGSize(width: 6, height: 10))
+                s.zPosition = 11
+                effects.addChild(s)
+                dropNodes[d.id] = s
+                return s
+            }()
+            n.position = CGPoint(x: d.x, y: d.y)
+            n.zRotation = atan2(CGFloat(d.vy), CGFloat(d.vx)) - .pi / 2
+        }
+        for (id, n) in dropNodes where !alive.contains(id) {
+            dropNodes[id] = nil
+            let p = n.position
+            n.removeFromParent()
+            // Where it hit: a puff of steam over flames or damp ground, a few droplets otherwise.
+            let burning = sim.fire.index(at: Double(p.x)).map { sim.fire.cells[$0].wet > 0 || sim.fire.cells[$0].burning } ?? false
+            let s = SKSpriteNode(texture: Art.puff())
+            let size: CGFloat = burning ? 34 : 14
+            s.size = CGSize(width: size, height: size)
+            s.alpha = burning ? 0.5 : 0.55
+            s.position = p
+            effects.addChild(s)
+            s.run(.sequence([
+                .group([.moveBy(x: CGFloat.random(in: -16...16), y: burning ? 46 : 14, duration: 0.7),
+                        .fadeOut(withDuration: 0.7), .scale(to: burning ? 2.2 : 1.6, duration: 0.7)]),
+                .removeFromParent()]))
         }
     }
 
@@ -538,13 +788,13 @@ final class GameScene: SKScene {
         }
     }
 
-    private func spawnSpray(count: Int, strong: Bool) {
+    private func spawnSpray(count: Int, strong: Bool, y: Double? = nil) {
         let h = sim.heli
         for _ in 0..<max(4, count) {
             let p = SKSpriteNode(texture: Art.puff())
             p.size = CGSize(width: 18, height: 18)
             p.alpha = 0.7
-            p.position = CGPoint(x: h.x + Double.random(in: -40...40), y: sim.floodLevel + 4)
+            p.position = CGPoint(x: h.x + Double.random(in: -40...40), y: (y ?? sim.floodLevel) + 4)
             effects.addChild(p)
             p.run(.sequence([
                 .group([.moveBy(x: CGFloat.random(in: -90...90), y: CGFloat.random(in: 30...110), duration: 0.6), .fadeOut(withDuration: 0.6)]),
@@ -597,9 +847,15 @@ final class GameScene: SKScene {
         snap.heliX = h.x
         snap.worldWidth = mission.world.width
         snap.baseX = mission.base.x
+        snap.water = h.water / mission.tankSpec.capacity
+        snap.filling = sim.filling
+        snap.smoke = sim.smoke
+        snap.heat = sim.heat
+        snap.fires = sim.fire.cells.indices.filter { sim.fire.cells[$0].burning }.map { sim.fire.center(of: $0) }
         snap.points = mission.rescuePoints.enumerated().map { i, p in
             let waiting = sim.people.filter { $0.pointIndex == i && $0.state == .waiting }.count
-            return MiniMapPoint(x: p.x, waiting: waiting, endangered: sim.floodLevel > p.top - 35)
+            return MiniMapPoint(x: p.x, waiting: waiting,
+                                endangered: sim.floodLevel > p.top - 35 || sim.fireExposure[i] > 0.5)
         }
         snap.messages = messages.map { $0.text }
         if case .crashed = sim.phase { snap.crashed = true }

@@ -66,6 +66,48 @@ public struct WindSpec: Codable, Equatable, Sendable {
     public var gusts: [GustSpec]
 }
 
+/// The water tank of the helicopter. Optional in mission files; these defaults apply otherwise.
+public struct TankSpec: Codable, Equatable, Sendable {
+    public var capacity: Double
+    /// Units per second while skimming over water (or standing in the camp).
+    public var fillPerSecond: Double
+    /// Droplets (one unit each) released per second while the drop key is held.
+    public var dropPerSecond: Double
+    public static let standard = TankSpec(capacity: 100, fillPerSecond: 32, dropPerSecond: 16)
+}
+
+/// A still lake: open water at a fixed level between two x positions (the ground lies below the level there).
+public struct LakeSpec: Codable, Equatable, Sendable {
+    public var name: String
+    public var x0: Double
+    public var x1: Double
+    public var level: Double
+}
+
+/// Part of the landscape that can burn. `fuel` 1 = normal forest, less burns shorter.
+public struct FuelZone: Codable, Equatable, Sendable {
+    public var x0: Double
+    public var x1: Double
+    public var fuel: Double
+}
+
+public struct IgnitionSpec: Codable, Equatable, Sendable {
+    public var time: Double
+    public var x: Double
+    public var intensity: Double
+}
+
+/// Everything that shapes how a fire behaves in a mission.
+public struct FireSpec: Codable, Equatable, Sendable {
+    public var cellWidth: Double
+    /// Seconds a cell burns at full intensity until its fuel is gone.
+    public var burnTime: Double
+    /// Heat per second a full-intensity neighbour passes on (1 = ignites).
+    public var spreadRate: Double
+    public var zones: [FuelZone]
+    public var ignitions: [IgnitionSpec]
+}
+
 /// A mission as read from its data file. All values that shape an Einsatz live here, not in code.
 public struct Mission: Codable, Equatable, Sendable {
     public var id: String
@@ -81,6 +123,21 @@ public struct Mission: Codable, Equatable, Sendable {
     public var fuel: FuelSpec
     public var flood: FloodSpec
     public var wind: WindSpec
+    /// 1-based position in the campaign, shown in menus. Optional.
+    public var number: Int? = nil
+    /// "flood" (default) or "fire": decides wording and what hurts the people waiting.
+    public var hazard: String? = nil
+    /// One or two sentences for the mission card in the start menu.
+    public var summary: String? = nil
+    /// Short label above the title, e.g. "Einführung".
+    public var tagline: String? = nil
+    public var tank: TankSpec? = nil
+    public var lakes: [LakeSpec]? = nil
+    public var fire: FireSpec? = nil
+
+    public var isFire: Bool { hazard == "fire" }
+    public var tankSpec: TankSpec { tank ?? .standard }
+    public var lakeList: [LakeSpec] { lakes ?? [] }
 
     public var totalPeople: Int { rescuePoints.reduce(0) { $0 + $1.people } }
 
@@ -131,6 +188,13 @@ public struct Mission: Codable, Equatable, Sendable {
         min(flood.maxLevel, flood.startLevel + flood.risePerSecond * time)
     }
 
+    /// Open water level under a span: the flood or a lake, whichever stands higher there.
+    public func waterLevel(from x0: Double, to x1: Double, flood: Double) -> Double {
+        var level = flood
+        for l in lakeList where x1 >= l.x0 && x0 <= l.x1 { level = max(level, l.level) }
+        return level
+    }
+
     /// Horizontal wind acceleration at a time. Deterministic, so tests and replays are repeatable.
     public func windAcceleration(at time: Double) -> Double {
         var w = wind.base
@@ -145,6 +209,9 @@ public struct Mission: Codable, Equatable, Sendable {
 }
 
 public enum MissionLibrary {
+    /// Missions offered in the start menu, in order.
+    public static let all = ["hochwasser", "waldbrand"]
+
     public enum LoadError: Error { case notFound(String) }
 
     /// Loads `Missions/<id>.json`: from the app bundle, from the Swift package resources, or – for

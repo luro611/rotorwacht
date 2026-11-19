@@ -25,6 +25,12 @@ public enum SimEvent: Equatable, Sendable {
     case rescued(personID: Int)
     case lost(personID: Int, pointIndex: Int)
     case floodWarning(pointIndex: Int)
+    case fireStarted(x: Double)
+    case fireWarning(pointIndex: Int)
+    case hurtByFire(personID: Int, pointIndex: Int)
+    case scorched(damage: Double)
+    case tankFull
+    case tankEmpty
     case cabinFull
     case helicopterLost(remaining: Int)
     case respawned
@@ -69,6 +75,13 @@ public struct MissionSimulation {
     public static let crashDelay = 2.5
     public static let finishDelay = 1.5
     public static let repairPerSecond = 1.5
+    /// Highest height above the water at which the tank still fills.
+    public static let skimHeight = 55.0
+    public static let dropGravity = 620.0
+    /// Seconds of fire exposure before waiting people are warned / hurt.
+    public static let fireWarnTime = 4.0
+    public static let fireHurtTime = 12.0
+    public static let heatDamagePerSecond = 16.0
 
     public let mission: Mission
     public let spec: HelicopterSpec
@@ -77,6 +90,22 @@ public struct MissionSimulation {
     public private(set) var time = 0.0
     public private(set) var floodLevel: Double
     public private(set) var wind = 0.0
+    public private(set) var fire: FireField
+    public private(set) var drops: [WaterDrop] = []
+    /// Smoke at the helicopter (0...1): takes away sight.
+    public private(set) var smoke = 0.0
+    /// Heat at the helicopter (0...1): costs durability.
+    public private(set) var heat = 0.0
+    public private(set) var filling = false
+    public private(set) var dropping = false
+    /// Seconds each rescue point has been close to a fire (0 when safe).
+    public private(set) var fireExposure: [Double]
+    private var dropAccumulator = 0.0
+    private var nextDropID = 0
+    private var tankWasFull = true
+    private var tankHadWater = true
+    private var scorchTimer = 0.0
+    private var fireWarned: Set<Int> = []
     /// Helicopters still available, the one in use included.
     public private(set) var helicoptersLeft: Int
     public private(set) var phase: SimPhase = .flying
@@ -90,10 +119,13 @@ public struct MissionSimulation {
         self.mission = mission
         self.spec = spec
         self.floodLevel = mission.floodLevel(at: 0)
+        self.fire = FireField(mission: mission)
+        self.fireExposure = Array(repeating: 0, count: mission.rescuePoints.count)
         self.helicoptersLeft = mission.helicopters
         self.heli = HelicopterState(
             x: mission.base.x, y: mission.baseSurface,
             fuel: mission.fuel.capacity, durability: spec.maxDurability)
+        self.heli.water = mission.tankSpec.capacity
         var list: [Person] = []
         var id = 0
         for (pi, p) in mission.rescuePoints.enumerated() {
@@ -138,6 +170,7 @@ public struct MissionSimulation {
         wind = mission.windAcceleration(at: time)
 
         updateFlood(&events)
+        updateFire(dt: dt, &events)
 
         switch phase {
         case .crashed(let left):
@@ -156,9 +189,13 @@ public struct MissionSimulation {
 
     private mutating func stepHelicopter(input: PilotInput, dt: Double, _ events: inout [SimEvent]) {
         let pe = HelicopterPhysics.step(
-            &heli, input: input, dt: dt, wind: wind, waterLevel: floodLevel,
+            &heli, input: input, dt: dt, wind: wind,
+            waterLevel: mission.waterLevel(from: heli.x - spec.halfWidth, to: heli.x + spec.halfWidth, flood: floodLevel),
             mission: mission, fuelBurnPerSecond: mission.fuel.burnPerSecond, spec: spec)
         events += pe.map { .physics($0) }
+
+        stepTank(input: input, dt: dt, &events)
+        applyHeat(dt: dt, &events)
 
         if heli.durability <= 0 {
             crash(&events)
@@ -180,6 +217,7 @@ public struct MissionSimulation {
         if inBaseZone {
             heli.fuel = min(mission.fuel.capacity, heli.fuel + mission.fuel.refuelPerSecond * dt)
             heli.durability = min(spec.maxDurability, heli.durability + Self.repairPerSecond * dt)
+            heli.water = min(mission.tankSpec.capacity, heli.water + mission.tankSpec.fillPerSecond * 1.5 * dt)
             disembarkTimer += dt
             if disembarkTimer >= Self.boardInterval,
                let i = people.firstIndex(where: { $0.state == .aboard }) {
@@ -245,6 +283,111 @@ public struct MissionSimulation {
         }
     }
 
+    // MARK: Water and fire
+
+    private mutating func stepTank(input: PilotInput, dt: Double, _ events: inout [SimEvent]) {
+        let tank = mission.tankSpec
+        // Fill by skimming low over open water (or sitting in it).
+        let level = mission.waterLevel(from: heli.x - spec.halfWidth, to: heli.x + spec.halfWidth, flood: floodLevel)
+        let surface = mission.maxSurface(from: heli.x - spec.halfWidth, to: heli.x + spec.halfWidth)
+        let overWater = level > surface && heli.y - level < Self.skimHeight && heli.fuel > 0
+        filling = overWater && heli.water < tank.capacity
+        if filling { heli.water = min(tank.capacity, heli.water + tank.fillPerSecond * dt) }
+
+        // Release: droplets inherit the helicopter's speed, so they fly on before they fall.
+        dropping = false
+        if input.drop, heli.water >= 1, !heli.onGround, heli.fuel > 0 {
+            dropping = true
+            dropAccumulator += tank.dropPerSecond * dt
+            while dropAccumulator >= 1, heli.water >= 1 {
+                dropAccumulator -= 1
+                heli.water -= 1
+                nextDropID += 1
+                let n = Double(nextDropID)
+                let jitter = sin(n * 12.9898) * 43758.5453
+                let r = jitter - jitter.rounded(.down) - 0.5   // deterministic, -0.5...0.5
+                drops.append(WaterDrop(
+                    id: nextDropID,
+                    x: heli.x + r * 36, y: heli.y + 6,
+                    vx: heli.vx * 0.92 + r * 40, vy: heli.vy * 0.5 - 20))
+            }
+        } else {
+            dropAccumulator = 0
+        }
+        if heli.water >= tank.capacity - 0.01 {
+            if !tankWasFull { events.append(.tankFull) }
+            tankWasFull = true
+            tankHadWater = true
+        } else {
+            tankWasFull = false
+            if heli.water < 1 {
+                if tankHadWater { events.append(.tankEmpty) }
+                tankHadWater = false
+            } else {
+                tankHadWater = true
+            }
+        }
+    }
+
+    private mutating func stepDrops(dt: Double) {
+        guard !drops.isEmpty else { return }
+        var alive: [WaterDrop] = []
+        alive.reserveCapacity(drops.count)
+        for var d in drops {
+            d.vy -= Self.dropGravity * dt
+            d.vx += (wind * 0.4 - d.vx * 0.35) * dt
+            d.x += d.vx * dt
+            d.y += d.vy * dt
+            let ground = mission.surfaceHeight(at: d.x)
+            var hitHeight = ground
+            if let i = fire.index(at: d.x), fire.cells[i].burning { hitHeight += 20 + 50 * fire.cells[i].intensity }
+            let waterLevel = mission.waterLevel(from: d.x, to: d.x, flood: floodLevel)
+            if d.y <= max(hitHeight, waterLevel) {
+                if waterLevel <= ground { fire.douse(at: d.x) }
+            } else if d.x >= 0, d.x <= mission.world.width {
+                alive.append(d)
+            }
+        }
+        drops = alive
+    }
+
+    private mutating func updateFire(dt: Double, _ events: inout [SimEvent]) {
+        for x in fire.step(dt: dt, time: time, wind: wind) { events.append(.fireStarted(x: x)) }
+        stepDrops(dt: dt)
+        guard mission.fire != nil else { return }
+
+        // Waiting people near flames are in danger; they have time while the fire is still approaching.
+        for (pi, p) in mission.rescuePoints.enumerated() {
+            let near = fire.maxIntensity(from: p.x - p.width / 2 - 70, to: p.x + p.width / 2 + 70)
+            if near > 0.25 { fireExposure[pi] += dt * near } else { fireExposure[pi] = max(0, fireExposure[pi] - dt) }
+            if fireExposure[pi] < 1 { fireWarned.remove(pi) }
+            let waiting = people.indices.filter {
+                people[$0].pointIndex == pi && (people[$0].state == .waiting || people[$0].state == .boarding)
+            }
+            guard !waiting.isEmpty else { continue }
+            if fireExposure[pi] >= Self.fireHurtTime {
+                for i in waiting {
+                    people[i].state = .injured
+                    events.append(.hurtByFire(personID: people[i].id, pointIndex: pi))
+                }
+            } else if fireExposure[pi] >= Self.fireWarnTime, !fireWarned.contains(pi) {
+                fireWarned.insert(pi)
+                events.append(.fireWarning(pointIndex: pi))
+            }
+        }
+        smoke = fire.smoke(atX: heli.x, y: heli.y)
+    }
+
+    private mutating func applyHeat(dt: Double, _ events: inout [SimEvent]) {
+        guard mission.fire != nil else { heat = 0; return }
+        heat = fire.heat(atX: heli.x, y: heli.y)
+        guard heat > 0.02, !heli.onGround || heat > 0.1 else { return }
+        let damage = Self.heatDamagePerSecond * heat * dt
+        heli.durability = max(0, heli.durability - damage)
+        scorchTimer -= dt
+        if scorchTimer <= 0 { scorchTimer = 2.5; events.append(.scorched(damage: damage)) }
+    }
+
     private mutating func crash(_ events: inout [SimEvent]) {
         helicoptersLeft -= 1
         for i in people.indices where people[i].state == .aboard || people[i].state == .boarding
@@ -265,6 +408,7 @@ public struct MissionSimulation {
         heli = HelicopterState(
             x: mission.base.x, y: mission.baseSurface,
             fuel: mission.fuel.capacity, durability: spec.maxDurability)
+        heli.water = mission.tankSpec.capacity
         boardTimer = 0
         disembarkTimer = 0
         phase = .flying

@@ -7,11 +7,12 @@
 
 Eigenes Hubschrauber-Rettungsspiel für den Mac (Swift, SpriteKit, SwiftUI): nach Naturkatastrophen Menschen von Dächern und Anhöhen holen und ins Lager bringen, bevor Wetter, Wasser oder Treibstoff dir einen Strich durch die Rechnung machen.
 
-**Status:** Version 0.1.0, erster spielbarer Stand (Einsatz 1 „Hochwasser im Flusstal“). Nur zum eigenen Gebrauch, unnotarisiert.
+**Status:** Version 0.2.0 (Einsatz 1 „Hochwasser im Flusstal“, Einsatz 2 „Waldbrand am Hang“ mit Löschwasser und Feuer). Nur zum eigenen Gebrauch, unnotarisiert.
 
 **Lizenz:** noch nicht festgelegt
 
 ![Einsatz 1: Rettung vom Dach](docs/bilder/flug-0.1.png)
+![Einsatz 2: Löschflug am Waldbrand](docs/bilder/loeschen-0.2.png)
 
 ## Starten
 
@@ -23,7 +24,7 @@ scripts/build.sh --run
 
 Das baut `build/Rotorwacht.app` (ad hoc signiert) und startet sie. Beim ersten Start einer unnotarisierten App: Rechtsklick auf die App, „Öffnen“.
 
-Tests (Swift Testing, 35 Tests für Flugphysik, Landen, Ein-/Aussteigen und eine Autopilot-Probe des echten Einsatzes):
+Tests (Swift Testing, 58 Tests für Flugphysik, Landen, Ein-/Aussteigen, Tank, Feuer und Autopilot-Proben beider Einsätze):
 
 ```bash
 scripts/test.sh
@@ -38,14 +39,16 @@ Mit einem vollständigen Toolchain (Xcode) geht auch `swift build` und `swift te
 | Pfeil links/rechts | beschleunigen, neigen, wenden |
 | Pfeil hoch/runter | steigen, sinken |
 | Esc | Pause |
-| Leertaste | Löschwasser (ab 0.2, noch ohne Wirkung) |
+| Leertaste | Löschwasser abwerfen (halten) |
 
 Landen: sanft aufsetzen (unter etwa 75 Einheiten Sinkgeschwindigkeit, wenig Seitenfahrt, gerade). Gelandet steigen Menschen von selbst ein; im Lager am rechten Rand steigen sie aus, und der Hubschrauber tankt und wird langsam repariert. Im Wasser landen kostet Haltbarkeit.
+
+Löschen: Den Tank füllst du im Tiefflug über See, Fluss oder Flut (und im Lager). Die Leertaste wirft Tropfen ab, die deine Fluggeschwindigkeit mitnehmen. Wasser löscht Flammen und macht den Boden nass; nasser Boden brennt nicht, ein Streifen vor der Flammenfront hält das Feuer auf. Feuer läuft bergauf und mit dem Wind schneller, bedroht Wartende, Rauch nimmt die Sicht und Hitze kostet Haltbarkeit.
 
 ## Aufbau
 
 - `Sources/RotorwachtCore`: Spiellogik ohne Oberfläche (Flugphysik, Regeln, Einsatzdaten). Von den Tests geprüft.
-- `Sources/RotorwachtCore/Missions/*.json`: Einsätze als Daten (Gelände, Rettungspunkte, Flut, Böen, Treibstoff).
+- `Sources/RotorwachtCore/Missions/*.json`: Einsätze als Daten (Gelände, Rettungspunkte, Flut, Seen, Brandzonen, Böen, Treibstoff, Tank).
 - `Sources/Rotorwacht`: die Mac-App (SpriteKit-Szene, SwiftUI-Menüs und Anzeige, synthetisierter Ton).
 - `scripts/`: `build.sh` (App bauen), `test.sh` (Tests).
 - `docs/planung/`: Spielkonzept und offene Fragen.

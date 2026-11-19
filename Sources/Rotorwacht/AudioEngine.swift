@@ -1,6 +1,6 @@
 import AVFoundation
 
-enum SFX { case ding, rescued, thump(Float), alarm, splash, warn, crash }
+enum SFX { case ding, rescued, thump(Float), alarm, splash, warn, crash, ignite, hiss }
 
 /// Synthesised sound: rotor, wind and short signal tones. No sound files, nothing to license.
 final class AudioEngine {
@@ -16,6 +16,12 @@ final class AudioEngine {
     var thrust: Float = 0
     var rotorSpeed: Float = 0
     var wind: Float = 0
+    /// Loudness of nearby fire (crackle and roar), 0...1.
+    var fire: Float = 0
+    /// 1 while water is being released, 0...1.
+    var spray: Float = 0
+    /// 1 while the tank is filling, 0...1.
+    var fill: Float = 0
     var enabled = true
 
     // Audio-thread state
@@ -24,6 +30,8 @@ final class AudioEngine {
     private var lp1: Float = 0, lp2: Float = 0, windLP: Float = 0
     private var rng: UInt32 = 0x1234_5678
     private var smoothRotor: Float = 0, smoothThrust: Float = 0, smoothWind: Float = 0
+    private var smoothFire: Float = 0, smoothSpray: Float = 0, smoothFill: Float = 0
+    private var fireLP: Float = 0, sprayLP: Float = 0, crackle: Float = 0
 
     init() {
         let out = engine.outputNode.outputFormat(forBus: 0)
@@ -62,6 +70,7 @@ final class AudioEngine {
         let dt = 1 / sampleRate
         let targetRotor = enabled ? rotorSpeed : 0
         let targetThrust = thrust, targetWind = enabled ? wind : 0
+        let targetFire = enabled ? fire : 0, targetSpray = enabled ? spray : 0, targetFill = enabled ? fill : 0
 
         lock.lock()
         var local = voices
@@ -72,6 +81,9 @@ final class AudioEngine {
             smoothRotor += (targetRotor - smoothRotor) * 0.0004
             smoothThrust += (targetThrust - smoothThrust) * 0.0006
             smoothWind += (targetWind - smoothWind) * 0.0004
+            smoothFire += (targetFire - smoothFire) * 0.0003
+            smoothSpray += (targetSpray - smoothSpray) * 0.002
+            smoothFill += (targetFill - smoothFill) * 0.002
 
             // Rotor: blade-pass chop (noise shaped by a pulse) plus a low engine tone.
             let chopHz = 10 + 7 * smoothThrust
@@ -88,6 +100,20 @@ final class AudioEngine {
             // Wind
             windLP += (n - windLP) * 0.02
             s += windLP * smoothWind * 0.6
+
+            // Fire: low roar plus sharp crackles at random moments.
+            if smoothFire > 0.001 {
+                fireLP += (n - fireLP) * 0.012
+                if abs(noise()) > 0.9985 - 0.004 * smoothFire { crackle = 1 }
+                crackle *= 0.9985
+                s += fireLP * smoothFire * 1.1 + n * crackle * crackle * smoothFire * 0.35
+            }
+            // Water: bright hiss while dropping, softer gurgle while filling.
+            if smoothSpray > 0.001 || smoothFill > 0.001 {
+                sprayLP += (n - sprayLP) * 0.25
+                let hiss = n - sprayLP
+                s += hiss * smoothSpray * 0.22 + (sprayLP * 0.5 + hiss * 0.2) * smoothFill * 0.14
+            }
 
             // One-shot voices
             for v in local.indices {
@@ -109,6 +135,8 @@ final class AudioEngine {
         case .splash: return 0.5
         case .warn: return 0.55
         case .crash: return 1.4
+        case .ignite: return 0.7
+        case .hiss: return 0.5
         }
     }
     private func done(_ v: Voice) -> Bool { v.t > duration(v.kind) }
@@ -142,6 +170,12 @@ final class AudioEngine {
             let f: Float = t < 0.25 ? 520 : 430
             let on = t < 0.22 || (t > 0.28 && t < 0.5)
             return on ? sinf(2 * .pi * f * t) * 0.15 : 0
+        case .ignite:
+            // Whoosh of a fire catching: noise swelling up, then fading.
+            let env = min(1, t / 0.15) * expf(-t * 4)
+            return n * env * 0.3 + sinf(2 * .pi * 70 * t) * env * 0.12
+        case .hiss:
+            return n * expf(-t * 7) * 0.12
         case .crash:
             return (sinf(2 * .pi * 42 * t) * expf(-t * 3) * 0.7 + n * expf(-t * 4) * 0.35)
         }

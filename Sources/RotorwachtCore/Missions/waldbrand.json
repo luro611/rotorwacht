@@ -1,0 +1,68 @@
+{
+  "id": "waldbrand",
+  "number": 2,
+  "hazard": "fire",
+  "tagline": "Löschen lernen",
+  "summary": "Das Feuer läuft bergauf auf Hütten und Türme zu. Fülle den Tank tief über dem See, lösche mit der Leertaste und halte die Flammen zurück. Rauch nimmt die Sicht.",
+  "title": "Waldbrand am Hang",
+  "briefing": "Am Hang brennt der Wald, und der Wind treibt das Feuer bergauf auf Hütten, Türme und Lichtungen zu, auf denen Menschen warten. Fülle den Tank, indem du tief über See und Fluss fliegst, und halte die Leertaste, um Löschwasser abzuwerfen. Nasser Boden brennt nicht: ein Streifen Wasser vor den Flammen hält sie auf. Rauch nimmt die Sicht, Hitze kostet Haltbarkeit.",
+  "world": { "width": 7200, "ceiling": 950 },
+  "terrain": [
+    [0, 560], [400, 520], [900, 450], [1400, 400], [1900, 330], [2300, 300],
+    [2550, 230], [2650, 150], [2850, 150], [2950, 240], [3300, 290], [3800, 250],
+    [4300, 200], [4700, 120], [5000, 60], [5100, 10], [5300, -40], [5700, -40],
+    [5900, 0], [6100, 60], [6300, 130], [7000, 130], [7200, 180]
+  ],
+  "base": { "x": 6650, "width": 420 },
+  "rescuePoints": [
+    { "id": "huette",   "name": "Berghütte",     "kind": "roof",   "x": 1000, "width": 150, "top": 510, "people": 3 },
+    { "id": "turm",     "name": "Aussichtsturm", "kind": "tower",  "x": 1600, "width": 120, "top": 490, "people": 3 },
+    { "id": "forst",    "name": "Forsthaus",     "kind": "roof",   "x": 2250, "width": 150, "top": 370, "people": 4 },
+    { "id": "lichtung", "name": "Lichtung",      "kind": "island", "x": 3050, "width": 170, "top": 276, "people": 2 },
+    { "id": "alm",      "name": "Almhütte",      "kind": "roof",   "x": 3600, "width": 140, "top": 335, "people": 4 },
+    { "id": "zelt",     "name": "Zeltplatz",     "kind": "island", "x": 4150, "width": 200, "top": 232, "people": 5 },
+    { "id": "hochsitz", "name": "Hochsitz",      "kind": "tower",  "x": 4500, "width": 110, "top": 285, "people": 3 }
+  ],
+  "helicopters": 3,
+  "capacity": 12,
+  "timeLimit": 480,
+  "fuel": { "capacity": 100, "burnPerSecond": 0.5, "refuelPerSecond": 12 },
+  "flood": { "startLevel": -100, "risePerSecond": 0, "maxLevel": -100 },
+  "tank": { "capacity": 100, "fillPerSecond": 32, "dropPerSecond": 16 },
+  "lakes": [
+    { "name": "Bergsee",  "x0": 2613, "x1": 2884, "level": 175 },
+    { "name": "Stausee",  "x0": 5064, "x1": 5988, "level": 25 }
+  ],
+  "fire": {
+    "cellWidth": 40,
+    "burnTime": 30,
+    "spreadRate": 0.15,
+    "zones": [
+      { "x0": 300,  "x1": 2590, "fuel": 1.0 },
+      { "x0": 2900, "x1": 5050, "fuel": 1.0 }
+    ],
+    "ignitions": [
+      { "time": 12, "x": 4830, "intensity": 0.7 },
+      { "time": 12, "x": 4870, "intensity": 0.7 },
+      { "time": 12, "x": 4910, "intensity": 0.7 },
+      { "time": 12, "x": 4950, "intensity": 0.7 },
+      { "time": 12, "x": 4990, "intensity": 0.7 },
+      { "time": 50, "x": 1960, "intensity": 0.6 },
+      { "time": 50, "x": 2000, "intensity": 0.6 },
+      { "time": 50, "x": 2040, "intensity": 0.6 },
+      { "time": 120, "x": 3260, "intensity": 0.6 },
+      { "time": 120, "x": 3300, "intensity": 0.6 },
+      { "time": 120, "x": 3340, "intensity": 0.6 }
+    ]
+  },
+  "wind": {
+    "base": -30,
+    "gusts": [
+      { "start": 40,  "duration": 10, "strength": -90 },
+      { "start": 110, "duration": 10, "strength": 100 },
+      { "start": 190, "duration": 12, "strength": -110 },
+      { "start": 280, "duration": 10, "strength": 90 },
+      { "start": 360, "duration": 12, "strength": -100 }
+    ]
+  }
+}

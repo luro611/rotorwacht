@@ -12,6 +12,9 @@ final class AppModel: ObservableObject {
     @Published var loadError: String?
     private(set) var scene: GameScene?
     private(set) var mission: Mission?
+    /// Which mission is running or was played last (for "Noch einmal").
+    private(set) var missionID = MissionLibrary.all[0]
+    @Published var missions: [Mission] = []
 
     init() {
         InputController.shared.start()
@@ -20,17 +23,24 @@ final class AppModel: ObservableObject {
             Task { @MainActor in self?.togglePause() }
         }
         NotificationCenter.default.addObserver(forName: NSApplication.didResignActiveNotification, object: nil, queue: .main) { [weak self] _ in
-            Task { @MainActor in if self?.screen == .playing { self?.setPaused(true) } }
+            Task { @MainActor in if !DebugShots.active, self?.screen == .playing { self?.setPaused(true) } }
         }
     }
 
-    func loadMission() -> Mission? {
-        do { return try MissionLibrary.load("hochwasser") }
+    func loadMission(_ id: String) -> Mission? {
+        do { return try MissionLibrary.load(id) }
         catch { loadError = "Einsatzdatei nicht gefunden: \(error)"; return nil }
     }
 
-    func startMission() {
-        guard let m = loadMission() else { return }
+    /// Loads the missions for the start menu.
+    func loadMissionList() {
+        if missions.isEmpty { missions = MissionLibrary.all.compactMap { loadMission($0) } }
+    }
+
+    func startMission(_ id: String? = nil) {
+        let id = id ?? missionID
+        guard let m = loadMission(id) else { return }
+        missionID = id
         mission = m
         let s = GameScene(mission: m)
         s.onHUD = { [weak self] snap in

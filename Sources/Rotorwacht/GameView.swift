@@ -14,7 +14,7 @@ struct GameView: View {
             HUDView(hud: model.hud)
                 .allowsHitTesting(false)
             if model.paused { PauseOverlay() }
-            if model.screen == .result, let r = model.result { ResultOverlay(result: r) }
+            if model.screen == .result, let r = model.result { ResultOverlay(result: r, mission: model.mission) }
         }
         .background(Color.black)
     }
@@ -24,13 +24,14 @@ private struct Bar: View {
     let label: String
     let value: Double
     var warnBelow = 0.25
+    var tint: Color? = nil
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
             Text(label.uppercased()).font(Theme.mono(10)).tracking(1.4).foregroundColor(Theme.muted)
             ZStack(alignment: .leading) {
                 Rectangle().fill(Theme.soft)
                 GeometryReader { g in
-                    Rectangle().fill(value < warnBelow ? Theme.accentStrong : Theme.accent)
+                    Rectangle().fill(value < warnBelow ? Theme.accentStrong : (tint ?? Theme.accent))
                         .frame(width: g.size.width * CGFloat(max(0, min(1, value))))
                 }
             }
@@ -67,6 +68,7 @@ struct HUDView: View {
                     VStack(alignment: .leading, spacing: 10) {
                         Bar(label: "Treibstoff", value: hud.fuel)
                         Bar(label: "Haltbarkeit", value: hud.durability)
+                        Bar(label: hud.filling ? "Wasser · füllt" : "Wasser", value: hud.water, warnBelow: 0.12, tint: Theme.ink)
                     }
                 }
                 panel {
@@ -123,6 +125,9 @@ struct MiniMap: View {
                 ctx.fill(Path(ellipseIn: CGRect(x: x(p.x) - 5, y: midY - 5, width: 10, height: 10)), with: .color(col))
                 ctx.draw(Text("\(p.waiting)").font(Theme.mono(9)).foregroundColor(Theme.muted), at: CGPoint(x: x(p.x), y: midY - 13))
             }
+            for fx in hud.fires {
+                ctx.fill(Path(CGRect(x: x(fx) - 2, y: midY - 9, width: 4, height: 7)), with: .color(Theme.accentStrong))
+            }
             var tri = Path()
             let hx = x(hud.heliX)
             tri.move(to: CGPoint(x: hx, y: midY + 3)); tri.addLine(to: CGPoint(x: hx - 5, y: midY + 12)); tri.addLine(to: CGPoint(x: hx + 5, y: midY + 12)); tri.closeSubpath()
@@ -161,6 +166,8 @@ struct PauseOverlay: View {
 struct ResultOverlay: View {
     @EnvironmentObject var model: AppModel
     let result: MissionResult
+    var mission: Mission? = nil
+    private var fireMission: Bool { mission?.isFire ?? false }
 
     private var headline: (String, String) {
         switch result.outcome {
@@ -184,7 +191,7 @@ struct ResultOverlay: View {
         ZStack {
             Color.black.opacity(0.45)
             VStack(alignment: .leading, spacing: 12) {
-                Eyebrow("Einsatz 1 · Hochwasser im Flusstal")
+                Eyebrow("Einsatz \(mission?.number ?? 1) · \(mission?.title ?? "Hochwasser im Flusstal")")
                 AccentTitle(plain: headline.0, accent: headline.1, size: 44)
                 HStack(spacing: 4) {
                     ForEach(0..<3, id: \.self) { i in
@@ -194,14 +201,14 @@ struct ResultOverlay: View {
                 }
                 VStack(spacing: 0) {
                     row("Gerettet", "\(result.rescued) von \(result.total)")
-                    row("Vom Wasser erreicht", "\(result.lost)")
-                    row("Verletzt oder nicht abgeholt", "\(result.injured)")
+                    if !fireMission { row("Vom Wasser erreicht", "\(result.lost)") }
+                    row(fireMission ? "Vom Feuer verletzt oder nicht abgeholt" : "Verletzt oder nicht abgeholt", "\(result.injured)")
                     row("Hubschrauber verloren", "\(result.helicoptersLost)")
                     row("Zeit", String(format: "%d:%02d", Int(result.timeUsed) / 60, Int(result.timeUsed) % 60))
                 }
                 .padding(.top, 4)
                 HStack(spacing: 10) {
-                    Button("Noch einmal") { model.startMission() }
+                    Button("Noch einmal") { model.startMission(model.missionID) }
                         .buttonStyle(PrimaryButtonStyle()).keyboardShortcut(.defaultAction)
                     Button("Zum Start") { model.backToStart() }
                         .buttonStyle(QuietButtonStyle())

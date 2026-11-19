@@ -13,7 +13,7 @@ final class InputController {
 
     var pilot: PilotInput {
         if let s = DebugShots.script { return s(DebugShots.elapsed) }
-        return PilotInput(left: left, right: right, up: up, down: down)
+        return PilotInput(left: left, right: right, up: up, down: down, drop: space)
     }
 
     func start() {

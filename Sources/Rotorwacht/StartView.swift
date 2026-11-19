@@ -1,4 +1,5 @@
 import SwiftUI
+import RotorwachtCore
 
 struct Siegel: View {
     @Environment(\.colorScheme) private var scheme
@@ -13,6 +14,14 @@ struct Siegel: View {
         }
         .frame(width: size, height: size)
         .accessibilityLabel("luro HOMELAB")
+    }
+}
+
+struct DefaultActionIf: ViewModifier {
+    let on: Bool
+    init(_ on: Bool) { self.on = on }
+    func body(content: Content) -> some View {
+        if on { content.keyboardShortcut(.defaultAction) } else { content }
     }
 }
 
@@ -31,12 +40,15 @@ struct StartView: View {
                     .multilineTextAlignment(.center).frame(maxWidth: 520).fixedSize(horizontal: false, vertical: true)
             }
 
-            missionCard.padding(.top, 20)
+            HStack(alignment: .top, spacing: 20) {
+                ForEach(model.missions, id: \.id) { m in missionCard(m) }
+            }
+            .padding(.top, 20)
 
             HStack(spacing: 28) {
                 key("← → ↑ ↓", "Fliegen")
                 key("Esc", "Pause")
-                key("Leertaste", "Löschwasser (ab 0.2)")
+                key("Leertaste", "Löschwasser")
             }
             .padding(.top, 16)
 
@@ -45,24 +57,34 @@ struct StartView: View {
         }
         .padding(.horizontal, 32)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .onAppear { model.loadMissionList() }
     }
 
-    private var missionCard: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            Eyebrow("Einsatz 1 · Einführung")
-            AccentTitle(plain: "Hochwasser im ", accent: "Flusstal", size: 32)
-            Text("Der Fluss steigt weiter. Niedrige Dächer gehen zuerst unter, Böen drücken dich vom Kurs. Zwölf Plätze, drei Hubschrauber.")
+    /// Title with the last word as the accent word, as on the website.
+    private func split(_ title: String) -> (String, String) {
+        guard let i = title.lastIndex(of: " ") else { return ("", title) }
+        return (String(title[...i]), String(title[title.index(after: i)...]))
+    }
+
+    private func missionCard(_ m: Mission) -> some View {
+        let first = m.id == model.missions.first?.id
+        let (plain, accent) = split(m.title)
+        return VStack(alignment: .leading, spacing: 10) {
+            Eyebrow("Einsatz \(m.number ?? 1) · \(m.tagline ?? "")")
+            AccentTitle(plain: plain, accent: accent, size: 30)
+            Text(m.summary ?? m.briefing)
                 .font(Theme.text(14)).foregroundColor(Theme.muted).fixedSize(horizontal: false, vertical: true)
+            Spacer(minLength: 0)
             HStack {
-                Button("Einsatz starten") { model.startMission() }
+                Button("Einsatz starten") { model.startMission(m.id) }
                     .buttonStyle(PrimaryButtonStyle())
-                    .keyboardShortcut(.defaultAction)
-                Text("Eingabetaste").font(Theme.mono(11)).foregroundColor(Theme.muted)
+                    .modifier(DefaultActionIf(first))
+                if first { Text("Eingabetaste").font(Theme.mono(11)).foregroundColor(Theme.muted) }
             }
             .padding(.top, 6)
         }
         .padding(22)
-        .frame(width: 520, alignment: .leading)
+        .frame(width: 440, height: 250, alignment: .leading)
         .background(Theme.surface)
         .overlay(RoundedRectangle(cornerRadius: Theme.radius).stroke(Theme.line, lineWidth: 1))
         .clipShape(RoundedRectangle(cornerRadius: Theme.radius))

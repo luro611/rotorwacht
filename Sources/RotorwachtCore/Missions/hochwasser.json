@@ -1,5 +1,9 @@
 {
   "id": "hochwasser",
+  "number": 1,
+  "hazard": "flood",
+  "tagline": "Einführung",
+  "summary": "Der Fluss steigt weiter. Niedrige Dächer gehen zuerst unter, Böen drücken dich vom Kurs. Zwölf Plätze, drei Hubschrauber.",
   "title": "Hochwasser im Flusstal",
   "briefing": "Der Fluss ist über die Ufer getreten und steigt weiter. Auf Dächern und kleinen Anhöhen warten Menschen. Hole sie ab und bringe sie ins Lager am rechten Rand. Böen setzen dem Hubschrauber zu, und niedrige Dächer gehen zuerst unter.",
   "world": { "width": 7200, "ceiling": 900 },

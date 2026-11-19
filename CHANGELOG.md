@@ -2,6 +2,19 @@
 
 Versionen: 0.x bis zum ersten fertigen Stand, dann 1.0.0.
 
+## [0.2.0] – 2026-11-19
+
+Löschen und Waldbrand.
+
+- **Löschwasser auf der Leertaste:** Tank mit Füllanzeige („Wasser“), Füllen im Tiefflug (unter etwa 55 Einheiten) über Fluss, See oder Flut sowie im Lager, Abwurf als einzelne Tropfen, die die Fluggeschwindigkeit mitnehmen und dann fallen (Trägheit, Wind).
+- **Feuer als Spielmechanik:** Brände breiten sich Zelle für Zelle über brennbares Gelände aus, bergauf und mit dem Wind schneller, brennen aus und hinterlassen Asche. Wasser kühlt und macht den Boden nass; nasser Boden brennt nicht, ein Wasserstreifen vor der Flammenfront hält sie auf.
+- Feuer bedroht Rettungspunkte: Wartende werden erst gewarnt, nach gut zehn Sekunden Nähe zu den Flammen verletzt. Rauch nimmt die Sicht, Hitze kostet Haltbarkeit.
+- **Einsatz 2 „Waldbrand am Hang“** (24 Menschen, zwei Seen, drei Brandherde, Wind bergauf) als `waldbrand.json`. Neue Einsatzfelder (Tank, Seen, Brennzonen, Zündungen) sind optional, Einsatz 1 bleibt unverändert.
+- **Einsatzauswahl** im Startmenü (Einsatz 1 und 2), Wertung und Anzeige je Einsatz.
+- Grafik: Feuer, Rauch, Wasserdampf und Tropfen als Partikel, Brandspuren am Boden, Rauch- und Hitzeschleier; Seen mit Wellen. Ton: Feuerprasseln, Zischen beim Abwurf, Plätschern beim Füllen, Zündgeräusch.
+- Anzeige: Wasserbalken, Brandmarken in der Übersichtsleiste.
+- 23 neue Tests (Tank, Abwurf, Ausbreitung, Löschen, Wind, Hang, Gefahr für Wartende, Hitze, Rauch, Laden von Einsatz 2, Autopilot-Probe).
+
 ## [0.1.0] – 2026-11-19
 
 Erster spielbarer Stand.

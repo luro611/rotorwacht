@@ -209,7 +209,8 @@ enum Art {
                 let wx = Double(gx) + rng.range(-10, 10)
                 let near = mission.rescuePoints.contains { abs($0.x - wx) < $0.width / 2 + 60 }
                 let inCamp = abs(wx - mission.base.x) < mission.base.width / 2 + 40
-                if !near && !inCamp && rng.next() > 0.45 && wx > 40 && wx < mission.world.width - 40 {
+                let dry = mission.waterLevel(from: wx, to: wx, flood: -1000) <= mission.groundHeight(at: wx)
+                if dry && !near && !inCamp && rng.next() > 0.45 && wx > 40 && wx < mission.world.width - 40 {
                     let gy = CGFloat(mission.groundHeight(at: wx)) - yMin
                     let size = CGFloat(rng.range(34, 66))
                     drawTree(ctx, x: CGFloat(wx) - x0, y: gy - 3, size: size, conifer: rng.next() > 0.55, rng: &rng)
@@ -478,6 +479,40 @@ enum Art {
         texture(CGSize(width: 8, height: height)) { ctx in
             fillVertical(ctx, CGRect(x: 0, y: 0, width: 8, height: height),
                          [(0, 0x5f8d99, 0.72), (0.2, 0x4b7685, 0.78), (1, 0x2a4552, 0.9)])
+        }
+    }
+}
+
+// MARK: - Fire and water (0.2)
+
+extension Art {
+    /// A flame tongue: bright core, orange body, soft edge. Tinted per particle.
+    static func flame() -> SKTexture {
+        texture(CGSize(width: 40, height: 56)) { ctx in
+            softCircle(ctx, CGPoint(x: 20, y: 18), 20, 0xe8480f, 0.95)
+            softCircle(ctx, CGPoint(x: 20, y: 26), 13, 0xff8a1f, 0.9)
+            softCircle(ctx, CGPoint(x: 20, y: 30), 6, 0xffcf5a, 0.8)
+        }
+    }
+
+    /// Ash and charred ground under a burnt stretch.
+    static func scorch(width: CGFloat) -> SKTexture {
+        texture(CGSize(width: width, height: 26)) { ctx in
+            ctx.saveGState()
+            ctx.translateBy(x: width / 2, y: 6)
+            ctx.scaleBy(x: width / 26, y: 1)
+            softCircle(ctx, .zero, 13, 0x15110f, 0.8)
+            ctx.restoreGState()
+        }
+    }
+
+    /// A droplet of extinguishing water.
+    static func waterDrop() -> SKTexture {
+        texture(CGSize(width: 8, height: 12)) { ctx in
+            ctx.setFillColor(c(0xcfe6f2, 0.95))
+            ctx.fillEllipse(in: CGRect(x: 1, y: 0.5, width: 6, height: 8))
+            ctx.setFillColor(c(0xeaf5fb, 0.95))
+            ctx.fillEllipse(in: CGRect(x: 2.4, y: 6, width: 3.2, height: 5))
         }
     }
 }

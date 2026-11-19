@@ -78,7 +78,7 @@ Jeder Einsatz in drei Stufen (leicht, mittel, schwer). Sterne je Einsatz für ge
 - Steigende Flut und Böen; noch kein Feuer und kein Löschwasser.
 - Einfache, aber schon hochauflösende Platzhaltergrafik mit Parallax; Grundgeräusche.
 
-Danach: 0.2 Löschen und Waldbrand, 0.3 Grafik und Effekte ausbauen, 0.4 Nacht, Gewitter, Einsatzkarte, 0.5 restliche Einsätze, 1.0 alle sechs Einsätze in drei Stufen.
+Danach: 0.2 Löschen und Waldbrand (gebaut 19.11.2026), 0.3 Grafik und Effekte ausbauen, 0.4 Nacht, Gewitter, Einsatzkarte, 0.5 restliche Einsätze, 1.0 alle sechs Einsätze in drei Stufen.
 
 ## Entscheidungen (freigegeben 19.11.2026)
 
