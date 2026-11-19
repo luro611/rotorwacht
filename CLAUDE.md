@@ -4,9 +4,17 @@ Eigenes Hubschrauber-Rettungsspiel für den Mac, nur zum eigenen Gebrauch. Inspi
 
 ## Stand
 
-- **Phase:** Bau von Version 0.1. Spielkonzept `docs/planung/02 Spielkonzept.md` am 19.11.2026 freigegeben (E1–E4 wie vorgeschlagen).
-- Nächster Schritt: Xcode-Projekt anlegen und Umfang 0.1 bauen (Abschnitt „Umfang Version 0.1“ im Konzept).
+- **Phase:** Version 0.1.0 gebaut (19.11.2026): Einsatz 1 „Hochwasser im Flusstal“ von Start bis Wertung spielbar, 35 Tests grün. Tag `v0.1.0` noch nicht gesetzt (erst nach Rückfrage bei Lutz).
+- Nächster Schritt: 0.2 Löschen und Waldbrand (Leertaste, Wassertank, Feuer, Rauch), siehe `docs/planung/02 Spielkonzept.md`.
 - Bis 19.11.2026 hieß das Projekt „Wühltisch“ (erster Entwurf mit Kaufhaus-Thema, Missverständnis: gemeint war Choplifter, nicht „Shoplifter“).
+
+## Bauen und Testen
+
+- `scripts/build.sh [--run]` baut `build/Rotorwacht.app` mit `swiftc` (nur Command Line Tools, kein Xcode). `scripts/test.sh` führt die Tests (Swift Testing) aus.
+- **Warum nicht `swift build`:** Die installierte Toolchain (CLT 27.2) hat eine unpassende Paketverwaltung (`PackageDescription` lässt sich nicht linken, XCBuild bricht ab), `swift build`/`swift test` laufen hier nicht. `Package.swift` liegt trotzdem bei und sollte mit Xcode oder einer heilen Toolchain funktionieren (nicht geprüft). Kein XCTest in den CLT, daher Swift Testing.
+- Code: `Sources/RotorwachtCore` (Logik, ohne UI, getestet), `Sources/Rotorwacht` (App). Einsätze als JSON in `Sources/RotorwachtCore/Missions/`.
+- Koordinaten: x nach rechts, y nach oben, Einheiten = Bildpunkte der 1280x720-Szene. Das Lager steht rechts.
+- Entwicklungshilfe: `ROTORWACHT_SHOTS=<Ordner>` startet den Einsatz mit Autopilot und legt Bildschirmfotos ab (`DebugShots.swift`).
 
 ## Planung
 

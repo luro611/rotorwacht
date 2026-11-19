@@ -1,0 +1,40 @@
+{
+  "id": "hochwasser",
+  "title": "Hochwasser im Flusstal",
+  "briefing": "Der Fluss ist über die Ufer getreten und steigt weiter. Auf Dächern und kleinen Anhöhen warten Menschen. Hole sie ab und bringe sie ins Lager am rechten Rand. Böen setzen dem Hubschrauber zu, und niedrige Dächer gehen zuerst unter.",
+  "world": { "width": 7200, "ceiling": 900 },
+  "terrain": [
+    [0, 420], [300, 380], [700, 200], [1000, 60], [1500, 30], [1900, 32],
+    [2150, 125], [2400, 110], [2700, 30], [3300, 28], [3800, 32],
+    [4150, 150], [4450, 160], [4800, 34], [5300, 30], [5700, 40],
+    [6000, 200], [6250, 300], [7000, 300], [7200, 360]
+  ],
+  "base": { "x": 6620, "width": 420 },
+  "rescuePoints": [
+    { "id": "hof",     "name": "Bauernhof",  "kind": "roof",   "x": 1250, "width": 150, "top": 100, "people": 3 },
+    { "id": "scheune", "name": "Scheune",    "kind": "roof",   "x": 1700, "width": 150, "top": 95,  "people": 4 },
+    { "id": "insel",   "name": "Anhöhe",     "kind": "island", "x": 2200, "width": 160, "top": 124, "people": 4 },
+    { "id": "schule",  "name": "Schule",     "kind": "roof",   "x": 2950, "width": 150, "top": 140, "people": 2 },
+    { "id": "laden",   "name": "Dorfladen",  "kind": "roof",   "x": 3550, "width": 130, "top": 110, "people": 3 },
+    { "id": "huegel",  "name": "Hügel",      "kind": "island", "x": 4300, "width": 220, "top": 160, "people": 5 },
+    { "id": "mehr",    "name": "Mehrfamilienhaus", "kind": "roof", "x": 4950, "width": 160, "top": 190, "people": 4 },
+    { "id": "turm",    "name": "Wasserturm", "kind": "tower",  "x": 5400, "width": 120, "top": 240, "people": 3 }
+  ],
+  "helicopters": 3,
+  "capacity": 12,
+  "timeLimit": 420,
+  "fuel": { "capacity": 100, "burnPerSecond": 0.55, "refuelPerSecond": 12 },
+  "flood": { "startLevel": 45, "risePerSecond": 0.3, "maxLevel": 200 },
+  "wind": {
+    "base": 0,
+    "gusts": [
+      { "start": 25,  "duration": 8,  "strength": 130 },
+      { "start": 70,  "duration": 10, "strength": -150 },
+      { "start": 120, "duration": 8,  "strength": 170 },
+      { "start": 170, "duration": 12, "strength": -160 },
+      { "start": 220, "duration": 10, "strength": 190 },
+      { "start": 270, "duration": 12, "strength": -180 },
+      { "start": 330, "duration": 10, "strength": 200 }
+    ]
+  }
+}
