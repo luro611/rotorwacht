@@ -1,6 +1,6 @@
-# Wühltisch
+# Rotorwacht
 
-Eigenes Retro-Arcade-Spiel für den Mac (Swift/SpriteKit), mit eigenen Figuren, Grafiken, Levels und Musik.
+Eigenes Hubschrauber-Rettungsspiel für den Mac (Swift/SpriteKit): nach Naturkatastrophen Menschen retten, Brände löschen, Wetter trotzen.
 
 **Status:** in Planung
 
