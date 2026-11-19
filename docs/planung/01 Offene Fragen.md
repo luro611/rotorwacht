@@ -2,6 +2,8 @@
 
 Vor dem ersten Code zu klären. Lutz beschreibt das Spielprinzip aus seiner Erinnerung; daraus entsteht ein eigenes Spielkonzept.
 
+Vorschläge zu allen Fragen stehen jetzt in `02 Spielkonzept.md` (19.11.2026). Eine Frage gilt als erledigt, wenn Lutz das Konzept freigibt.
+
 ## Spielprinzip
 
 1. Worum geht es in einem Satz? Was ist das Ziel einer Runde?

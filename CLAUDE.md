@@ -12,6 +12,7 @@ Eigenes Retro-Arcade-Spiel für den Mac, nur zum eigenen Gebrauch. Inspiriert vo
 Liegt unter `docs/planung/`:
 
 - `01 Offene Fragen.md`: Fragen zu Spielprinzip, Steuerung, Grafikstil und Technik
+- `02 Spielkonzept.md`: Vorschlag vom 19.11.2026 (Schnäppchenjagd im Schlussverkauf), Entscheidungen E1–E4 offen
 
 ## Projekt-Eckdaten
 
