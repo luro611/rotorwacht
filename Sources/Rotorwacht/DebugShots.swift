@@ -38,7 +38,7 @@ enum DebugShots {
             model.debugSeedScores(for: missionID)
             model.scoreMission = missionID
             for (name, view) in [("result", AnyView(ResultOverlay(result: r, mission: model.loadMission(missionID)))), ("pause", AnyView(PauseOverlay())),
-                                 ("scores", AnyView(HighScoreSheet()))] {
+                                 ("scores", AnyView(HighScoreSheet())), ("practice", AnyView(PracticeSheet()))] {
                 let content = ZStack { Color.gray; view }.environmentObject(model).frame(width: 1280, height: 720)
                 let renderer = ImageRenderer(content: content)
                 renderer.scale = 1
@@ -48,7 +48,10 @@ enum DebugShots {
             }
         }
         DispatchQueue.main.asyncAfter(deadline: .now() + 3.0) {
-            MainActor.assumeIsolated { model.startMission(missionID) }
+            MainActor.assumeIsolated {
+                if let c = ProcessInfo.processInfo.environment["ROTORWACHT_PRACTICE"] { model.practiceCourse = c; model.startPractice() }
+                else { model.startMission(missionID) }
+            }
         }
         let defaults: [String: [Double]] = [
             "hochwasser": [4, 14, 26, 60, 95],

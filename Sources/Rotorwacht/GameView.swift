@@ -57,6 +57,7 @@ struct HUDView: View {
     let hud: HUDSnapshot
 
     private func time(_ s: Double) -> String {
+        if s > 50_000 { return "∞" }
         let t = Int(s.rounded(.up))
         return String(format: "%d:%02d", t / 60, t % 60)
     }
@@ -74,7 +75,7 @@ struct HUDView: View {
                 panel {
                     HStack(spacing: 18) {
                         Stat(label: "An Bord", value: "\(hud.aboard)/\(hud.capacity)")
-                        Stat(label: "Hubschrauber", value: "\(hud.helicoptersLeft)/\(hud.helicoptersTotal)")
+                        Stat(label: "Hubschrauber", value: hud.helicoptersTotal < 0 ? "∞" : "\(hud.helicoptersLeft)/\(hud.helicoptersTotal)")
                     }
                 }
                 Spacer(minLength: 8)

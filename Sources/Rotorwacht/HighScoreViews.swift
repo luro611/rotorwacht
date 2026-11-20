@@ -95,3 +95,53 @@ struct NameField: View {
         }
     }
 }
+
+/// Practice mode: pick a course, level and optionally slower hazards.
+struct PracticeSheet: View {
+    @EnvironmentObject var model: AppModel
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            Eyebrow("Üben · ohne Wertung")
+            AccentTitle(plain: "Gefahren ", accent: "üben", size: 34)
+            Text("Unbegrenzt Hubschrauber, nach einem Verlust geht es sofort am Start weiter. Kein Punktestand, keine Bestenliste, der Fortschritt bleibt unverändert.")
+                .font(Theme.text(12)).foregroundColor(Theme.muted).fixedSize(horizontal: false, vertical: true)
+            VStack(spacing: 0) {
+                ForEach(Practice.courses, id: \.id) { c in
+                    let on = model.practiceCourse == c.id
+                    Button { model.practiceCourse = c.id } label: {
+                        HStack(alignment: .firstTextBaseline, spacing: 10) {
+                            Text(c.title).font(on ? Theme.textMedium(14) : Theme.text(14)).foregroundColor(on ? Theme.accentStrong : Theme.ink)
+                            Spacer()
+                            Text(c.hint).font(Theme.text(11)).foregroundColor(Theme.muted).lineLimit(1)
+                        }
+                        .padding(.vertical, 7).padding(.horizontal, 6)
+                        .background(on ? Theme.soft : Color.clear)
+                        .overlay(Rectangle().fill(Theme.line).frame(height: 1), alignment: .bottom)
+                        .contentShape(Rectangle())
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
+            HStack(spacing: 10) {
+                Eyebrow("Stufe")
+                ForEach(Difficulty.allCases, id: \.self) { l in
+                    Button(l.label) { model.difficulty = l }.buttonStyle(LevelButtonStyle(selected: model.difficulty == l))
+                }
+                Spacer()
+                Button(model.practiceSlow ? "Langsamer: an" : "Langsamer: aus") { model.practiceSlow.toggle() }
+                    .buttonStyle(LevelButtonStyle(selected: model.practiceSlow))
+                    .help("Shutter, Blitze, Salven, Lava und Lawinen langsamer und milder")
+            }
+            HStack {
+                Button("Schließen") { model.showPractice = false }.buttonStyle(QuietButtonStyle()).keyboardShortcut(.cancelAction)
+                Spacer()
+                Button("Üben starten") { model.startPractice() }.buttonStyle(PrimaryButtonStyle()).keyboardShortcut(.defaultAction)
+            }
+            .padding(.top, 6)
+        }
+        .padding(26)
+        .frame(width: 600)
+        .background(Theme.bg)
+    }
+}

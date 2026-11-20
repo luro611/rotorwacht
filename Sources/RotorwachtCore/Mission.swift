@@ -149,6 +149,9 @@ public struct Mission: Codable, Equatable, Sendable {
     public var outposts: [Outpost]? = nil
     /// Underpasses and tunnels that must be flown through.
     public var passages: [Passage]? = nil
+    /// Practice mode (set by `practiced`): unlimited helicopters, restart at `startX`.
+    public var practice: Bool? = nil
+    public var startX: Double? = nil
     /// Landscape style for the picture: "valley" (default), "coast", "town", "volcano", "alpine".
     public var look: String? = nil
 

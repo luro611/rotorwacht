@@ -35,7 +35,7 @@ scripts/build.sh --run
 
 Das baut `build/Rotorwacht.app` (ad hoc signiert) und startet sie. Beim ersten Start einer unnotarisierten App: Rechtsklick auf die App, „Öffnen“.
 
-Tests (Swift Testing, 149 Tests für Flugphysik, Landen, Ein-/Aussteigen, Tank, Feuer, Blitz, Trümmer, Lava, Lawinen, Seilwinde, Durchfahrten, Bestenliste, Fortschritt und Autopilot-Proben aller sechs Einsätze auf allen Stufen):
+Tests (Swift Testing, 154 Tests für Flugphysik, Landen, Ein-/Aussteigen, Tank, Feuer, Blitz, Trümmer, Lava, Lawinen, Seilwinde, Durchfahrten, Übungsmodus, Bestenliste, Fortschritt und Autopilot-Proben aller sechs Einsätze auf allen Stufen):
 
 ```bash
 scripts/test.sh
@@ -63,6 +63,8 @@ Neue Gefahren: Blitze kündigen sich mit rotem Strahl und Kreis an, dann zur Sei
 Durchfahrten (Einsätze 1, 4, 5, 6): Unter Brücken und durch Tunnel musst du hindurch, darüber geht es nicht. Die Decke nicht berühren, nicht von der Seite hineinfliegen. Tunnel haben Shutter, die im Takt auf- und zugehen: **grün** offen, **gelb blinkend** mit Klacken kurz vor dem Schließen, **rot** zu. Zwischen den Toren darfst du warten, aber wer im Tor getroffen wird oder stecken bleibt, verliert diesen Hubschrauber. Im Tunnel leuchtet dein Scheinwerfer.
 
 Bestenliste: Je Einsatz und Stufe die zehn besten Ergebnisse, im Startmenü (Knopf neben den Stufen) und auf der Wertungskarte. Den Namen gibst du beim ersten Eintrag an, später änderst du ihn in den Einstellungen (Cmd+,).
+
+Üben: Der Knopf „Üben“ im Startmenü bietet neun kurze Strecken (Unterführung, Tunnel, Galerie, Brücke, Blitze, Trümmer, Lava, Lawinen mit Seilwinde, Löschen) mit Stufenwahl und „Langsamer“. Unbegrenzt Hubschrauber, sofort weiter am Start, keine Wertung und keine Bestenliste.
 
 Seilwinde (Einsatz 6): Auf Felsvorsprüngen nicht landen. Schwebe ruhig über dem Vorsprung, nicht höher als das Seil (Pfeil runter holt es näher): Die Winde zieht eine Person nach der anderen hoch. Zu viel Bewegung lässt das Seil die Person wieder verlieren.
 

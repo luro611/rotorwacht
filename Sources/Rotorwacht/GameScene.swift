@@ -1029,7 +1029,7 @@ final class GameScene: SKScene {
         snap.lost = sim.lostCount + sim.injuredCount
         snap.timeLeft = sim.timeLeft
         snap.helicoptersLeft = sim.helicoptersLeft
-        snap.helicoptersTotal = mission.helicopters
+        snap.helicoptersTotal = mission.isPractice ? -1 : mission.helicopters
         snap.wind = sim.wind
         snap.floodLevel = sim.floodLevel
         snap.heliX = h.x

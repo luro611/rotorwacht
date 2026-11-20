@@ -48,6 +48,12 @@ Hubschrauberkörper: Breite `±36`, Höhe `heliHeight = 70` (Kufen bis Rotorkopf
 ### Einbau in die Einsätze (ohne Geländeänderung)
 Hochwasser: Brücke über Wasser bei 3150–3400 (Decke 350, über dem höchsten Wasser 200; die Öffnung schrumpft mit der Flut). Altstadt: Brücke 5820–6040 über dem ebenen Platz vor dem Lager (Decke 250). Vulkan: Tunnel 6060–6560 vor dem Lager. Hochgebirge: Lawinengalerie 5900–6450 vor dem Lager. Alle liegen zwischen Lager und allen Rettungspunkten.
 
+### Übungsmodus (Zusatz von Lutz, 20.11.2026)
+- Knopf „Üben“ im Startmenü neben den Stufen. Wahl: Übungsstrecke, Stufe, „Langsamer“ (Shutter länger offen und länger gewarnt, Blitze und Salven seltener und milder, Lava und Lawinen langsamer, Flut halb so schnell).
+- Neun Strecken (`Practice.courses`), je aus einer vorhandenen Einsatzdatei mit eigenem Startpunkt (`startX`): Unterführung, Tunnel mit Shuttern, Lawinengalerie, Brücke über der Flut, Blitze, Trümmer und Nachbeben, Lava, Lawinen mit Seilwinde, Löschen. Jeder Einsatz ist damit auch ohne Wertung spielbar; alle Einsätze sind geöffnet.
+- Regeln (`Mission.practiced`): Hubschrauber unbegrenzt (Anzeige ∞), nach einem Verlust steht der nächste nach 0,4 s am Start der Strecke, kein Treibstoffverbrauch, keine Zeitgrenze (Anzeige ∞). Keine Wertungskarte, kein Eintrag in die Bestenliste, Fortschritt unverändert (die App beendet die Übung zurück im Menü, wenn alle Menschen versorgt sind).
+- Tests: `PracticeTests` (alle Strecken gültig auf allen Stufen, Start fest, sofortiger Ersatz, langsamer ist milder, nie Niederlage, normale Einsätze unverändert).
+
 ### Bestenliste
 `HighScores` in `RotorwachtCore`: je `"<Einsatz>|<Stufe>"` Top 10 nach Punkten (dann Sterne, dann früher), `ScoreEntry` (Name, Punkte, Sterne, Datum). Name auf 16 Zeichen gekürzt, leer = „Pilot“; Datei `highscores.json` neben `progress.json`. Einträge mit 0 Punkten kommen nicht in die Liste.
 

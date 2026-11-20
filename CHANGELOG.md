@@ -17,12 +17,18 @@ Mehr Spannung (Rückmeldung von Lutz nach 0.5.0: zu langweilig): Durchfahrten un
 - **Grafik:** Felswand und Betonbauwerk über dem Durchflug sowie Shutter-Teile (Lamellen, Warnleiste, Gehäuse, Lampen) sind Blender-Modelle (`art/passages.py`, `scripts/render-art.sh passages`); die Shutter fahren als bewegliche SpriteKit-Teile, das Tunnelinnere ist dunkel mit Deckenlampen, der Scheinwerfer des Hubschraubers leuchtet die Umgebung an (`PassageLayer.swift`). Hinweise im Einsatz, Klacken bei der Vorwarnung, dumpfer Schlag beim Schließen.
 - Logik: `RotorwachtCore/Passages.swift`; Tests: `PassageTests` (Takt, Ereignisse, Treffer durch Shutter und Tür, Decke, Stirnwand, Objekte, Ströme, Prüfung schlechter Daten, Stufen, Lage der Durchfahrten, **Zeitfenster in beide Richtungen für jeden Einsatz und jede Stufe, Autopilot ohne einen Treffer auf allen Stufen**).
 
+### Übungsmodus
+
+- Knopf **„Üben“** im Startmenü: neun kurze Übungsstrecken (Unterführung, Tunnel mit Shuttern, Lawinengalerie, Brücke über der Flut, Blitze, Trümmer und Nachbeben, Lava, Lawinen mit Seilwinde, Löschen), gebaut aus den vorhandenen Einsatzdateien mit eigenem Startpunkt (`Practice.swift`). Wahl von Stufe und **„Langsamer“** (milderes Tempo aller Gefahren).
+- Unbegrenzt Hubschrauber (Anzeige ∞), nach einem Verlust sofort der nächste am Start der Strecke, kein Treibstoffverbrauch, keine Zeitgrenze. **Keine Wertung, kein Eintrag in die Bestenliste, Fortschritt unverändert.** Alle Einsätze sind darüber ohne Sperre übbar.
+- 5 neue Tests (`PracticeTests`); zusammen 154 Tests grün.
+
 ### Bestenliste
 
 - Je Einsatz und Stufe die zehn besten Ergebnisse (Name, Punkte, Sterne, Datum), lokal in `~/Library/Application Support/Rotorwacht/highscores.json`. Gleiche Punkte: mehr Sterne, dann der frühere Eintrag; 0 Punkte kommen nicht hinein; Namen auf 16 Zeichen gekürzt, leer wird „Pilot“.
 - **Startmenü:** Knopf „Bestenliste“ neben den Stufen (Fenster mit Einsatz und Stufe zum Wählen). **Wertungskarte:** Liste der Stufe rechts neben dem Ergebnis, der eigene neue Platz hervorgehoben.
 - **Name:** vor dem ersten Eintrag einmal auf der Wertungskarte abgefragt (Standard: Benutzername des Macs), später änderbar in den Einstellungen (Cmd+,).
-- Logik in `RotorwachtCore/HighScores.swift`, 8 neue Tests (`HighScoreTests`: Reihenfolge, Gleichstand, Zehnerliste, 0 Punkte, getrennte Listen, Namen, Speichern und beschädigte Datei, Umbenennen); zusammen 149 Tests grün.
+- Logik in `RotorwachtCore/HighScores.swift`, 8 neue Tests (`HighScoreTests`: Reihenfolge, Gleichstand, Zehnerliste, 0 Punkte, getrennte Listen, Namen, Speichern und beschädigte Datei, Umbenennen); zusammen 149 Tests ohne Übungsmodus.
 - Nicht mit dem Controller bedienbar (Bestenliste im Startmenü nur mit Maus oder Tastatur).
 
 ## [0.5.0] – 2026-11-20

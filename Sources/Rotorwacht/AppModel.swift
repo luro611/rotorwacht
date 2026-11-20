@@ -175,10 +175,26 @@ final class AppModel: ObservableObject {
 
     func best(_ id: String) -> MissionRecord? { progress.best(id, difficulty) }
 
+    /// Practice course (no score, no list entry, no progress). Chosen in the practice sheet.
+    @Published var showPractice = false
+    @Published var practiceCourse = Practice.courses[0].id
+    @Published var practiceSlow = false
+    private(set) var practicing = false
+
+    func startPractice() {
+        guard let c = Practice.course(practiceCourse), let base = loadMission(c.missionID) else { return }
+        showPractice = false
+        launch(base.practiced(course: c, level: difficulty, slow: practiceSlow), id: c.missionID, practice: true)
+    }
+
     func startMission(_ id: String? = nil) {
         let id = id ?? missionID
         guard isUnlocked(id), let base = loadMission(id) else { return }
-        let m = base.scaled(for: difficulty)
+        launch(base.scaled(for: difficulty), id: id, practice: false)
+    }
+
+    private func launch(_ m: Mission, id: String, practice: Bool) {
+        practicing = practice
         missionID = id
         mission = m
         let s = GameScene(mission: m)
@@ -244,6 +260,13 @@ final class AppModel: ObservableObject {
     func scores(_ id: String, _ level: Difficulty) -> [ScoreEntry] { highScores.list(id, level) }
 
     private func finish(_ r: MissionResult) {
+        if practicing {
+            // Practice has no result card, no score and no list entry: back to the menu.
+            InputController.shared.capturing = false
+            InputController.shared.releaseAll()
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) { [weak self] in self?.backToStart() }
+            return
+        }
         result = r
         let entry = ScoreEntry(name: playerName, score: r.score, stars: r.stars, date: Date())
         nameDraft = playerName

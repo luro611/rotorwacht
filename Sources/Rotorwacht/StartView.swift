@@ -62,6 +62,9 @@ struct StartView: View {
                     .buttonStyle(LevelButtonStyle(selected: false))
                     .padding(.leading, 14)
                     .accessibilityLabel("Bestenliste anzeigen")
+                Button("Üben") { model.showPractice = true }
+                    .buttonStyle(LevelButtonStyle(selected: false))
+                    .accessibilityLabel("Übungsmodus")
             }
             .padding(.top, 16)
 
@@ -85,6 +88,7 @@ struct StartView: View {
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .onAppear { model.loadMissionList() }
         .sheet(isPresented: $model.showScores) { HighScoreSheet().environmentObject(model) }
+        .sheet(isPresented: $model.showPractice) { PracticeSheet().environmentObject(model) }
     }
 
     /// Title with the last word as the accent word, as on the website.
