@@ -4,7 +4,7 @@ Eigenes Hubschrauber-Rettungsspiel für den Mac, nur zum eigenen Gebrauch. Inspi
 
 ## Stand
 
-- **Phase:** Version 0.5.0 (Gamepad, Musik) gemerged, 127 Tests grün, noch nicht von Lutz mit Controller und Ohr geprüft, kein Tag. Davor Version 0.4.0 gebaut (20.11.2026): Grafik aus gerenderten Blender-Modellen (Hubschrauber, Menschen, Landeplätze, Gelände, Panoramen), ebene Landeflächen, Wartende am Rand. Davor 0.3.0 (19.11.2026): alle sechs Einsätze (Hochwasser, Waldbrand, Sturmnacht an der Küste, Erdbeben in der Altstadt, Vulkanausbruch, Lawinen im Hochgebirge) von Start bis Wertung spielbar, drei Stufen, Freischalten und lokaler Fortschritt, 99 Tests grün. Tags `v0.1.0` bis `v0.4.0` gesetzt und gepusht (20.11.2026; v0.3.0 und v0.4.0 auf den Commits mit den Review-Fixes).
+- **Phase:** Version 0.5.0 (Gamepad, Musik) getaggt (`v0.5.0`), 127 Tests grün. Davor Version 0.4.0 gebaut (20.11.2026): Grafik aus gerenderten Blender-Modellen (Hubschrauber, Menschen, Landeplätze, Gelände, Panoramen), ebene Landeflächen, Wartende am Rand. Davor 0.3.0 (19.11.2026): alle sechs Einsätze (Hochwasser, Waldbrand, Sturmnacht an der Küste, Erdbeben in der Altstadt, Vulkanausbruch, Lawinen im Hochgebirge) von Start bis Wertung spielbar, drei Stufen, Freischalten und lokaler Fortschritt, 99 Tests grün. Tags `v0.1.0` bis `v0.4.0` gesetzt und gepusht (20.11.2026; v0.3.0 und v0.4.0 auf den Commits mit den Review-Fixes).
 - Nächster Schritt: Grafik und Effekte ausbauen, Feinschliff der Einsätze (Spielbarkeit mit echter Hand prüfen), siehe Fahrplan in `docs/planung/02 Spielkonzept.md`.
 - Bis 19.11.2026 hieß das Projekt „Wühltisch“ (erster Entwurf mit Kaufhaus-Thema, Missverständnis: gemeint war Choplifter, nicht „Shoplifter“).
 

@@ -2,7 +2,7 @@
 
 Versionen: 0.x bis zum ersten fertigen Stand, dann 1.0.0.
 
-## [0.5.0] – in Arbeit (Gamepad und Musik zusammengeführt)
+## [0.5.0] – 2026-11-20
 
 ### Gamepad
 
