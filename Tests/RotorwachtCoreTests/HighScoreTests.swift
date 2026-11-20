@@ -77,4 +77,19 @@ import Foundation
         try Data("kaputt".utf8).write(to: url)
         #expect(HighScores.load(from: url) == HighScores())            // damaged file
     }
+
+    @Test func renamingChangesOnlyTheMatchingEntry() {
+        var s = HighScores()
+        let mine = e("Pilot", 500, day: 4)
+        s.add(e("Anna", 300), mission: "m", level: .easy)
+        let place = s.add(mine, mission: "m", level: .easy)!
+        let renamed = s.rename(place: place, date: mine.date, mission: "m", level: .easy, to: "  Lutz ")
+        #expect(renamed)
+        #expect(s.list("m", .easy).map(\.name) == ["Lutz", "Anna"])
+        // Wrong date or place: nothing changes.
+        let wrongPlace = s.rename(place: 1, date: mine.date, mission: "m", level: .easy, to: "X")
+        let noPlace = s.rename(place: 7, date: mine.date, mission: "m", level: .easy, to: "X")
+        #expect(!wrongPlace && !noPlace)
+        #expect(s.list("m", .easy).map(\.name) == ["Lutz", "Anna"])
+    }
 }

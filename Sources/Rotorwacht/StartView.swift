@@ -58,6 +58,10 @@ struct StartView: View {
                         .buttonStyle(LevelButtonStyle(selected: model.difficulty == level,
                                                       focused: padFocused(row: 0, col: i)))
                 }
+                Button("Bestenliste") { model.showScores = true }
+                    .buttonStyle(LevelButtonStyle(selected: false))
+                    .padding(.leading, 14)
+                    .accessibilityLabel("Bestenliste anzeigen")
             }
             .padding(.top, 16)
 
@@ -80,6 +84,7 @@ struct StartView: View {
         .padding(.horizontal, 32)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .onAppear { model.loadMissionList() }
+        .sheet(isPresented: $model.showScores) { HighScoreSheet().environmentObject(model) }
     }
 
     /// Title with the last word as the accent word, as on the website.

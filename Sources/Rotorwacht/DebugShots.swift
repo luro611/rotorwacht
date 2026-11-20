@@ -34,7 +34,11 @@ enum DebugShots {
             snap(dir, "0-start", window: true, model: model)
             let r = MissionResult(outcome: .completed, total: 28, rescued: 25, lost: 3, injured: 0, timeUsed: 301,
                                   helicoptersLost: 1, score: 2570, stars: 2)
-            for (name, view) in [("result", AnyView(ResultOverlay(result: r, mission: model.loadMission(missionID)))), ("pause", AnyView(PauseOverlay()))] {
+            model.loadMissionList()
+            model.debugSeedScores(for: missionID)
+            model.scoreMission = missionID
+            for (name, view) in [("result", AnyView(ResultOverlay(result: r, mission: model.loadMission(missionID)))), ("pause", AnyView(PauseOverlay())),
+                                 ("scores", AnyView(HighScoreSheet()))] {
                 let content = ZStack { Color.gray; view }.environmentObject(model).frame(width: 1280, height: 720)
                 let renderer = ImageRenderer(content: content)
                 renderer.scale = 1

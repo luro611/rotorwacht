@@ -76,6 +76,19 @@ struct SettingsView: View {
                 row("B / Kreis", "Im Menü zurück")
                 row("Start / Menü", "Pause")
             }
+            Divider().padding(.vertical, 4)
+            Eyebrow("Bestenliste")
+            HStack {
+                Text("Name für neue Einträge").font(Theme.mono(12)).foregroundColor(Theme.ink).frame(width: 190, alignment: .leading)
+                TextField("Pilot", text: $model.playerName)
+                    .textFieldStyle(.plain).font(Theme.text(13)).foregroundColor(Theme.ink)
+                    .padding(.horizontal, 8).padding(.vertical, 5).frame(width: 180)
+                    .overlay(RoundedRectangle(cornerRadius: Theme.radius).stroke(Theme.line, lineWidth: 1))
+                    .onChange(of: model.playerName) { _, v in
+                        if v.count > HighScores.maxNameLength { model.playerName = String(v.prefix(HighScores.maxNameLength)) }
+                        model.nameConfirmed = true
+                    }
+            }
             HStack {
                 Text("Totzone des Sticks").font(Theme.mono(12)).foregroundColor(Theme.ink).frame(width: 190, alignment: .leading)
                 Slider(value: Binding(get: { pad.deadzone }, set: { pad.deadzone = $0 }), in: 0.05...0.4)

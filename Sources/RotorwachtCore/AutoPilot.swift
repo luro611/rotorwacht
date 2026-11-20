@@ -207,7 +207,15 @@ public struct AutoPilot {
             let entry = dir > 0 ? p.x0 : p.x1, exit = dir > 0 ? p.x1 : p.x0
             let before = (entry - h.x) * dir
             let past = (h.x - exit) * dir
-            guard (target.x - exit) * dir > 0, before < 500, past < Self.tailDistance else { continue }
+            guard (target.x - exit) * dir > 0, before < 500 else { continue }
+            if past >= Self.tailDistance {
+                // Just out of the passage: climb slowly until the terrain ahead is cleared, then the normal flight takes over.
+                guard past < Self.tailDistance + 320 else { continue }
+                let lo = min(h.x, h.x + dir * 420) - 70, hi = max(h.x, h.x + dir * 420) + 70
+                let need = max(m.maxSurface(from: lo, to: hi) + 70, target.top + 70)
+                if h.y < need - 15 { return steer(sim, vx: dir * 70, y: need) }
+                continue
+            }
             let floor = sim.passageFloor(pi)
             let limit = p.shutterList.compactMap(\.gap).min().map { floor + $0 } ?? p.roof
             let y = p.corridorY(floor: floor, upTo: limit)

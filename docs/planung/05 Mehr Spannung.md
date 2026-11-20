@@ -1,6 +1,6 @@
 # Mehr Spannung: Durchfahrten und Bestenliste
 
-Rückmeldung von Lutz am 20.11.2026 nach dem Anspielen von 0.5.0: Es ist noch zu langweilig. Wünsche: eine **Unterführung**, durch die man fliegen muss, einen **Tunnel mit Shuttern (Rolltoren), die auf- und zugehen**, und eine **Score-Liste**. Bleibt man im Shutter hängen, ist ein Hubschrauber weg.
+**Stand 20.11.2026: Durchfahrten und Bestenliste in Version 0.6.0 umgesetzt (Spielgefühl noch von Lutz zu prüfen).** Rückmeldung von Lutz am 20.11.2026 nach dem Anspielen von 0.5.0: Es ist noch zu langweilig. Wünsche: eine **Unterführung**, durch die man fliegen muss, einen **Tunnel mit Shuttern (Rolltoren), die auf- und zugehen**, und eine **Score-Liste**. Bleibt man im Shutter hängen, ist ein Hubschrauber weg.
 
 ## Entscheidungen (Annahmen von Claude, Lutz kann ändern)
 

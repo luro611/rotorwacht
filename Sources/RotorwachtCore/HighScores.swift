@@ -61,6 +61,16 @@ public struct HighScores: Codable, Equatable, Sendable {
         return place
     }
 
+    /// Changes the name of the entry at `place`; `date` guards against a list that changed in the meantime.
+    @discardableResult
+    public mutating func rename(place: Int, date: Date, mission id: String, level: Difficulty, to name: String) -> Bool {
+        let k = Self.key(id, level)
+        guard var l = lists[k], l.indices.contains(place), l[place].date == date else { return false }
+        l[place].name = Self.cleanName(name)
+        lists[k] = l
+        return true
+    }
+
     // MARK: Storage
 
     private static var decoder: JSONDecoder { let d = JSONDecoder(); d.dateDecodingStrategy = .iso8601; return d }
