@@ -36,6 +36,16 @@ extension Mission {
         m.volleys = m.volleys?.map { var v = $0; v.damage *= p; v.warn *= level.warning; return v }
         m.flows = m.flows?.map { var f = $0; f.speed *= p; f.damagePerSecond *= p; f.warn *= level.warning; return f }
         m.passages = m.passages?.map { scaledPassage($0, level) }
+        m.obstacles = m.obstacles?.map { var o = $0; o.damage = ($0.damage ?? Obstacle.defaultWireDamage) * p; return o }
+        m.weather = m.weather?.map { e in
+            var w = e
+            w.warn *= level.warning
+            w.strength = e.strength.map { $0 * p }
+            w.density = e.density.map { min(0.9, $0 * p) }
+            w.damage = e.damage.map { $0 * p }
+            w.strikeWarn = e.strikeWarn.map { $0 * level.warning }
+            return w
+        }
         return m
     }
 }

@@ -55,6 +55,7 @@ final class GameScene: SKScene {
     private var fireSaid = false
     private var hazards: HazardLayer?
     private var passages: PassageLayer?
+    private var obstacles: ObstacleLayer?
     private var atmosphere: AtmosphereLayer?
     private let cable = SKShapeNode()
     private var beacons: [Int: SKSpriteNode] = [:]
@@ -112,6 +113,11 @@ final class GameScene: SKScene {
             let pl = PassageLayer(mission: mission)
             addChild(pl)
             passages = pl
+        }
+        if !mission.obstacleList.isEmpty {
+            let ol = ObstacleLayer(mission: mission)
+            addChild(ol)
+            obstacles = ol
         }
         cable.strokeColor = SKColor(red: 0.95, green: 0.9, blue: 0.8, alpha: 1)
         cable.lineWidth = 2
@@ -383,11 +389,12 @@ final class GameScene: SKScene {
         heatOverlay.zPosition = 32
         cam.addChild(heatOverlay)
 
-        if mission.atmosphere != nil {
-            let a = AtmosphereLayer(mission: mission, size: Self.viewSize)
+        if mission.atmosphere != nil || !mission.weatherList.isEmpty {
+            let a = AtmosphereLayer(mission: mission, size: Self.viewSize, weatherOnly: mission.atmosphere == nil)
             cam.addChild(a)
             atmosphere = a
-            return
+            // With an `atmosphere` block this layer does everything; without one it only adds the weather schedule.
+            if mission.atmosphere != nil { return }
         }
 
         if mission.isFire {
@@ -582,6 +589,30 @@ final class GameScene: SKScene {
                 audio.play(.crash)
                 shake = max(shake, 16)
                 say("Vom Shutter erwischt: Dieser Hubschrauber ist verloren.", seconds: 5)
+            case .scored(let points, let combo):
+                say(combo >= 2 ? "+\(points) Punkte · Kombo ×\(combo)" : "+\(points) Punkte", seconds: 2.5)
+            case .comboBroken(let was):
+                say("Kombo ×\(was) abgebrochen.", seconds: 3)
+            case .flightBonus(let points, let people, let all):
+                audio.play(.ding)
+                say(all ? "Alle in einem Flug! +\(points) Punkte" : "Voller Flug mit \(people) Menschen: +\(points) Punkte", seconds: 4)
+            case .obstacleHit(let kind, let d, let x, let y):
+                let solid = d >= 100
+                audio.play(solid ? .crash : .thump(0.8))
+                shake = max(shake, solid ? 16 : 9)
+                obstacles?.sparks(at: CGPoint(x: x, y: y), big: solid)
+                let what: [String: String] = ["powerline": "Hochspannungsleitung", "crane": "Kran", "cablecar": "Seilbahn", "windmill": "Windrad"]
+                if solid { say("\(what[kind] ?? "Hindernis") getroffen: Dieser Hubschrauber ist verloren.", seconds: 5) }
+                else { say("Draht berührt, Funken! Die Haltbarkeit sinkt. Über oder unter den Leitungen fliegen.", seconds: 4) }
+            case .weatherWarning(let kind, let seconds):
+                audio.play(.warn)
+                let s = Int(seconds.rounded())
+                switch kind {
+                case "gust": say("Böen im Anmarsch (\(s) s): Der Windsack zeigt die Richtung.", seconds: 6)
+                case "windShift": say("Windwechsel in \(s) s: Der Windsack zeigt die neue Richtung.", seconds: 6)
+                case "fog": say("Nebelbank zieht auf (\(s) s): Die Sicht wird schlecht, Gelände und Hindernisse im Kopf behalten.", seconds: 7)
+                default: say("Gewitter zieht auf (\(s) s): Blitze im Anflug, auf die roten Kreise achten.", seconds: 7)
+                }
             case .passageContact(let kind, let d):
                 if d > 1 {
                     audio.play(.thump(0.7))
@@ -616,6 +647,7 @@ final class GameScene: SKScene {
         syncDrops()
         hazards?.sync(sim: sim, dt: dt, camX: cam.position.x)
         passages?.sync(sim: sim, dt: dt)
+        obstacles?.sync(sim: sim, dt: dt)
         passageHints()
         atmosphere?.sync(sim: sim, heli: CGPoint(x: h.x - cam.position.x, y: h.y - cam.position.y), dt: dt)
         if sim.hz.tremor > 0, !gamePaused { shake = max(shake, CGFloat(sim.hz.tremor) * 5) }
@@ -1029,6 +1061,8 @@ final class GameScene: SKScene {
         snap.lost = sim.lostCount + sim.injuredCount
         snap.timeLeft = sim.timeLeft
         snap.helicoptersLeft = sim.helicoptersLeft
+        snap.score = sim.livePoints
+        snap.combo = sim.tally.combo
         snap.helicoptersTotal = mission.isPractice ? -1 : mission.helicopters
         snap.wind = sim.wind
         snap.floodLevel = sim.floodLevel

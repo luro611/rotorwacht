@@ -74,6 +74,7 @@ struct HUDView: View {
                 }
                 panel {
                     HStack(spacing: 18) {
+                        Stat(label: hud.combo >= 2 ? "Punkte · Kombo ×\(hud.combo)" : "Punkte", value: "\(hud.score)")
                         Stat(label: "An Bord", value: "\(hud.aboard)/\(hud.capacity)")
                         Stat(label: "Hubschrauber", value: hud.helicoptersTotal < 0 ? "∞" : "\(hud.helicoptersLeft)/\(hud.helicoptersTotal)")
                     }
@@ -224,8 +225,13 @@ struct ResultOverlay: View {
             Color.black.opacity(0.45)
             HStack(alignment: .top, spacing: 0) {
             VStack(alignment: .leading, spacing: 12) {
-                Eyebrow("Einsatz \(mission?.number ?? 1) · \(mission?.title ?? "Hochwasser im Flusstal") · \(model.difficulty.label)")
-                AccentTitle(plain: headline.0, accent: headline.1, size: 44)
+                if let run = model.endless {
+                    Eyebrow("Endlos · Stufe \(mission?.number ?? run.stage) · \(mission?.title ?? "")")
+                    AccentTitle(plain: run.isOver ? "Der Lauf ist " : "Stufe ", accent: run.isOver ? "zu Ende" : "geschafft", size: 44)
+                } else {
+                    Eyebrow("Einsatz \(mission?.number ?? 1) · \(mission?.title ?? "Hochwasser im Flusstal") · \(model.difficulty.label)")
+                    AccentTitle(plain: headline.0, accent: headline.1, size: 44)
+                }
                 HStack(spacing: 4) {
                     ForEach(0..<3, id: \.self) { i in
                         Text("★").font(.system(size: 26)).foregroundColor(i < result.stars ? Theme.accent : Theme.line)
@@ -237,12 +243,17 @@ struct ResultOverlay: View {
                     if let l = lostLabel { row(l, "\(result.lost)") }
                     row(fireMission ? "Vom Feuer verletzt oder nicht abgeholt" : "Verletzt oder nicht abgeholt", "\(result.injured + (lostLabel == nil && !fireMission ? result.lost : 0))")
                     row("Hubschrauber verloren", "\(result.helicoptersLost)")
+                    if result.timeBonus + result.comboBonus + result.flightBonus > 0 {
+                        row("Bonus Zeit", "+\(result.timeBonus)")
+                        row("Bonus Kombo (längste Serie ×\(result.bestCombo))", "+\(result.comboBonus)")
+                        if result.flightBonus > 0 { row("Bonus Flüge", "+\(result.flightBonus)") }
+                    }
                     row("Zeit", String(format: "%d:%02d", Int(result.timeUsed) / 60, Int(result.timeUsed) % 60))
                 }
                 .padding(.top, 4)
                 HStack(spacing: 10) {
-                    Button("Noch einmal") { model.startMission(model.missionID) }
-                        .buttonStyle(PrimaryButtonStyle()).modifier(DefaultActionIf(model.lastEntry == nil || model.nameConfirmed))
+                    Button(model.endless == nil ? "Noch einmal" : (model.endless?.isOver == true ? "Neuer Lauf" : "Nächster Einsatz")) { model.playAgain() }
+                        .buttonStyle(PrimaryButtonStyle()).modifier(DefaultActionIf((model.lastEntry == nil && model.lastEndlessEntry == nil) || model.nameConfirmed))
                         .modifier(PadFocusRing(on: model.controllerName != nil && model.overlayFocus == 0))
                     Button("Zum Start") { model.backToStart() }
                         .buttonStyle(QuietButtonStyle())
@@ -253,10 +264,14 @@ struct ResultOverlay: View {
             .padding(28)
             .frame(width: 460)
             VStack(alignment: .leading, spacing: 10) {
+                if let run = model.endless {
+                    EndlessSidePanel(run: run, next: model.endlessNext)
+                } else {
                 Eyebrow("Bestenliste · \(model.difficulty.label)")
                 ScoreListView(entries: model.scores(model.missionID, model.difficulty), highlight: model.lastEntry, compact: true)
-                if model.lastEntry != nil {
-                    Text("Neuer Eintrag: Platz \((model.lastEntry?.place ?? 0) + 1)").font(Theme.mono(11)).foregroundColor(Theme.accentStrong)
+                }
+                if model.lastEntry != nil || model.lastEndlessEntry != nil {
+                    Text("Neuer Eintrag: Platz \(((model.lastEntry?.place ?? model.lastEndlessEntry?.place) ?? 0) + 1)").font(Theme.mono(11)).foregroundColor(Theme.accentStrong)
                     if !model.nameConfirmed { NameField() }
                 }
                 Spacer(minLength: 0)
