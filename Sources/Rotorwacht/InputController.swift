@@ -5,7 +5,10 @@ import RotorwachtCore
 final class InputController {
     static let shared = InputController()
 
-    private(set) var left = false, right = false, up = false, down = false, space = false
+    private var keyLeft = false, keyRight = false, keyUp = false, keyDown = false, space = false
+    /// Thrust demand for the engine sound, from keys or the controller.
+    var up: Bool { keyUp || GamepadController.shared.pilot.up }
+    var down: Bool { keyDown || GamepadController.shared.pilot.down }
     /// When true, arrow keys and space are swallowed (no system beep) and Esc is forwarded.
     var capturing = false
     var onEscape: (() -> Void)?
@@ -13,7 +16,12 @@ final class InputController {
 
     var pilot: PilotInput {
         if let s = DebugShots.script { return s(DebugShots.elapsed) }
-        return PilotInput(left: left, right: right, up: up, down: down, drop: space)
+        let keys = PilotInput(left: keyLeft, right: keyRight, up: keyUp, down: keyDown, drop: space)
+        var pad = GamepadController.shared.pilot
+        // Keys win as soon as one is held; the fire button works from either device.
+        if keyLeft || keyRight || keyUp || keyDown { var k = keys; k.drop = space || pad.drop; return k }
+        pad.drop = pad.drop || space
+        return pad
     }
 
     func start() {
@@ -25,17 +33,17 @@ final class InputController {
         }
     }
 
-    func releaseAll() { left = false; right = false; up = false; down = false; space = false }
+    func releaseAll() { keyLeft = false; keyRight = false; keyUp = false; keyDown = false; space = false }
 
     private func handle(_ e: NSEvent) -> NSEvent? {
         let isDown = e.type == .keyDown
         // Don't interfere with shortcuts such as Cmd+Q.
         if e.modifierFlags.contains(.command) { return e }
         switch e.keyCode {
-        case 123: left = isDown
-        case 124: right = isDown
-        case 125: down = isDown
-        case 126: up = isDown
+        case 123: keyLeft = isDown
+        case 124: keyRight = isDown
+        case 125: keyDown = isDown
+        case 126: keyUp = isDown
         case 49: space = isDown
         case 53:
             if capturing {

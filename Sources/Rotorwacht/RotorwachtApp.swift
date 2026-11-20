@@ -24,6 +24,9 @@ struct RotorwachtApp: App {
                 .frame(minWidth: 960, minHeight: 540)
         }
         .defaultSize(width: 1280, height: 720)
+        Settings {
+            SettingsView().environmentObject(model)
+        }
     }
 }
 
@@ -48,4 +51,40 @@ struct RootView: View {
 
 var appVersion: String {
     Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "0.1.0"
+}
+
+struct SettingsView: View {
+    @EnvironmentObject var model: AppModel
+    @ObservedObject private var pad = GamepadController.shared
+
+    private func row(_ k: String, _ v: String) -> some View {
+        HStack(alignment: .firstTextBaseline) {
+            Text(k).font(Theme.mono(12)).foregroundColor(Theme.ink).frame(width: 190, alignment: .leading)
+            Text(v).font(Theme.text(13)).foregroundColor(Theme.muted)
+        }
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Eyebrow("Einstellungen · Controller")
+            AccentTitle(plain: "Gamepad ", accent: "anschließen", size: 30)
+            Text(model.controllerName.map { "Verbunden: \($0)" } ?? "Kein Controller verbunden. Xbox, PlayStation oder MFi per Bluetooth oder Kabel anschließen, die Tastatur geht immer.")
+                .font(Theme.text(13)).foregroundColor(model.controllerName == nil ? Theme.muted : Theme.accentStrong)
+            VStack(alignment: .leading, spacing: 6) {
+                row("Linker Stick / Steuerkreuz", "Fliegen (Stick dosiert Schub und Fahrt)")
+                row("A / Kreuz", "Löschwasser; im Menü bestätigen")
+                row("B / Kreis", "Im Menü zurück")
+                row("Start / Menü", "Pause")
+            }
+            HStack {
+                Text("Totzone des Sticks").font(Theme.mono(12)).foregroundColor(Theme.ink).frame(width: 190, alignment: .leading)
+                Slider(value: Binding(get: { pad.deadzone }, set: { pad.deadzone = $0 }), in: 0.05...0.4)
+                    .frame(width: 180)
+                Text(String(format: "%.0f %%", pad.deadzone * 100)).font(Theme.mono(12)).foregroundColor(Theme.muted)
+            }
+        }
+        .padding(24)
+        .frame(width: 560, alignment: .leading)
+        .background(Theme.bg)
+    }
 }

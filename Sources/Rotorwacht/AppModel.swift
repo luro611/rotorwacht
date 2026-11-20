@@ -1,4 +1,5 @@
 import SwiftUI
+import Combine
 import RotorwachtCore
 
 @MainActor
@@ -10,6 +11,15 @@ final class AppModel: ObservableObject {
     @Published var paused = false
     @Published var result: MissionResult?
     @Published var loadError: String?
+    /// Name of the connected controller (nil = none); drives the hints in the menu and settings.
+    @Published private(set) var controllerName: String?
+    /// Controller focus: start menu grid (row 0 = Stufen, then the Einsätze), pause and result buttons.
+    @Published var startFocus = GridFocus(rowLengths: [3, 3, 3], row: 1)
+    @Published var overlayFocus = 0
+    /// Shown in the pause card when the controller was unplugged during the flight.
+    @Published var controllerLost = false
+    private var resultShownAt = Date.distantFuture
+    private var cancellables = Set<AnyCancellable>()
     private(set) var scene: GameScene?
     private(set) var mission: Mission?
     /// Which mission is running or was played last (for "Noch einmal").
@@ -33,12 +43,67 @@ final class AppModel: ObservableObject {
         progress = DebugShots.active ? PlayerProgress() : PlayerProgress.load(from: Self.progressURL)
         difficulty = Difficulty(rawValue: UserDefaults.standard.string(forKey: "difficulty") ?? "") ?? .medium
         InputController.shared.start()
+        setupGamepad()
         DispatchQueue.main.async { DebugShots.runIfRequested(model: self) }
         InputController.shared.onEscape = { [weak self] in
             Task { @MainActor in self?.togglePause() }
         }
         NotificationCenter.default.addObserver(forName: NSApplication.didResignActiveNotification, object: nil, queue: .main) { [weak self] _ in
             Task { @MainActor in if !DebugShots.active, self?.screen == .playing { self?.setPaused(true) } }
+        }
+    }
+
+    private func setupGamepad() {
+        let pad = GamepadController.shared
+        if !DebugShots.active { pad.start() }
+        controllerName = pad.name
+        pad.$name.receive(on: DispatchQueue.main).sink { [weak self] n in self?.controllerName = n }.store(in: &cancellables)
+        pad.onOutput = { [weak self] out in self?.handlePad(out) }
+        pad.onDisconnect = { [weak self] in
+            guard let self, self.screen == .playing else { return }
+            self.controllerLost = true
+            self.setPaused(true)
+        }
+    }
+
+    private func rebuildStartFocus() {
+        let n = missions.count
+        var rows = [Difficulty.allCases.count]
+        var left = n
+        while left > 0 { rows.append(min(3, left)); left -= 3 }
+        startFocus = GridFocus(rowLengths: rows, row: n > 0 ? 1 : 0)
+    }
+
+    private func handlePad(_ out: GamepadOutput) {
+        if DebugShots.active { return }
+        switch screen {
+        case .start:
+            for m in out.moves { startFocus.move(m) }
+            if out.confirm { activateStartFocus() }
+        case .playing:
+            if !paused {
+                if out.pause { setPaused(true) }
+            } else {
+                for m in out.moves { if m == .left { overlayFocus = 0 } else if m == .right { overlayFocus = 1 } }
+                if out.pause || out.back { setPaused(false) }
+                else if out.confirm { if overlayFocus == 0 { setPaused(false) } else { backToStart() } }
+            }
+        case .result:
+            for m in out.moves { if m == .left { overlayFocus = 0 } else if m == .right { overlayFocus = 1 } }
+            // The fire button may still be pressed when the card appears; give it a moment.
+            guard Date().timeIntervalSince(resultShownAt) > 1.0 else { return }
+            if out.back { backToStart() }
+            else if out.confirm { if overlayFocus == 0 { startMission(missionID) } else { backToStart() } }
+        }
+    }
+
+    private func activateStartFocus() {
+        let f = startFocus
+        if f.row == 0 {
+            difficulty = Difficulty.allCases[min(f.col, Difficulty.allCases.count - 1)]
+        } else {
+            let i = (f.row - 1) * 3 + f.col
+            if missions.indices.contains(i) { startMission(missions[i].id) }
         }
     }
 
@@ -50,7 +115,7 @@ final class AppModel: ObservableObject {
 
     /// Loads the missions for the start menu.
     func loadMissionList() {
-        if missions.isEmpty { missions = MissionLibrary.all.compactMap { loadMission($0) } }
+        if missions.isEmpty { missions = MissionLibrary.all.compactMap { loadMission($0) }; rebuildStartFocus() }
     }
 
     func isUnlocked(_ id: String) -> Bool {
@@ -76,6 +141,8 @@ final class AppModel: ObservableObject {
         scene = s
         hud = HUDSnapshot()
         paused = false
+        controllerLost = false
+        overlayFocus = 0
         result = nil
         InputController.shared.releaseAll()
         InputController.shared.capturing = true
@@ -85,6 +152,7 @@ final class AppModel: ObservableObject {
     func setPaused(_ p: Bool) {
         guard screen == .playing else { return }
         paused = p
+        if p { overlayFocus = 0 } else { controllerLost = false }
         scene?.gamePaused = p
         scene?.audio.enabled = !p
         if p { InputController.shared.releaseAll() }
@@ -100,6 +168,8 @@ final class AppModel: ObservableObject {
         }
         InputController.shared.capturing = false
         InputController.shared.releaseAll()
+        overlayFocus = 0
+        resultShownAt = Date().addingTimeInterval(0.6)
         // A short beat so the last rescue can be seen before the result card appears.
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) { [weak self] in
             self?.screen = .result

@@ -164,10 +164,17 @@ struct PauseOverlay: View {
                 HStack(spacing: 10) {
                     Button("Weiter") { model.setPaused(false) }
                         .buttonStyle(PrimaryButtonStyle()).keyboardShortcut(.defaultAction)
+                        .modifier(PadFocusRing(on: model.controllerName != nil && model.overlayFocus == 0))
                     Button("Einsatz abbrechen") { model.backToStart() }
                         .buttonStyle(QuietButtonStyle())
+                        .modifier(PadFocusRing(on: model.controllerName != nil && model.overlayFocus == 1))
                 }
-                Text("Esc setzt den Einsatz fort.").font(Theme.mono(11)).foregroundColor(Theme.muted)
+                Text(model.controllerName != nil ? "Esc oder Start setzt den Einsatz fort, A bestätigt." : "Esc setzt den Einsatz fort.")
+                    .font(Theme.mono(11)).foregroundColor(Theme.muted)
+                if model.controllerLost {
+                    Text("Controller getrennt. Wieder anschließen oder mit der Tastatur weiterfliegen.")
+                        .font(Theme.mono(11)).foregroundColor(Theme.accentStrong)
+                }
             }
             .padding(26)
             .background(Theme.surface)
@@ -233,8 +240,10 @@ struct ResultOverlay: View {
                 HStack(spacing: 10) {
                     Button("Noch einmal") { model.startMission(model.missionID) }
                         .buttonStyle(PrimaryButtonStyle()).keyboardShortcut(.defaultAction)
+                        .modifier(PadFocusRing(on: model.controllerName != nil && model.overlayFocus == 0))
                     Button("Zum Start") { model.backToStart() }
                         .buttonStyle(QuietButtonStyle())
+                        .modifier(PadFocusRing(on: model.controllerName != nil && model.overlayFocus == 1))
                 }
                 .padding(.top, 8)
             }
@@ -243,5 +252,13 @@ struct ResultOverlay: View {
             .background(Theme.surface)
             .overlay(RoundedRectangle(cornerRadius: Theme.radius).stroke(Theme.line, lineWidth: 1))
         }
+    }
+}
+
+/// Accent ring around the button the controller would press.
+struct PadFocusRing: ViewModifier {
+    let on: Bool
+    func body(content: Content) -> some View {
+        content.overlay(RoundedRectangle(cornerRadius: Theme.radius).stroke(Theme.accent, lineWidth: 2).padding(-4).opacity(on ? 1 : 0))
     }
 }
