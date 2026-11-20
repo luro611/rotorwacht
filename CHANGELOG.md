@@ -2,6 +2,35 @@
 
 Versionen: 0.x bis zum ersten fertigen Stand, dann 1.0.0.
 
+## [0.6.0] – 2026-11-20
+
+Mehr Spannung (Rückmeldung von Lutz nach 0.5.0: zu langweilig): Durchfahrten und eine Bestenliste. Entwurf und Regeln: `docs/planung/05 Mehr Spannung.md`.
+
+### Durchfahrten (`passages`)
+
+- **Neuer Gefahren-Baustein:** Unterführung (`bridge`) und Tunnel (`tunnel`) mit Shuttern. Alle Felder in der Einsatzdatei sind optional. Über der Decke ist die Spanne bis zur Flughöhengrenze massiv (Brückenbauwerk, Fels): Man kann **nicht darüber fliegen**, nur hindurch.
+- **Shutter** gehen nach festem Takt auf und zu (`period`, `open`, `phase`, `warn`, `gap`, `move`). Ampel an beiden Seiten: grün offen, **gelb blinkend** mit Klacken in der Vorwarnzeit, rot ab Schließbeginn. **Wird der Hubschrauber getroffen oder bleibt er im Tor stecken, ist er verloren** (Ersatz aus dem Lager).
+- **Decke und Stirnwand:** Berührung der Decke drückt nach unten und kostet Haltbarkeit; wer von der Seite hineinfliegt, wird gestoppt und beschädigt. Fliegende Objekte über der Decke verschwinden, Lawinen und Lava schaden im Tunnel nicht (die Galerie schützt).
+- **Stufen** skalieren Takt (offene und geschlossene Zeit), Vorwarnzeit und Höhe der Öffnung (leicht 1,15 / schwer 0,9 der Öffnungshöhe, nie unter Hubschrauberhöhe plus 36).
+- **Einsätze:** Brücke in 1 Hochwasser (die Öffnung schrumpft mit der Flut) und 4 Altstadt (Unterführung vor dem Lager), Tunnel mit zwei Shuttern in 5 Vulkan (Hangtunnel) und 6 Hochgebirge (Lawinengalerie). Alle liegen zwischen Lager und den Rettungspunkten (in 1 teils), kein Gelände geändert. Rettungspunkte liegen nicht im Tunnel.
+- **Autopilot** (für Tests und Bildschirmfotos): wartet vor dem Tor in Korridorhöhe, bis ein Zeitfenster für alle Tore passt (`Passage.canCross`), fliegt dann durch und steigt danach langsam über das Gelände.
+- **Grafik:** Felswand und Betonbauwerk über dem Durchflug sowie Shutter-Teile (Lamellen, Warnleiste, Gehäuse, Lampen) sind Blender-Modelle (`art/passages.py`, `scripts/render-art.sh passages`); die Shutter fahren als bewegliche SpriteKit-Teile, das Tunnelinnere ist dunkel mit Deckenlampen, der Scheinwerfer des Hubschraubers leuchtet die Umgebung an (`PassageLayer.swift`). Hinweise im Einsatz, Klacken bei der Vorwarnung, dumpfer Schlag beim Schließen.
+- Logik: `RotorwachtCore/Passages.swift`; Tests: `PassageTests` (Takt, Ereignisse, Treffer durch Shutter und Tür, Decke, Stirnwand, Objekte, Ströme, Prüfung schlechter Daten, Stufen, Lage der Durchfahrten, **Zeitfenster in beide Richtungen für jeden Einsatz und jede Stufe, Autopilot ohne einen Treffer auf allen Stufen**).
+
+### Übungsmodus
+
+- Knopf **„Üben“** im Startmenü: neun kurze Übungsstrecken (Unterführung, Tunnel mit Shuttern, Lawinengalerie, Brücke über der Flut, Blitze, Trümmer und Nachbeben, Lava, Lawinen mit Seilwinde, Löschen), gebaut aus den vorhandenen Einsatzdateien mit eigenem Startpunkt (`Practice.swift`). Wahl von Stufe und **„Langsamer“** (milderes Tempo aller Gefahren).
+- Unbegrenzt Hubschrauber (Anzeige ∞), nach einem Verlust sofort der nächste am Start der Strecke, kein Treibstoffverbrauch, keine Zeitgrenze. **Keine Wertung, kein Eintrag in die Bestenliste, Fortschritt unverändert.** Alle Einsätze sind darüber ohne Sperre übbar.
+- 5 neue Tests (`PracticeTests`); zusammen 154 Tests grün.
+
+### Bestenliste
+
+- Je Einsatz und Stufe die zehn besten Ergebnisse (Name, Punkte, Sterne, Datum), lokal in `~/Library/Application Support/Rotorwacht/highscores.json`. Gleiche Punkte: mehr Sterne, dann der frühere Eintrag; 0 Punkte kommen nicht hinein; Namen auf 16 Zeichen gekürzt, leer wird „Pilot“.
+- **Startmenü:** Knopf „Bestenliste“ neben den Stufen (Fenster mit Einsatz und Stufe zum Wählen). **Wertungskarte:** Liste der Stufe rechts neben dem Ergebnis, der eigene neue Platz hervorgehoben.
+- **Name:** vor dem ersten Eintrag einmal auf der Wertungskarte abgefragt (Standard: Benutzername des Macs), später änderbar in den Einstellungen (Cmd+,).
+- Logik in `RotorwachtCore/HighScores.swift`, 8 neue Tests (`HighScoreTests`: Reihenfolge, Gleichstand, Zehnerliste, 0 Punkte, getrennte Listen, Namen, Speichern und beschädigte Datei, Umbenennen); zusammen 149 Tests ohne Übungsmodus.
+- Nicht mit dem Controller bedienbar (Bestenliste im Startmenü nur mit Maus oder Tastatur).
+
 ## [0.5.0] – 2026-11-20
 
 ### Gamepad

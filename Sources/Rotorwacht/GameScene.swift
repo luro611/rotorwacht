@@ -54,6 +54,7 @@ final class GameScene: SKScene {
     private var lakeTimer = 0.0
     private var fireSaid = false
     private var hazards: HazardLayer?
+    private var passages: PassageLayer?
     private var atmosphere: AtmosphereLayer?
     private let cable = SKShapeNode()
     private var beacons: [Int: SKSpriteNode] = [:]
@@ -107,6 +108,11 @@ final class GameScene: SKScene {
         hl.onThunder = { [weak self] x in self?.thunder(at: x) }
         addChild(hl)
         hazards = hl
+        if !mission.passageList.isEmpty {
+            let pl = PassageLayer(mission: mission)
+            addChild(pl)
+            passages = pl
+        }
         cable.strokeColor = SKColor(red: 0.95, green: 0.9, blue: 0.8, alpha: 1)
         cable.lineWidth = 2
         cable.zPosition = 9
@@ -141,6 +147,17 @@ final class GameScene: SKScene {
         case "volcano": return "Pfeil hoch startet. Lavabrocken fliegen auf gestrichelten Bahnen. Außenposten tanken: lande auf einem."
         case "avalanche": return "Pfeil hoch startet. An Felsvorsprüngen nicht landen: schwebe ruhig darüber, Pfeil runter holt das Seil näher."
         default: return nil
+        }
+    }
+
+    /// First hint when a passage comes close.
+    private func passageHints() {
+        for p in mission.passageList where abs(sim.heli.x - (p.x0 + p.x1) / 2) < (p.x1 - p.x0) / 2 + 520 {
+            if p.isTunnel {
+                sayOnce("tunnel", "Tunnel mit Shuttern: Gelb blinkt vor dem Schließen, Rot heißt zu. Wer im Tor steckt, verliert den Hubschrauber.", seconds: 8)
+            } else {
+                sayOnce("bridge", "Unterführung: Man kommt nur darunter durch, über die Brücke geht es nicht. Nicht die Decke berühren.", seconds: 7)
+            }
         }
     }
 
@@ -557,6 +574,20 @@ final class GameScene: SKScene {
                 if clock - cableHint > 8 { cableHint = clock; say("Zu unruhig: Das Seil verliert die Person. Ruhig halten, nicht höher als das Seil.", seconds: 5) }
             case .refueling:
                 say("Außenposten: Der Hubschrauber tankt.", seconds: 4)
+            case .shutterWarning(let pi, let si):
+                if abs(mission.passageList[pi].shutterList[si].x - sim.heli.x) < 900 { audio.play(.pop) }
+            case .shutterClosing(let pi, let si):
+                if abs(mission.passageList[pi].shutterList[si].x - sim.heli.x) < 900 { audio.play(.thump(0.45)) }
+            case .shutterCrush:
+                audio.play(.crash)
+                shake = max(shake, 16)
+                say("Vom Shutter erwischt: Dieser Hubschrauber ist verloren.", seconds: 5)
+            case .passageContact(let kind, let d):
+                if d > 1 {
+                    audio.play(.thump(0.7))
+                    shake = max(shake, min(10, CGFloat(d) / 2 + 3))
+                    sayOnce("contact-\(kind)-\(Int(clock / 4))", kind == "roof" ? "Decke berührt: tiefer fliegen." : "Gegen die Wand geflogen: Man kommt nur durch die Öffnung.", seconds: 3)
+                }
             }
         }
     }
@@ -584,6 +615,8 @@ final class GameScene: SKScene {
         syncFire(dt: dt)
         syncDrops()
         hazards?.sync(sim: sim, dt: dt, camX: cam.position.x)
+        passages?.sync(sim: sim, dt: dt)
+        passageHints()
         atmosphere?.sync(sim: sim, heli: CGPoint(x: h.x - cam.position.x, y: h.y - cam.position.y), dt: dt)
         if sim.hz.tremor > 0, !gamePaused { shake = max(shake, CGFloat(sim.hz.tremor) * 5) }
 
@@ -996,7 +1029,7 @@ final class GameScene: SKScene {
         snap.lost = sim.lostCount + sim.injuredCount
         snap.timeLeft = sim.timeLeft
         snap.helicoptersLeft = sim.helicoptersLeft
-        snap.helicoptersTotal = mission.helicopters
+        snap.helicoptersTotal = mission.isPractice ? -1 : mission.helicopters
         snap.wind = sim.wind
         snap.floodLevel = sim.floodLevel
         snap.heliX = h.x

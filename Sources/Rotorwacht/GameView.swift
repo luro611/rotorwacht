@@ -57,6 +57,7 @@ struct HUDView: View {
     let hud: HUDSnapshot
 
     private func time(_ s: Double) -> String {
+        if s > 50_000 { return "∞" }
         let t = Int(s.rounded(.up))
         return String(format: "%d:%02d", t / 60, t % 60)
     }
@@ -74,7 +75,7 @@ struct HUDView: View {
                 panel {
                     HStack(spacing: 18) {
                         Stat(label: "An Bord", value: "\(hud.aboard)/\(hud.capacity)")
-                        Stat(label: "Hubschrauber", value: "\(hud.helicoptersLeft)/\(hud.helicoptersTotal)")
+                        Stat(label: "Hubschrauber", value: hud.helicoptersTotal < 0 ? "∞" : "\(hud.helicoptersLeft)/\(hud.helicoptersTotal)")
                     }
                 }
                 Spacer(minLength: 8)
@@ -221,6 +222,7 @@ struct ResultOverlay: View {
     var body: some View {
         ZStack {
             Color.black.opacity(0.45)
+            HStack(alignment: .top, spacing: 0) {
             VStack(alignment: .leading, spacing: 12) {
                 Eyebrow("Einsatz \(mission?.number ?? 1) · \(mission?.title ?? "Hochwasser im Flusstal") · \(model.difficulty.label)")
                 AccentTitle(plain: headline.0, accent: headline.1, size: 44)
@@ -240,7 +242,7 @@ struct ResultOverlay: View {
                 .padding(.top, 4)
                 HStack(spacing: 10) {
                     Button("Noch einmal") { model.startMission(model.missionID) }
-                        .buttonStyle(PrimaryButtonStyle()).keyboardShortcut(.defaultAction)
+                        .buttonStyle(PrimaryButtonStyle()).modifier(DefaultActionIf(model.lastEntry == nil || model.nameConfirmed))
                         .modifier(PadFocusRing(on: model.controllerName != nil && model.overlayFocus == 0))
                     Button("Zum Start") { model.backToStart() }
                         .buttonStyle(QuietButtonStyle())
@@ -250,8 +252,22 @@ struct ResultOverlay: View {
             }
             .padding(28)
             .frame(width: 460)
+            VStack(alignment: .leading, spacing: 10) {
+                Eyebrow("Bestenliste · \(model.difficulty.label)")
+                ScoreListView(entries: model.scores(model.missionID, model.difficulty), highlight: model.lastEntry, compact: true)
+                if model.lastEntry != nil {
+                    Text("Neuer Eintrag: Platz \((model.lastEntry?.place ?? 0) + 1)").font(Theme.mono(11)).foregroundColor(Theme.accentStrong)
+                    if !model.nameConfirmed { NameField() }
+                }
+                Spacer(minLength: 0)
+            }
+            .padding(28)
+            .frame(width: 330, alignment: .topLeading)
+            .overlay(Rectangle().fill(Theme.line).frame(width: 1), alignment: .leading)
+            }
             .background(Theme.surface)
             .overlay(RoundedRectangle(cornerRadius: Theme.radius).stroke(Theme.line, lineWidth: 1))
+            .fixedSize()
         }
     }
 }

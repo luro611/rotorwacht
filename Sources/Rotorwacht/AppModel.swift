@@ -27,6 +27,22 @@ final class AppModel: ObservableObject {
     @Published var missions: [Mission] = []
     /// Stars and scores so far, stored locally.
     @Published private(set) var progress: PlayerProgress
+    /// Best results per Einsatz and level, stored locally.
+    @Published private(set) var highScores: HighScores
+    /// Name for new entries; asked once on the result card, changeable in the settings.
+    @Published var playerName: String {
+        didSet { UserDefaults.standard.set(HighScores.cleanName(playerName), forKey: "playerName") }
+    }
+    /// Bestenliste sheet of the start menu and the name field of the result card.
+    @Published var showScores = false
+    @Published var scoreMission = MissionLibrary.all[0]
+    @Published var scoreLevel: Difficulty = .medium
+    @Published var nameDraft = ""
+    @Published var nameConfirmed: Bool {
+        didSet { UserDefaults.standard.set(nameConfirmed, forKey: "playerNameConfirmed") }
+    }
+    /// Place and date of the entry made by the last result (nil: did not make the list).
+    @Published private(set) var lastEntry: (place: Int, date: Date)?
     /// Music on/off and volumes, stored in the user defaults.
     @Published var sound: SoundSettings {
         didSet {
@@ -53,7 +69,15 @@ final class AppModel: ObservableObject {
             .appendingPathComponent("Rotorwacht/progress.json")
     }
 
+    static var highScoresURL: URL {
+        FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
+            .appendingPathComponent("Rotorwacht/highscores.json")
+    }
+
     init() {
+        highScores = DebugShots.active ? HighScores() : HighScores.load(from: Self.highScoresURL)
+        playerName = UserDefaults.standard.string(forKey: "playerName") ?? HighScores.cleanName(NSUserName())
+        nameConfirmed = UserDefaults.standard.bool(forKey: "playerNameConfirmed")
         // Screenshot runs must not touch the player's progress.
         progress = DebugShots.active ? PlayerProgress() : PlayerProgress.load(from: Self.progressURL)
         difficulty = Difficulty(rawValue: UserDefaults.standard.string(forKey: "difficulty") ?? "") ?? .medium
@@ -151,10 +175,26 @@ final class AppModel: ObservableObject {
 
     func best(_ id: String) -> MissionRecord? { progress.best(id, difficulty) }
 
+    /// Practice course (no score, no list entry, no progress). Chosen in the practice sheet.
+    @Published var showPractice = false
+    @Published var practiceCourse = Practice.courses[0].id
+    @Published var practiceSlow = false
+    private(set) var practicing = false
+
+    func startPractice() {
+        guard let c = Practice.course(practiceCourse), let base = loadMission(c.missionID) else { return }
+        showPractice = false
+        launch(base.practiced(course: c, level: difficulty, slow: practiceSlow), id: c.missionID, practice: true)
+    }
+
     func startMission(_ id: String? = nil) {
         let id = id ?? missionID
         guard isUnlocked(id), let base = loadMission(id) else { return }
-        let m = base.scaled(for: difficulty)
+        launch(base.scaled(for: difficulty), id: id, practice: false)
+    }
+
+    private func launch(_ m: Mission, id: String, practice: Bool) {
+        practicing = practice
         missionID = id
         mission = m
         let s = GameScene(mission: m)
@@ -194,8 +234,48 @@ final class AppModel: ObservableObject {
 
     func togglePause() { setPaused(!paused) }
 
+    /// Renames the entry of the last result (name asked on the result card) and remembers the name.
+    func confirmName(_ raw: String) {
+        let name = HighScores.cleanName(raw)
+        playerName = name
+        nameConfirmed = true
+        if let e = lastEntry, highScores.rename(place: e.place, date: e.date, mission: missionID, level: difficulty, to: name) {
+            if !DebugShots.active { highScores.save(to: Self.highScoresURL) }
+        }
+    }
+
+    /// Developer aid for screenshots: fills the list with sample results and marks one as the last entry.
+    func debugSeedScores(for id: String) {
+        highScores = HighScores()
+        let names = ["Anna", "Jonas", "Mira", "Tobi", "Lena", "Kai", "Sven"]
+        for (i, n) in names.enumerated() {
+            highScores.add(ScoreEntry(name: n, score: 2900 - i * 260, stars: i < 2 ? 3 : (i < 5 ? 2 : 1), date: Date().addingTimeInterval(-Double(i) * 86_400)), mission: missionID, level: difficulty)
+            highScores.add(ScoreEntry(name: n, score: 2900 - i * 260, stars: i < 2 ? 3 : (i < 5 ? 2 : 1), date: Date().addingTimeInterval(-Double(i) * 86_400)), mission: id, level: difficulty)
+        }
+        let mine = ScoreEntry(name: playerName, score: 2570, stars: 2, date: Date())
+        highScores.add(mine, mission: id, level: difficulty)
+        if let p = highScores.add(mine, mission: missionID, level: difficulty) { lastEntry = (p, mine.date) }
+    }
+
+    func scores(_ id: String, _ level: Difficulty) -> [ScoreEntry] { highScores.list(id, level) }
+
     private func finish(_ r: MissionResult) {
+        if practicing {
+            // Practice has no result card, no score and no list entry: back to the menu.
+            InputController.shared.capturing = false
+            InputController.shared.releaseAll()
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) { [weak self] in self?.backToStart() }
+            return
+        }
         result = r
+        let entry = ScoreEntry(name: playerName, score: r.score, stars: r.stars, date: Date())
+        nameDraft = playerName
+        if let place = highScores.add(entry, mission: missionID, level: difficulty) {
+            lastEntry = (place, entry.date)
+            if !DebugShots.active { highScores.save(to: Self.highScoresURL) }
+        } else {
+            lastEntry = nil
+        }
         if !DebugShots.active {
             progress.record(missionID: missionID, level: difficulty, result: r)
             progress.save(to: Self.progressURL)

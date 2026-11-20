@@ -182,6 +182,62 @@ public struct AutoPilot {
         return input
     }
 
+    // MARK: Passages
+
+    /// Where the pilot waits in front of a passage and how far in front of it the crossing counts as started.
+    private static let stageDistance = 170.0
+    private static let commitDistance = 130.0
+    private static let crossSpeed = 190.0
+    private static let tailDistance = Passage.bodyHalfWidth + 30
+
+    private func steer(_ sim: MissionSimulation, vx desiredVx: Double, y wantY: Double) -> PilotInput {
+        let h = sim.heli
+        var input = PilotInput()
+        if h.vx < desiredVx - 12 { input.right = true } else if h.vx > desiredVx + 12 { input.left = true }
+        let desiredVy = max(-110, min(110, (wantY - h.y) * 1.4))
+        if desiredVy > h.vy + 8 { input.up = true } else if desiredVy < h.vy - 8 { input.down = true }
+        return input
+    }
+
+    /// Flies through an underpass or tunnel on the way to `target`: waits in front of closing doors until a window fits.
+    private func passageInput(_ sim: MissionSimulation, target: (x: Double, top: Double, pointIndex: Int?)) -> PilotInput? {
+        let m = sim.mission, h = sim.heli
+        let dir: Double = target.x > h.x ? 1 : -1
+        for (pi, p) in m.passageList.enumerated() {
+            let entry = dir > 0 ? p.x0 : p.x1, exit = dir > 0 ? p.x1 : p.x0
+            let before = (entry - h.x) * dir
+            let past = (h.x - exit) * dir
+            guard (target.x - exit) * dir > 0, before < 500 else { continue }
+            if past >= Self.tailDistance {
+                // Just out of the passage: climb slowly until the terrain ahead is cleared, then the normal flight takes over.
+                guard past < Self.tailDistance + 320 else { continue }
+                let lo = min(h.x, h.x + dir * 420) - 70, hi = max(h.x, h.x + dir * 420) + 70
+                let need = max(m.maxSurface(from: lo, to: hi) + 70, target.top + 70)
+                if h.y < need - 15 { return steer(sim, vx: dir * 70, y: need) }
+                continue
+            }
+            let floor = sim.passageFloor(pi)
+            let limit = p.shutterList.compactMap(\.gap).min().map { floor + $0 } ?? p.roof
+            let y = p.corridorY(floor: floor, upTo: limit)
+            let inBand = h.y >= floor + 10 && h.y + Passage.heliHeight <= min(p.roof, limit) - 6
+            if before <= Self.commitDistance {
+                return steer(sim, vx: dir * Self.crossSpeed, y: y)
+            }
+            let stage = entry - dir * Self.stageDistance
+            let launching = before <= Self.stageDistance + 40
+            if launching, inBand,
+               p.canCross(in: m, flood: sim.floodLevel, from: h.x, direction: dir, at: sim.time) {
+                return steer(sim, vx: dir * Self.crossSpeed, y: y)
+            }
+            // Wait at the staging point, descending to the corridor height once the ground allows it.
+            let lo = min(h.x, stage) - 70, hi = max(h.x, stage) + 70
+            let wantY = max(y, m.maxSurface(from: lo, to: hi) + 30)
+            let vx = max(-110, min(110, (stage - h.x) * 0.7))
+            return steer(sim, vx: vx, y: wantY)
+        }
+        return nil
+    }
+
     public func input(for sim: MissionSimulation) -> PilotInput {
         let m = sim.mission
         let h = sim.heli
@@ -189,6 +245,7 @@ public struct AutoPilot {
         if let d = dodge(sim) { return d }
         if !h.onGround, let f = fightInput(sim) { return f }
         let target = pickTarget(sim)
+        if !h.onGround, !m.passageList.isEmpty, let p = passageInput(sim, target: target) { return p }
         if let pi = target.pointIndex, m.rescuePoints[pi].isWinch, !(h.onGround && !h.inWater && sim.people.contains { $0.state == .boarding || $0.state == .leaving }) {
             if h.onGround { return PilotInput(up: true) }
             return winchInput(sim, point: m.rescuePoints[pi])

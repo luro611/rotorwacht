@@ -189,6 +189,9 @@ public struct HazardState: Equatable, Sendable {
     var winchHolding = false
     var flowHurtTimer = 0.0
     var refuelSaid = false
+    var passageContactCooldown = 0.0
+    var shutterWarnCycle: [Int: Int] = [:]
+    var shutterCloseCycle: [Int: Int] = [:]
     var nextID = 0
 
     init(mission: Mission) {

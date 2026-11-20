@@ -1,6 +1,6 @@
 # Mehr Spannung: Durchfahrten und Bestenliste
 
-Rückmeldung von Lutz am 20.11.2026 nach dem Anspielen von 0.5.0: Es ist noch zu langweilig. Wünsche: eine **Unterführung**, durch die man fliegen muss, einen **Tunnel mit Shuttern (Rolltoren), die auf- und zugehen**, und eine **Score-Liste**. Bleibt man im Shutter hängen, ist ein Hubschrauber weg.
+**Stand 20.11.2026: Durchfahrten und Bestenliste in Version 0.6.0 umgesetzt (Spielgefühl noch von Lutz zu prüfen).** Rückmeldung von Lutz am 20.11.2026 nach dem Anspielen von 0.5.0: Es ist noch zu langweilig. Wünsche: eine **Unterführung**, durch die man fliegen muss, einen **Tunnel mit Shuttern (Rolltoren), die auf- und zugehen**, und eine **Score-Liste**. Bleibt man im Shutter hängen, ist ein Hubschrauber weg.
 
 ## Entscheidungen (Annahmen von Claude, Lutz kann ändern)
 
@@ -17,6 +17,45 @@ Rückmeldung von Lutz am 20.11.2026 nach dem Anspielen von 0.5.0: Es ist noch zu
 - Je Einsatz und Stufe eine Liste der besten Ergebnisse (Top 10: Punkte, Sterne, Datum, Name), lokal gespeichert wie der Fortschritt (`~/Library/Application Support/Rotorwacht/`).
 - Name vor dem ersten Eintrag einmal abfragen (Standard: Benutzername), änderbar in den Einstellungen.
 - Anzeige im Menü (Bestenliste je Einsatz/Stufe) und auf der Wertungskarte (eigener Platz hervorgehoben).
+
+## Detailentwurf `passages` (Version 0.6.0)
+
+Entworfen vor dem Bauen, 20.11.2026. Alle Felder in der Einsatzdatei sind optional (`passages` fehlt = wie bisher).
+
+### Daten (`Passage`, `Shutter`)
+- `Passage`: `id`, `kind` (`"bridge"` Unterführung oder `"tunnel"`), `x0`/`x1` (Spanne in Weltkoordinaten), `roof` (Höhe der Unterseite der Decke, absolut), `shutters` (nur Tunnel, optional).
+- Der **Boden** ist nie Teil der Daten: `floorRef = max(höchste Geländehöhe in der Spanne, höchster Wasserstand der Welt)`. Die Decke muss mindestens `Passage.heliHeight + 36` über `floorRef` liegen (Prüfung in `validate`), Geländeprofil in der Spanne bleibt unverändert (bei Tunneln eben).
+- `Shutter`: `x`, `period` (Sekunden je Zyklus), `open` (Sekunden voll offen je Zyklus), `phase` (Verschiebung), `warn` (Vorwarnzeit vor dem Schließen), `gap` (Höhe der Öffnung über dem Boden, wenn offen; Standard bis zur Decke), `move` (Bewegungszeit, Standard 0,6 s). Pflicht: `period > open + 2·move + 0,5`.
+
+### Zyklus eines Shutters (rein rechnerisch aus der Zeit, ohne eigenen Zustand)
+`u = (t + phase) mod period`: `u < open` offen; danach `move` s Schließen (Torunterkante fährt von `floorRef + gap` auf den Boden); geschlossen bis `period − move`; dann `move` s Öffnen. Ampel: **grün** (offen, noch keine Warnung), **gelb blinkend** ab `open − warn` bis Schließbeginn, **rot** ab Schließbeginn bis wieder ganz offen. Ereignisse: `shutterWarning` (Klacken, Gelb beginnt) und `shutterClosing` (Rot beginnt), je einmal je Zyklus.
+
+### Kollisionsregeln (nach der Physik, nur solange der Hubschrauber fliegt)
+Hubschrauberkörper: Breite `±36`, Höhe `heliHeight = 70` (Kufen bis Rotorkopf).
+1. **Shutter:** Liegt `|heli.x − shutter.x| < 36 + 8` und die Torunterkante unter der Rotoroberkante (`heli.y + 70`) und `heli.y < Decke`, ist **dieser Hubschrauber verloren** (Haltbarkeit 0, normaler Absturz mit Ersatz aus dem Lager). Gilt auch, wenn das Tor von oben auf den Hubschrauber fährt (Steckenbleiben). Kein Schaden-Zwischenschritt.
+2. **Decke (Mitte des Hubschraubers in der Spanne):** `heli.y` wird auf `Decke − 70` begrenzt, Steigen gestoppt, Schaden `8 + 0,15·Steiggeschwindigkeit` einmalig je Berührung (Sperre 0,5 s) plus 40 je Sekunde Dauerkontakt. Ereignis `passageContact`.
+3. **Stirnwand (Mitte außerhalb der Spanne, aber weniger als 36 davor, und `heli.y + 70 > Decke`):** `x` wird an die Kante gesetzt, Geschwindigkeit nach innen gestoppt, Schaden `0,12·|vx|` einmalig je Berührung. So **kann man nicht darüber fliegen**: Über der Decke ist die Spanne bis zur Flughöhengrenze Masse (Brückenbauwerk bzw. Berg).
+4. Fliegende Objekte (Lavabrocken, Trümmer), die über der Decke in die Spanne geraten, verschwinden; **Ströme** (Lava, Lawine) schaden im Tunnel nicht (Lawinengalerie als Schutz).
+
+### Stufen (`Mission.scaled`)
+- Takt: `open` × `warning` (leicht 1,3 / schwer 0,8), geschlossene Zeit × (2 − `warning`); `warn` × `warning`.
+- Öffnung: Decke − `floorRef` × (leicht 1,15 / schwer 0,9), nie unter `heliHeight + 36`; `gap` entsprechend.
+
+### Autopilot und Planung
+- `Passage.canCross(...)` prüft für jeden Shutter in Fahrtrichtung, ob er zur geplanten Ankunftszeit (Abstand / 170 + 0,5 s Anlauf) von −0,8 s bis +0,9 s durchgehend begehbar ist (Torunterkante mindestens 18 über Hubschrauberhöhe). Der Autopilot wartet 140 vor dem Portal in Korridorhöhe, bis das Fenster passt, und fliegt dann mit 190 durch; ein Test prüft für jeden Einsatz und jede Stufe, dass ein Fenster in beide Richtungen existiert und der Autopilot keinen Hubschrauber verliert.
+- Rettungspunkte liegen **nicht** im Tunnel (der Hubschrauber wartet nie zwischen Toren; Nischen bleiben eine spätere Idee).
+
+### Einbau in die Einsätze (ohne Geländeänderung)
+Hochwasser: Brücke über Wasser bei 3150–3400 (Decke 350, über dem höchsten Wasser 200; die Öffnung schrumpft mit der Flut). Altstadt: Brücke 5820–6040 über dem ebenen Platz vor dem Lager (Decke 250). Vulkan: Tunnel 6060–6560 vor dem Lager. Hochgebirge: Lawinengalerie 5900–6450 vor dem Lager. Alle liegen zwischen Lager und allen Rettungspunkten.
+
+### Übungsmodus (Zusatz von Lutz, 20.11.2026)
+- Knopf „Üben“ im Startmenü neben den Stufen. Wahl: Übungsstrecke, Stufe, „Langsamer“ (Shutter länger offen und länger gewarnt, Blitze und Salven seltener und milder, Lava und Lawinen langsamer, Flut halb so schnell).
+- Neun Strecken (`Practice.courses`), je aus einer vorhandenen Einsatzdatei mit eigenem Startpunkt (`startX`): Unterführung, Tunnel mit Shuttern, Lawinengalerie, Brücke über der Flut, Blitze, Trümmer und Nachbeben, Lava, Lawinen mit Seilwinde, Löschen. Jeder Einsatz ist damit auch ohne Wertung spielbar; alle Einsätze sind geöffnet.
+- Regeln (`Mission.practiced`): Hubschrauber unbegrenzt (Anzeige ∞), nach einem Verlust steht der nächste nach 0,4 s am Start der Strecke, kein Treibstoffverbrauch, keine Zeitgrenze (Anzeige ∞). Keine Wertungskarte, kein Eintrag in die Bestenliste, Fortschritt unverändert (die App beendet die Übung zurück im Menü, wenn alle Menschen versorgt sind).
+- Tests: `PracticeTests` (alle Strecken gültig auf allen Stufen, Start fest, sofortiger Ersatz, langsamer ist milder, nie Niederlage, normale Einsätze unverändert).
+
+### Bestenliste
+`HighScores` in `RotorwachtCore`: je `"<Einsatz>|<Stufe>"` Top 10 nach Punkten (dann Sterne, dann früher), `ScoreEntry` (Name, Punkte, Sterne, Datum). Name auf 16 Zeichen gekürzt, leer = „Pilot“; Datei `highscores.json` neben `progress.json`. Einträge mit 0 Punkten kommen nicht in die Liste.
 
 ## Weitere Ideen gegen Langeweile (noch nicht entschieden)
 Mehr Abwechslung je Einsatz, Kombo-/Zeitbonus für schnelle Rettung, Hindernisse wie Hochspannungsleitungen und Kräne, wechselnde Wetterlagen, Endlosmodus. Lutz sagt, welche.

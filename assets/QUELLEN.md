@@ -2,7 +2,7 @@
 
 ## Grafik und Ton
 
-Alle Grafiken des Spielfelds (Hubschrauber, Menschen, Landeplätze, Gebäude, Gelände, Panoramen) sind eigene 3D-Modelle, die per Python-Skript in Blender (Version 5.3, GPL, nur als Werkzeug; die Bilder sind eigene Werke) erzeugt und gerendert werden: `art/*.py`, Ausgabe in `Sources/Rotorwacht/Renders`. Keine fremden Modelle oder Texturen. Effekte und das Menü entstehen im Code, alle Geräusche werden synthetisiert. Die Musik wird zur Laufzeit im Code erzeugt (eigene Tonleitern, Akkordfolgen, Melodien und Synthesizer-Stimmen in `Sources/RotorwachtCore/Music*.swift`), ebenso die Geräusche. Es gibt keine fremden Bild- oder Tondateien und keine Aufnahmen. Nichts stammt aus Choplifter oder einem anderen bestehenden Spiel.
+Alle Grafiken des Spielfelds (Hubschrauber, Menschen, Landeplätze, Gebäude, Gelände, Panoramen, Felswand und Betonbauwerk der Durchfahrten, Shutter und Signallampen) sind eigene 3D-Modelle, die per Python-Skript in Blender (Version 5.3, GPL, nur als Werkzeug; die Bilder sind eigene Werke) erzeugt und gerendert werden: `art/*.py`, Ausgabe in `Sources/Rotorwacht/Renders`. Keine fremden Modelle oder Texturen. Effekte und das Menü entstehen im Code, alle Geräusche werden synthetisiert. Die Musik wird zur Laufzeit im Code erzeugt (eigene Tonleitern, Akkordfolgen, Melodien und Synthesizer-Stimmen in `Sources/RotorwachtCore/Music*.swift`), ebenso die Geräusche. Es gibt keine fremden Bild- oder Tondateien und keine Aufnahmen. Nichts stammt aus Choplifter oder einem anderen bestehenden Spiel.
 
 ## Luro-Siegel
 

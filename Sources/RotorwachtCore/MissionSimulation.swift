@@ -51,6 +51,11 @@ public enum SimEvent: Equatable, Sendable {
     case winchStarted(pointIndex: Int)
     case winchSlipped
     case refueling
+    // Passages
+    case shutterWarning(passage: Int, shutter: Int)
+    case shutterClosing(passage: Int, shutter: Int)
+    case shutterCrush(passage: Int)
+    case passageContact(kind: String, damage: Double)
 }
 
 public enum MissionOutcome: Equatable, Sendable {
@@ -143,8 +148,9 @@ public struct MissionSimulation {
         self.hz = HazardState(mission: mission)
         self.fireExposure = Array(repeating: 0, count: mission.rescuePoints.count)
         self.helicoptersLeft = mission.helicopters
+        let sx = mission.startX ?? mission.base.x
         self.heli = HelicopterState(
-            x: mission.base.x, y: mission.baseSurface,
+            x: sx, y: mission.surfaceHeight(at: sx),
             fuel: mission.fuel.capacity, durability: spec.maxDurability)
         self.heli.water = mission.tankSpec.capacity
         var list: [Person] = []
@@ -239,6 +245,7 @@ public struct MissionSimulation {
         stepTank(input: input, dt: dt, &events)
         applyHeat(dt: dt, &events)
         stepWinch(dt: dt, &events)
+        stepPassages(dt: dt, &events)
 
         if heli.durability <= 0 {
             crash(&events)
@@ -437,7 +444,7 @@ public struct MissionSimulation {
     }
 
     private mutating func crash(_ events: inout [SimEvent]) {
-        helicoptersLeft -= 1
+        if !mission.isPractice { helicoptersLeft -= 1 }
         for i in people.indices where people[i].state == .aboard || people[i].state == .boarding
             || people[i].state == .leaving || people[i].state == .hoisting {
             // Those already stepping out at the camp count as rescued; the rest are injured.
@@ -452,13 +459,14 @@ public struct MissionSimulation {
         if helicoptersLeft <= 0 {
             finish(.failed, &events)
         } else {
-            phase = .crashed(timeLeft: Self.crashDelay)
+            phase = .crashed(timeLeft: mission.isPractice ? 0.4 : Self.crashDelay)
         }
     }
 
     private mutating func respawn(_ events: inout [SimEvent]) {
+        let sx = mission.startX ?? mission.base.x
         heli = HelicopterState(
-            x: mission.base.x, y: mission.baseSurface,
+            x: sx, y: mission.surfaceHeight(at: sx),
             fuel: mission.fuel.capacity, durability: spec.maxDurability)
         heli.water = mission.tankSpec.capacity
         hz.winchProgress = Array(repeating: 0, count: mission.rescuePoints.count)

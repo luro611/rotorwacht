@@ -4,7 +4,7 @@
  "hazard": "volcano",
  "look": "volcano",
  "tagline": "Asche und Lava",
- "summary": "Asche nimmt die Sicht, Lavabrocken fliegen in Bögen, ein Lavastrom kriecht hangab. Der Treibstoff ist knapp.",
+ "summary": "Asche nimmt die Sicht, Lavabrocken fliegen in Bögen, ein Lavastrom kriecht hangab. Der Treibstoff ist knapp, ein Tunnel hat Shutter.",
  "title": "Vulkanausbruch auf der Insel",
  "briefing": "Der Vulkan ist ausgebrochen. Ascheregen nimmt die Sicht, Lavabrocken fliegen in hohen Bögen aus dem Krater (die Flugbahn wird angezeigt), und ein Lavastrom läuft den Osthang hinab auf die Siedlungen zu. Wo er hinkommt, ist alles verloren, hole zuerst die obersten Orte. Der Treibstoff ist knapp: Auf der Westseite wartet ein Außenposten zum Tanken.",
  "world": {
@@ -187,6 +187,31 @@
    "radius": 22,
    "damage": 14,
    "blockTime": 14
+  }
+ ],
+ "passages": [
+  {
+   "id": "hangtunnel",
+   "kind": "tunnel",
+   "x0": 6060,
+   "x1": 6560,
+   "roof": 300,
+   "shutters": [
+    {
+     "x": 6085,
+     "period": 10,
+     "open": 6.0,
+     "phase": 0,
+     "warn": 1.5
+    },
+    {
+     "x": 6535,
+     "period": 10,
+     "open": 6.0,
+     "phase": 4.5,
+     "warn": 1.5
+    }
+   ]
   }
  ]
 }
