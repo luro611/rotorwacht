@@ -21,7 +21,7 @@ struct Look {
     static let valley = Look(
         sky: [(0, 0x5e7388, 1), (0.45, 0x93a6b4, 1), (0.78, 0xcdd0cb, 1), (1, 0xe9dcc6, 1)],
         glow: (0.72, 0.30, 300, 0xfff0cf, 0.55),
-        far: [0x9aaab7, 0x7f929f], mist: 0xcfd3d0,
+        far: [0xa2b0bc, 0x8d9eab], mist: 0xcfd3d0,
         hill: [(0, 0x5c7466, 1), (0.6, 0x62806c, 1), (1, 0x8fa092, 1)],
         ground: [(0, 0x82744f, 1), (0.55, 0x6a5841, 1), (1, 0x3b2f27, 1)],
         edgeDark: 0x4f6334, edgeLight: 0x8fa05a)
@@ -75,8 +75,8 @@ struct Look {
             l.sky = [(0, 0x070b14, 1), (0.5, 0x10192a, 1), (0.85, 0x1b2638, 1), (1, 0x273449, 1)]
             l.glow = (0.8, 0.3, 160, 0x9fb2d0, 0.18)
             l.stars = true
-            l.far = [0x1c2735, 0x151e2b]; l.mist = 0x1f2b3b
-            l.hill = [(0, 0x162029, 1), (0.6, 0x1b2631, 1), (1, 0x273442, 1)]
+            l.far = [0x2e3d52, 0x25344a]; l.mist = 0x3a4d66
+            l.hill = [(0, 0x1f2d3b, 1), (0.6, 0x2c3c4d, 1), (1, 0x3a4c5e, 1)]
         default: break
         }
         return l
@@ -289,12 +289,12 @@ extension Art {
     private static func make_night() -> SKTexture {
         let s: CGFloat = 800
         return texture(CGSize(width: s, height: s)) { ctx in
-            ctx.setFillColor(c(0x04070f, 0.86)); ctx.fill(CGRect(x: 0, y: 0, width: s, height: s))
+            ctx.setFillColor(c(0x0a1220, 0.60)); ctx.fill(CGRect(x: 0, y: 0, width: s, height: s))
             ctx.setBlendMode(.destinationOut)
             let center = CGPoint(x: s / 2, y: s / 2)
             // Soft glow around the helicopter.
-            let glow = gradient([(0, 0x000000, 0.95), (0.5, 0x000000, 0.45), (1, 0x000000, 0)])
-            ctx.drawRadialGradient(glow, startCenter: center, startRadius: 0, endCenter: center, endRadius: 38, options: [])
+            let glow = gradient([(0, 0x000000, 0.95), (0.5, 0x000000, 0.55), (1, 0x000000, 0)])
+            ctx.drawRadialGradient(glow, startCenter: center, startRadius: 0, endCenter: center, endRadius: 70, options: [])
             // Cone.
             ctx.saveGState()
             let half: CGFloat = 0.34

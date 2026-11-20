@@ -7,10 +7,13 @@
 
 Eigenes Hubschrauber-Rettungsspiel für den Mac (Swift, SpriteKit, SwiftUI): nach Naturkatastrophen Menschen von Dächern und Anhöhen holen und ins Lager bringen, bevor Wetter, Wasser oder Treibstoff dir einen Strich durch die Rechnung machen.
 
-**Status:** Version 0.6.0 gebaut, 0.7 in Arbeit (alle sechs Einsätze, drei Stufen, Gamepad, Musik, Durchfahrten mit Shuttern, Bestenliste, Hindernisse und Wetterwechsel; Grafik aus gerenderten 3D-Modellen). Nur zum eigenen Gebrauch, unnotarisiert.
+**Status:** Version 0.8.0 (Feinschliff nach 0.7.0: hellere Sturmnacht, ruhigere Fernberge; alle sechs Einsätze, drei Stufen, Gamepad, Musik, Durchfahrten mit Shuttern, Bestenliste, Hindernisse, Wetterwechsel, Zeitbonus, Kombos und Endlosmodus; Grafik aus gerenderten 3D-Modellen). Nur zum eigenen Gebrauch, unnotarisiert.
 
 **Lizenz:** MIT für den Code, CC BY 4.0 für eigene Grafik und Ton (siehe `LICENSE`, `LICENSE-ASSETS.md`)
 
+![Startbildschirm mit Einsätzen, Stufen, Bestenliste, Üben und Endlos](docs/bilder/start-0.8.png)
+![Sturmnacht an der Küste, heller als zuvor](docs/bilder/sturmnacht-0.8.png)
+![Hochwasser mit ruhigeren Fernbergen](docs/bilder/hochwasser-0.8.png)
 ![Tunnel mit Shuttern im Vulkan-Einsatz](docs/bilder/tunnel-0.6.png)
 ![Baukran mit schwenkendem Ausleger in der Altstadt](docs/bilder/kran-0.7.png)
 ![Nebelbank mit Windsack und Leitung im Hochwasser-Einsatz](docs/bilder/nebel-0.7.png)
@@ -37,7 +40,7 @@ scripts/build.sh --run
 
 Das baut `build/Rotorwacht.app` (ad hoc signiert) und startet sie. Beim ersten Start einer unnotarisierten App: Rechtsklick auf die App, „Öffnen“.
 
-Tests (Swift Testing, 173 Tests für Flugphysik, Landen, Ein-/Aussteigen, Tank, Feuer, Blitz, Trümmer, Lava, Lawinen, Seilwinde, Durchfahrten, Hindernisse, Wetterwechsel, Übungsmodus, Bestenliste, Fortschritt und Autopilot-Proben aller sechs Einsätze auf allen Stufen):
+Tests (Swift Testing, 191 Tests für Flugphysik, Landen, Ein-/Aussteigen, Tank, Feuer, Blitz, Trümmer, Lava, Lawinen, Seilwinde, Durchfahrten, Hindernisse, Wetterwechsel, Punkte, Endlosmodus, Übungsmodus, Bestenliste, Fortschritt und Autopilot-Proben aller sechs Einsätze auf allen Stufen):
 
 ```bash
 scripts/test.sh

@@ -2,6 +2,15 @@
 
 Versionen: 0.x bis zum ersten fertigen Stand, dann 1.0.0.
 
+## [0.8.0] – 2026-11-20
+
+Feinschliff, keine neuen Spielregeln (Planung `docs/planung/07 Feinschliff 0.8.md`).
+
+- **Sturmnacht an der Küste lesbarer:** Die Dunkelheit deckt weniger (Schleier 60 statt 86 Prozent, bläulich), das Leuchten um den Hubschrauber ist größer, Fernberge und Hügel der Nacht sind heller. Hubschrauber, Gelände und Wartende sind nun auch außerhalb des Scheinwerferkegels zu erkennen; der Kegel bleibt die Hauptlichtquelle.
+- **Fernberge im Hochwasser-Einsatz zurückgenommen** (gilt auch für den Waldbrand, gleiche Landschaft): niedriger (62 Prozent der Höhe), stärker im Dunst, heller und ruhiger. Panoramen neu gerendert (`scripts/render-art.sh panorama`).
+- **Prüfung 0.7 (Opus):** Der Bericht nennt nur die vier Fehler des Endlos-Tests mit Hindernissen und Wetter; sie sind im Stand 0.7.0 behoben, 191 Tests grün (bestätigt). Weitere niedrige Befunde gibt es dort nicht.
+- **Doku:** README auf 0.7/0.8, neue Bildschirmfotos (`start-0.8`, `sturmnacht-0.8`, `hochwasser-0.8`), Stand in `CLAUDE.md`.
+
 ## [0.7.0] – 2026-11-20
 
 Abwechslung (Entscheidung von Lutz am 20.11.2026): Planung `docs/planung/06 Abwechslung 0.7.md`. Gebaut in zwei Teilen: 0.7a (Hindernisse, Wetter) und 0.7b (Punkte, Endlosmodus).
