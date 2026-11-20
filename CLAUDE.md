@@ -16,6 +16,12 @@ Eigenes Hubschrauber-Rettungsspiel für den Mac, nur zum eigenen Gebrauch. Inspi
 - Koordinaten: x nach rechts, y nach oben, Einheiten = Bildpunkte der 1280x720-Szene. Das Lager steht rechts.
 - Entwicklungshilfe: `ROTORWACHT_SHOTS=<Ordner>` (mit `ROTORWACHT_MISSION=<id>`, `ROTORWACHT_UNLOCK_ALL=1` und `ROTORWACHT_TIMES=10,20,…` für die Zeitpunkte) startet den Einsatz mit Autopilot und legt Bildschirmfotos ab (`DebugShots.swift`). Der Fortschritt wird dabei nicht angefasst.
 
+## Musik (seit 0.5.0)
+
+- Alles synthetisch, keine Tondateien. Core: `Music.swift` (Themen `MusicTheme`, Tonleitern, 8-Takt-Form, `MusicScore`), `MusicSynth.swift` (Sequenzer, Stimmen, Echo, Limiter; keine Allokation beim Rendern), `MusicMixer.swift` (Überblenden, Nutzerlautstärke, Pause), `MusicIntensity.swift` (`IntensityTracker`, `SoundSettings`). App: `MusicPlayer.swift` (eigene AVAudioEngine, getrennt von `AudioEngine` für Effekte), `SoundSettingsView.swift`. `AppModel` füttert die Intensität aus dem `HUDSnapshot`.
+- Neue Einsatz-Musik: `MusicTheme.forMission` ergänzen und `spec` im Enum; `MusicTests` verlangen ein eigenes Thema je Einsatz.
+- Klang nur per Kennzahlen geprüft (Offline-Rendern), nicht abgehört.
+
 ## Grafik (seit 0.4.0)
 
 - Alle Bilder kommen aus Blender (`brew install --cask blender`), erzeugt von Python-Skripten in `art/` (`lib.py`, `helicopter.py`, `people.py`, `pads.py`, `terrain.py`, `panorama.py`); `scripts/render-art.sh [heli|people|pads|terrain|panorama]` rendert neu. Die PNGs liegen in `Sources/Rotorwacht/Renders` (im Repository, Bundle wächst um etwa 50 MB). Maßstab: 16 pt je Meter, Pads 2 px je Einheit, Gelände 1,5 px.

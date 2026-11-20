@@ -17,6 +17,21 @@ final class AppModel: ObservableObject {
     @Published var missions: [Mission] = []
     /// Stars and scores so far, stored locally.
     @Published private(set) var progress: PlayerProgress
+    /// Music on/off and volumes, stored in the user defaults.
+    @Published var sound: SoundSettings {
+        didSet {
+            sound = sound.clamped
+            if let data = try? JSONEncoder().encode(sound) { UserDefaults.standard.set(data, forKey: "sound") }
+            music.apply(sound)
+            scene?.audio.volume = Float(sound.effectsVolume)
+        }
+    }
+    private let music = MusicPlayer()
+    private var intensity = IntensityTracker()
+    private var lastMusicUpdate: Date?
+    /// Music stands still while the game is paused or the window is in the background.
+    private var gamePausedForMusic = false
+    private var appInactive = false
     @Published var difficulty: Difficulty {
         didSet { UserDefaults.standard.set(difficulty.rawValue, forKey: "difficulty") }
     }
@@ -32,13 +47,25 @@ final class AppModel: ObservableObject {
         // Screenshot runs must not touch the player's progress.
         progress = DebugShots.active ? PlayerProgress() : PlayerProgress.load(from: Self.progressURL)
         difficulty = Difficulty(rawValue: UserDefaults.standard.string(forKey: "difficulty") ?? "") ?? .medium
+        sound = (UserDefaults.standard.data(forKey: "sound").flatMap { try? JSONDecoder().decode(SoundSettings.self, from: $0) } ?? SoundSettings()).clamped
         InputController.shared.start()
+        if !DebugShots.active {
+            music.apply(sound)
+            music.start()
+            music.play(.menu)
+        }
         DispatchQueue.main.async { DebugShots.runIfRequested(model: self) }
         InputController.shared.onEscape = { [weak self] in
             Task { @MainActor in self?.togglePause() }
         }
         NotificationCenter.default.addObserver(forName: NSApplication.didResignActiveNotification, object: nil, queue: .main) { [weak self] _ in
-            Task { @MainActor in if !DebugShots.active, self?.screen == .playing { self?.setPaused(true) } }
+            Task { @MainActor in
+                self?.appInactive = true; self?.updateMusicPause()
+                if !DebugShots.active, self?.screen == .playing { self?.setPaused(true) }
+            }
+        }
+        NotificationCenter.default.addObserver(forName: NSApplication.didBecomeActiveNotification, object: nil, queue: .main) { [weak self] _ in
+            Task { @MainActor in self?.appInactive = false; self?.updateMusicPause() }
         }
     }
 
@@ -67,13 +94,18 @@ final class AppModel: ObservableObject {
         mission = m
         let s = GameScene(mission: m)
         s.onHUD = { [weak self] snap in
-            DispatchQueue.main.async { self?.hud = snap }
+            DispatchQueue.main.async { self?.hud = snap; self?.feedMusic(snap) }
         }
         s.onFinished = { [weak self] r in
             self?.finish(r)
         }
         scene?.shutdown()
         scene = s
+        s.audio.volume = Float(sound.effectsVolume)
+        intensity.reset()
+        lastMusicUpdate = nil
+        gamePausedForMusic = false
+        if !DebugShots.active { music.play(MusicTheme.forMission(id)); updateMusicPause() }
         hud = HUDSnapshot()
         paused = false
         result = nil
@@ -87,6 +119,8 @@ final class AppModel: ObservableObject {
         paused = p
         scene?.gamePaused = p
         scene?.audio.enabled = !p
+        gamePausedForMusic = p
+        updateMusicPause()
         if p { InputController.shared.releaseAll() }
     }
 
@@ -100,6 +134,7 @@ final class AppModel: ObservableObject {
         }
         InputController.shared.capturing = false
         InputController.shared.releaseAll()
+        if !DebugShots.active { music.play(MusicTheme.ending(for: r), crossfade: 0.6) }
         // A short beat so the last rescue can be seen before the result card appears.
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) { [weak self] in
             self?.screen = .result
@@ -111,6 +146,31 @@ final class AppModel: ObservableObject {
         scene = nil
         InputController.shared.capturing = false
         paused = false
+        gamePausedForMusic = false
         screen = .start
+        if !DebugShots.active { music.play(.menu); updateMusicPause() }
+    }
+
+    private func updateMusicPause() { music.setPaused(gamePausedForMusic || appInactive) }
+
+    /// Derives the music intensity from the on-screen display (a few times per second).
+    private func feedMusic(_ h: HUDSnapshot) {
+        guard screen == .playing, !DebugShots.active, let m = mission, !paused else { lastMusicUpdate = nil; return }
+        let now = Date()
+        let dt = min(1, now.timeIntervalSince(lastMusicUpdate ?? now.addingTimeInterval(-0.25)))
+        lastMusicUpdate = now
+        var i = MusicInputs()
+        i.timeUsed = 1 - h.timeLeft / max(1, m.timeLimit)
+        i.fuel = h.fuel
+        i.durability = h.durability
+        let rise = m.flood.maxLevel - m.flood.startLevel
+        if m.flood.risePerSecond > 0, rise > 0 { i.flood = (h.floodLevel - m.flood.startLevel) / rise }
+        i.fire = Double(h.fires.count) / 14
+        i.smoke = h.smoke
+        i.heat = h.heat
+        i.lost = h.lost
+        i.helicoptersLeft = h.helicoptersLeft
+        i.crashed = h.crashed
+        music.setIntensity(intensity.update(i, dt: dt))
     }
 }

@@ -135,6 +135,7 @@ struct StartView: View {
 
     private var footer: some View {
         VStack(spacing: 8) {
+            SoundSettingsView().padding(.bottom, 4)
             Rectangle().fill(Theme.line).frame(height: 1)
             HStack {
                 Text("Eigenes Spiel, nur für den privaten Gebrauch.").font(Theme.mono(11)).foregroundColor(Theme.muted)

@@ -167,6 +167,7 @@ struct PauseOverlay: View {
                     Button("Einsatz abbrechen") { model.backToStart() }
                         .buttonStyle(QuietButtonStyle())
                 }
+                SoundSettingsView()
                 Text("Esc setzt den Einsatz fort.").font(Theme.mono(11)).foregroundColor(Theme.muted)
             }
             .padding(26)

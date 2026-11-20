@@ -33,7 +33,7 @@ scripts/build.sh --run
 
 Das baut `build/Rotorwacht.app` (ad hoc signiert) und startet sie. Beim ersten Start einer unnotarisierten App: Rechtsklick auf die App, „Öffnen“.
 
-Tests (Swift Testing, 99 Tests für Flugphysik, Landen, Ein-/Aussteigen, Tank, Feuer, Blitz, Trümmer, Lava, Lawinen, Seilwinde, Fortschritt und Autopilot-Proben aller sechs Einsätze auf allen Stufen):
+Tests (Swift Testing, 116 Tests für Flugphysik, Landen, Ein-/Aussteigen, Tank, Feuer, Blitz, Trümmer, Lava, Lawinen, Seilwinde, Fortschritt und Autopilot-Proben aller sechs Einsätze auf allen Stufen):
 
 ```bash
 scripts/test.sh
@@ -60,11 +60,15 @@ Seilwinde (Einsatz 6): Auf Felsvorsprüngen nicht landen. Schwebe ruhig über de
 
 Löschen: Den Tank füllst du im Tiefflug über See, Fluss oder Flut (und im Lager). Die Leertaste wirft Tropfen ab, die deine Fluggeschwindigkeit mitnehmen. Wasser löscht Flammen und macht den Boden nass; nasser Boden brennt nicht, ein Streifen vor der Flammenfront hält das Feuer auf. Feuer läuft bergauf und mit dem Wind schneller, bedroht Wartende, Rauch nimmt die Sicht und Hitze kostet Haltbarkeit.
 
+## Musik und Ton
+
+Alle Musik und alle Geräusche entstehen im Code (Synthesizer, keine Aufnahmen, nichts Fremdes): ruhige Menümusik, je Einsatz ein eigener Teppich mit eigener Melodie, der bei Zeitdruck, knappem Treibstoff, Flut, Feuer und Schaden dichter und schneller wird, und ein kurzer Abschluss bei der Wertung. Im Startmenü und in der Pause stellst du Musik an/aus, Musiklautstärke und Effektlautstärke getrennt ein. Die Logik (Tonleitern, Muster, Intensität) liegt in `RotorwachtCore/Music*.swift` und ist getestet, auch per Offline-Rendern (Pegel, Stille, Sprünge); den Klang selbst muss man hören.
+
 ## Aufbau
 
 - `Sources/RotorwachtCore`: Spiellogik ohne Oberfläche (Flugphysik, Regeln, Einsatzdaten, Gefahren-Bausteine, Stufen, Fortschritt). Von den Tests geprüft.
 - `Sources/RotorwachtCore/Missions/*.json`: Einsätze als Daten (Gelände, Rettungspunkte, Flut und Seegang, Seen, Brandzonen, Böen, Treibstoff, Tank, Gewitterzellen, Salven, Lava und Lawinen, Außenposten, Atmosphäre).
-- `Sources/Rotorwacht`: die Mac-App (SpriteKit-Szene, SwiftUI-Menüs und Anzeige, synthetisierter Ton).
+- `Sources/Rotorwacht`: die Mac-App (SpriteKit-Szene, SwiftUI-Menüs und Anzeige, synthetisierter Ton und selbst erzeugte Musik).
 - `scripts/`: `build.sh` (App bauen), `test.sh` (Tests).
 - `docs/planung/`: Spielkonzept und offene Fragen.
 - `art/`: Blender-Skripte (Python), die alle 3D-Modelle erzeugen und rendern; `scripts/render-art.sh` rendert alles neu (Blender nötig: `brew install --cask blender`), die Bilder liegen fertig in `Sources/Rotorwacht/Renders`. Ton entsteht im Code. Herkunft und Schriften: `assets/QUELLEN.md`.

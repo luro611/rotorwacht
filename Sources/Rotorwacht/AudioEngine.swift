@@ -28,6 +28,8 @@ final class AudioEngine {
     /// 1 while the tank is filling, 0...1.
     var fill: Float = 0
     var enabled = true
+    /// Effect volume from the settings, 0...1.
+    var volume: Float = 1 { didSet { engine.mainMixerNode.outputVolume = 0.6 * min(1, max(0, volume)) } }
 
     // Audio-thread state
     private var chopPhase: Float = 0
