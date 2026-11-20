@@ -50,6 +50,8 @@ Mit einem vollständigen Toolchain (Xcode) geht auch `swift build` und `swift te
 | Esc | Pause |
 | Leertaste | Löschwasser abwerfen (halten) |
 
+Controller (Xbox, PlayStation, MFi; optional, per Bluetooth oder Kabel): linker Stick oder Steuerkreuz fliegen (der Stick dosiert weich), A/Kreuz Löschwasser, Start/Menü Pause. Im Menü wählen Stick oder Steuerkreuz, A bestätigt, B geht zurück. Ob ein Controller verbunden ist, steht im Startmenü und in den Einstellungen (Cmd+,, dort auch die Totzone). Wird er im Einsatz abgesteckt, pausiert das Spiel.
+
 Landen: sanft aufsetzen (unter etwa 75 Einheiten Sinkgeschwindigkeit, wenig Seitenfahrt, gerade). Gelandet steigen Menschen von selbst ein; im Lager am rechten Rand steigen sie aus, und der Hubschrauber tankt und wird langsam repariert. Im Wasser landen kostet Haltbarkeit.
 
 Einsätze und Stufen: Auf dem Startbildschirm wählst du Leicht, Mittel oder Schwer und den Einsatz. Der erste ist offen, jeder weitere, sobald der vorige mit mindestens einem Stern geschafft ist. Sterne und Bestwerte bleiben gespeichert.

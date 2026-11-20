@@ -2,6 +2,18 @@
 
 Versionen: 0.x bis zum ersten fertigen Stand, dann 1.0.0.
 
+## [0.5.0] – in Arbeit
+
+### Gamepad
+
+Controller (Xbox, PlayStation, MFi) zusätzlich zur Tastatur, über das Framework GameController.
+
+- **Fliegen:** linker Stick analog (Totzone, Kurve; dosiert Fahrt und Steig-/Sinkgeschwindigkeit weich) und Steuerkreuz (volle Ausschläge). Tastatur unverändert; sobald eine Pfeiltaste gehalten wird, gilt die Tastatur.
+- **A / Kreuz** Löschwasser, **Start / Menü** Pause, im Menü Stick oder Steuerkreuz wählen (mit Wiederholung), A bestätigen, B zurück (Pause: B setzt fort, Wertung: B zum Start). Fokusrahmen in Terrakotta, nur mit verbundenem Controller.
+- Hinweis zum Controller im Startmenü und im neuen Einstellungsfenster (Cmd+,) mit Belegung und Totzone-Regler. Abtrennen im Einsatz pausiert und zeigt es im Pausenfenster an.
+- Logik ohne Oberfläche in `RotorwachtCore/Gamepad.swift` (`GamepadInterpreter`, `GridFocus`), `PilotInput` hat dafür optionale Analogachsen (`axisX`, `axisY`); Anbindung in `Sources/Rotorwacht/GamepadController.swift`.
+- 11 neue Tests (Totzone, Kurve, Steuerkreuz, Hysterese, Tasten, Wiederholung, Fokus, analoges Steigen); zusammen 110. Mit echtem Controller noch nicht geprüft.
+
 ## [0.4.0] – 2026-11-20
 
 Grafik-Überarbeitung: alles aus gerenderten 3D-Modellen (Blender, per Python-Skript, `art/`).

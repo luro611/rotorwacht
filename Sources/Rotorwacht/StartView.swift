@@ -27,12 +27,14 @@ struct DefaultActionIf: ViewModifier {
 
 struct LevelButtonStyle: ButtonStyle {
     let selected: Bool
+    var focused = false
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
             .font(Theme.label(12))
             .foregroundColor(selected ? Theme.accentStrong : Theme.muted)
             .padding(.horizontal, 12).padding(.vertical, 5)
             .overlay(RoundedRectangle(cornerRadius: Theme.radius).stroke(selected ? Theme.accent : Theme.line, lineWidth: 1))
+            .overlay(RoundedRectangle(cornerRadius: Theme.radius).stroke(Theme.accent, lineWidth: 2).padding(-4).opacity(focused ? 1 : 0))
             .opacity(configuration.isPressed ? 0.7 : 1)
     }
 }
@@ -51,15 +53,16 @@ struct StartView: View {
 
             HStack(spacing: 10) {
                 Eyebrow("Stufe")
-                ForEach(Difficulty.allCases, id: \.self) { level in
+                ForEach(Array(Difficulty.allCases.enumerated()), id: \.element) { i, level in
                     Button(level.label) { model.difficulty = level }
-                        .buttonStyle(LevelButtonStyle(selected: model.difficulty == level))
+                        .buttonStyle(LevelButtonStyle(selected: model.difficulty == level,
+                                                      focused: padFocused(row: 0, col: i)))
                 }
             }
             .padding(.top, 16)
 
             LazyVGrid(columns: Array(repeating: GridItem(.fixed(300), spacing: 16, alignment: .top), count: 3), spacing: 16) {
-                ForEach(model.missions, id: \.id) { m in missionCard(m) }
+                ForEach(Array(model.missions.enumerated()), id: \.element.id) { i, m in missionCard(m, focused: padFocused(row: 1 + i / 3, col: i % 3)) }
             }
             .padding(.top, 14)
 
@@ -69,6 +72,7 @@ struct StartView: View {
                 key("Leertaste", "Löschwasser")
             }
             .padding(.top, 14)
+            controllerHint.padding(.top, 8)
 
             Spacer(minLength: 8)
             footer
@@ -84,7 +88,23 @@ struct StartView: View {
         return (String(title[...i]), String(title[title.index(after: i)...]))
     }
 
-    private func missionCard(_ m: Mission) -> some View {
+    /// Focus ring only while a controller is connected.
+    private func padFocused(row: Int, col: Int) -> Bool {
+        model.controllerName != nil && model.startFocus.row == row && model.startFocus.col == col
+    }
+
+    private var controllerHint: some View {
+        Group {
+            if let n = model.controllerName {
+                Text("Controller verbunden: \(n) · Stick oder Steuerkreuz wählen und fliegen · A bestätigen, Löschwasser · Start Pause")
+            } else {
+                Text("Kein Controller verbunden. Optional: Xbox, PlayStation oder MFi per Bluetooth oder Kabel anschließen.")
+            }
+        }
+        .font(Theme.mono(11)).foregroundColor(Theme.muted)
+    }
+
+    private func missionCard(_ m: Mission, focused: Bool) -> some View {
         let first = m.id == model.missions.first?.id
         let (plain, accent) = split(m.title)
         let open = model.isUnlocked(m.id)
@@ -120,7 +140,7 @@ struct StartView: View {
         .frame(width: 300, height: 180, alignment: .leading)
         .background(Theme.surface)
         .opacity(open ? 1 : 0.55)
-        .overlay(RoundedRectangle(cornerRadius: Theme.radius).stroke(Theme.line, lineWidth: 1))
+        .overlay(RoundedRectangle(cornerRadius: Theme.radius).stroke(focused ? Theme.accent : Theme.line, lineWidth: focused ? 2 : 1))
         .clipShape(RoundedRectangle(cornerRadius: Theme.radius))
     }
 

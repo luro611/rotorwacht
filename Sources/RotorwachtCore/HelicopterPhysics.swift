@@ -31,11 +31,15 @@ public struct PilotInput: Equatable, Sendable {
     public var left = false, right = false, up = false, down = false
     /// Release the extinguishing water.
     public var drop = false
+    /// Analog stick values (-1...1), only set by a gamepad. nil = keyboard: the four flags decide.
+    public var axisX: Double? = nil, axisY: Double? = nil
     public init(left: Bool = false, right: Bool = false, up: Bool = false, down: Bool = false, drop: Bool = false) {
         self.left = left; self.right = right; self.up = up; self.down = down; self.drop = drop
     }
-    /// -1, 0 or 1.
-    public var horizontal: Double { (right ? 1 : 0) - (left ? 1 : 0) }
+    /// -1...1: -1, 0 or 1 on the keyboard, any value in between on a gamepad stick.
+    public var horizontal: Double { axisX ?? ((right ? 1 : 0) - (left ? 1 : 0)) }
+    /// Vertical demand -1...1 (positive = climb).
+    public var vertical: Double { axisY ?? ((up ? 1 : 0) - (down ? 1 : 0)) }
 }
 
 public struct HelicopterState: Equatable, Sendable {
@@ -123,7 +127,8 @@ public enum HelicopterPhysics {
             var target = 0.0
             var response = spec.verticalResponse
             if engine {
-                if input.up { target = spec.climbSpeed } else if input.down { target = -spec.descendSpeed }
+                let v = input.vertical
+                if v > 0 { target = spec.climbSpeed * v } else if v < 0 { target = spec.descendSpeed * v }
             } else {
                 target = -spec.glideFallSpeed
                 response = 0.8
