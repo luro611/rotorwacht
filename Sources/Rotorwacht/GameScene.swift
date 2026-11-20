@@ -68,7 +68,6 @@ final class GameScene: SKScene {
     private var accumulator = 0.0
     private var camPos = CGPoint(x: 640, y: 360)
     private var shake: CGFloat = 0
-    private var rotorPhase: CGFloat = 0
     private var spawnTimer = 0.0
     private var hudTimer = 0.0
     private var clock = 0.0
@@ -579,7 +578,7 @@ final class GameScene: SKScene {
         let alt = max(0, h.y - under)
         heliShadow.position = CGPoint(x: h.x, y: under + 1)
         heliShadow.size = CGSize(width: 150 + alt * 0.25, height: 16 + alt * 0.03)
-        heliShadow.alpha = max(0, 0.42 - alt / 520) * (crashed ? 0 : 1)
+        heliShadow.alpha = max(0, 0.42 - alt / 520) * (heliRoot.isHidden ? 0 : 1)
 
         syncLakes(dt: dt)
         syncFire(dt: dt)
