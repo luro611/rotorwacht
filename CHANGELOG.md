@@ -2,7 +2,7 @@
 
 Versionen: 0.x bis zum ersten fertigen Stand, dann 1.0.0.
 
-## [0.7.0] – in Arbeit (20.11.2026)
+## [0.7.0] – 2026-11-20
 
 Abwechslung (Entscheidung von Lutz am 20.11.2026): Planung `docs/planung/06 Abwechslung 0.7.md`. Gebaut in zwei Teilen: 0.7a (Hindernisse, Wetter) und 0.7b (Punkte, Endlosmodus).
 
