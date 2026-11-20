@@ -7,11 +7,13 @@
 
 Eigenes Hubschrauber-Rettungsspiel für den Mac (Swift, SpriteKit, SwiftUI): nach Naturkatastrophen Menschen von Dächern und Anhöhen holen und ins Lager bringen, bevor Wetter, Wasser oder Treibstoff dir einen Strich durch die Rechnung machen.
 
-**Status:** Version 0.6.0 (alle sechs Einsätze, drei Stufen, Gamepad, Musik, Durchfahrten mit Shuttern, Bestenliste; Grafik aus gerenderten 3D-Modellen). Nur zum eigenen Gebrauch, unnotarisiert.
+**Status:** Version 0.6.0 gebaut, 0.7 in Arbeit (alle sechs Einsätze, drei Stufen, Gamepad, Musik, Durchfahrten mit Shuttern, Bestenliste, Hindernisse und Wetterwechsel; Grafik aus gerenderten 3D-Modellen). Nur zum eigenen Gebrauch, unnotarisiert.
 
 **Lizenz:** MIT für den Code, CC BY 4.0 für eigene Grafik und Ton (siehe `LICENSE`, `LICENSE-ASSETS.md`)
 
 ![Tunnel mit Shuttern im Vulkan-Einsatz](docs/bilder/tunnel-0.6.png)
+![Baukran mit schwenkendem Ausleger in der Altstadt](docs/bilder/kran-0.7.png)
+![Nebelbank mit Windsack und Leitung im Hochwasser-Einsatz](docs/bilder/nebel-0.7.png)
 ![Wertungskarte mit Bestenliste](docs/bilder/wertung-bestenliste-0.6.png)
 ![Hochwasser mit neuem Hubschrauber und Landeplätzen](docs/bilder/hochwasser-0.4.png)
 ![Waldbrand: Landeplätze mit Wartenden am Rand](docs/bilder/waldbrand-landeplatz-0.4.png)
@@ -35,7 +37,7 @@ scripts/build.sh --run
 
 Das baut `build/Rotorwacht.app` (ad hoc signiert) und startet sie. Beim ersten Start einer unnotarisierten App: Rechtsklick auf die App, „Öffnen“.
 
-Tests (Swift Testing, 154 Tests für Flugphysik, Landen, Ein-/Aussteigen, Tank, Feuer, Blitz, Trümmer, Lava, Lawinen, Seilwinde, Durchfahrten, Übungsmodus, Bestenliste, Fortschritt und Autopilot-Proben aller sechs Einsätze auf allen Stufen):
+Tests (Swift Testing, 173 Tests für Flugphysik, Landen, Ein-/Aussteigen, Tank, Feuer, Blitz, Trümmer, Lava, Lawinen, Seilwinde, Durchfahrten, Hindernisse, Wetterwechsel, Übungsmodus, Bestenliste, Fortschritt und Autopilot-Proben aller sechs Einsätze auf allen Stufen):
 
 ```bash
 scripts/test.sh
@@ -61,6 +63,10 @@ Einsätze und Stufen: Auf dem Startbildschirm wählst du Leicht, Mittel oder Sch
 Neue Gefahren: Blitze kündigen sich mit rotem Strahl und Kreis an, dann zur Seite fliegen. Nachbeben lassen Trümmer fallen und sperren Landeplätze für eine Weile. Lavabrocken fliegen auf gestrichelten Bahnen, der Lavastrom und Lawinen nehmen Rettungspunkte. Außenposten (Symbol in der Übersichtsleiste) betanken den Hubschrauber.
 
 Durchfahrten (Einsätze 1, 4, 5, 6): Unter Brücken und durch Tunnel musst du hindurch, darüber geht es nicht. Die Decke nicht berühren, nicht von der Seite hineinfliegen. Tunnel haben Shutter, die im Takt auf- und zugehen: **grün** offen, **gelb blinkend** mit Klacken kurz vor dem Schließen, **rot** zu. Zwischen den Toren darfst du warten, aber wer im Tor getroffen wird oder stecken bleibt, verliert diesen Hubschrauber. Im Tunnel leuchtet dein Scheinwerfer.
+
+Hindernisse (alle sechs Einsätze): Hochspannungsleitungen, Kräne mit schwenkendem Ausleger, Seilbahnen mit fahrender Gondel und Windräder stehen im Weg, immer so, dass man darüber hinwegfliegen kann. Drähte und Seile berühren kostet Haltbarkeit (Funken), feste Teile (Flügel, Ausleger, Gondel, Turm) zerstören den Hubschrauber. Wer unten durch oder zwischen den Flügeln hindurch will, geht ein Risiko ein.
+
+Wetterwechsel: Im Einsatz drehen sich Wind und Wetter. Zuerst kommt die Vorwarnung (Hinweis, Signalton und der **Windsack** links unten, der vor Böen und Windwechsel mit gelbem Pfeil und Sekunden die kommende Richtung zeigt), dann Böen, ein Windwechsel, eine Nebelbank (schlechte Sicht, nur ein kleiner freier Fleck um den Hubschrauber) oder ein aufziehendes Gewitter mit Blitzen.
 
 Bestenliste: Je Einsatz und Stufe die zehn besten Ergebnisse, im Startmenü (Knopf neben den Stufen) und auf der Wertungskarte. Den Namen gibst du beim ersten Eintrag an, später änderst du ihn in den Einstellungen (Cmd+,).
 

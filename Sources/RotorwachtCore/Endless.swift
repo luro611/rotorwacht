@@ -40,6 +40,11 @@ public struct EndlessBlock: Sendable {
     public var apply: @Sendable (inout Mission, inout SeededRandom, Double) -> Void
 }
 
+public extension Mission {
+    /// Something keeps coming (lava, fire, rising water): the Einsatz is tuned to the clock and takes little extra.
+    var hasClock: Bool { !flowList.isEmpty || fire != nil || flood.risePerSecond > 0 }
+}
+
 public enum EndlessKit {
     /// The Einsätze that serve as the ground for a stage (terrain, rescue points, look). Central list: new Einsätze join here.
     public static var bases: [String] { MissionLibrary.all }
@@ -56,31 +61,30 @@ public enum EndlessKit {
         return (x0, x0 + width)
     }
 
-    private static func debrisVolley(at x: Double, start: Double, interval: Double, m: Mission, pressure p: Double) -> Volley {
-        Volley(kind: "debris", start: start, interval: interval, repeats: 6, count: 2, stagger: 0.5,
-               x0: x - 45, x1: x + 45, spawnY: min(m.world.ceiling - 120, 720),
-               speedMin: 0, speedMax: 0, angleMin: 0, angleMax: 0, gravity: 520,
-               warn: 3.2 - 0.6 * p, radius: 26, damage: 12 + 6 * p, blockTime: 18)
-    }
-
     public static let blocks: [EndlessBlock] = [
         EndlessBlock(id: "storm", minStage: 2,
-                     fits: { $0.stormList.count < 3 && $0.rescuePoints.count > 0 },
+                     fits: { $0.stormList.count < 3 && $0.rescuePoints.count > 0 && !$0.hasClock && $0.volleyList.isEmpty
+                         && !$0.weatherList.contains { $0.kind == "thunder" } },
                      apply: { m, rng, p in
             guard let (x0, x1) = transitSpan(m, maxWidth: rng.double(900...1500), &rng) else { return }
-            m.storms = m.stormList + [StormCell(x0: x0, x1: x1, start: rng.double(25...45), interval: 17 - 5 * p,
+            m.storms = (m.storms ?? []) + [StormCell(x0: x0, x1: x1, start: rng.double(25...45), interval: 17 - 5 * p,
                                                 warn: 3.0 - 0.5 * p, radius: 150, damage: 14 + 6 * p)]
         }),
-        EndlessBlock(id: "debris", minStage: 3,
-                     // Not under rising water (a blocked pad is a death sentence there), not where objects already fall.
-                     fits: { $0.flood.risePerSecond == 0 && $0.volleyList.isEmpty && $0.rescuePoints.contains { !$0.isWinch } },
+        // Weather of 0.7a (fog bank, wind shift). Obstacles (`obstacles`) are not added: every ground already brings its own,
+        // placed with room around pads and passages, and more of them were not solvable for the scripted pilot. They sit on the transit stretch (`transitSpan`).
+        EndlessBlock(id: "fogBank", minStage: 3,
+                     fits: { !$0.weatherList.contains { $0.kind == "fog" } },
                      apply: { m, rng, p in
-            let spots = m.rescuePoints.filter { pt in !pt.isWinch && !m.passageList.contains { $0.x1 + 150 > pt.x && $0.x0 - 150 < pt.x } }
-            guard !spots.isEmpty else { return }
-            let n = min(spots.count, 1 + Int((p * 2).rounded()))
-            for pt in rng.shuffled(spots).prefix(n) {
-                m.volleys = m.volleyList + [debrisVolley(at: pt.x, start: rng.double(40...90), interval: rng.double(60...85) - 15 * p, m: m, pressure: p)]
-            }
+            guard let (x0, x1) = transitSpan(m, maxWidth: rng.double(900...1500), &rng) else { return }
+            m.weather = m.weatherList + [WeatherEvent(kind: "fog", start: rng.double(60...(max(61, m.timeLimit * 0.5))), duration: rng.double(45...70),
+                                                       warn: 8, density: 0.35 + 0.2 * p, x0: x0, x1: x1)]
+        }),
+        EndlessBlock(id: "windShift", minStage: 4,
+                     fits: { $0.passageList.isEmpty && $0.fire == nil && !$0.rescuePoints.contains { $0.isWinch } },
+                     apply: { m, rng, p in
+            let sign: Double = rng.unit() < 0.5 ? -1 : 1
+            m.weather = m.weatherList + [WeatherEvent(kind: "windShift", start: rng.double(60...(max(61, m.timeLimit * 0.6))), duration: rng.double(35...55),
+                                                       warn: 8, strength: sign * rng.double(20...(30 + 15 * p)))]
         }),
         EndlessBlock(id: "gusts", minStage: 1,
                      fits: { _ in true },
@@ -88,20 +92,13 @@ public enum EndlessKit {
             for _ in 0..<rng.int(1...2) {
                 let sign: Double = rng.unit() < 0.5 ? -1 : 1
                 m.wind.gusts.append(GustSpec(start: rng.double(30...(m.timeLimit * 0.7)), duration: rng.double(6...9),
-                                             strength: sign * rng.double(30...(40 + 15 * p))))
+                                             strength: sign * rng.double(30...(40 + 15 * p)) * (m.hasClock ? 0.6 : 1)))
             }
         }),
-        // A steady wind is no fun in a tunnel or on a winch: only where it is flown in the open.
-        EndlessBlock(id: "crosswind", minStage: 4,
-                     fits: { $0.passageList.isEmpty && !$0.rescuePoints.contains { $0.isWinch } },
-                     apply: { m, rng, p in m.wind.base += (rng.unit() < 0.5 ? -1 : 1) * rng.double(5...(8 + 5 * p)) }),
         // Not where fuel is already the bottleneck (outposts, the high mountains).
         EndlessBlock(id: "thirstyEngine", minStage: 3,
-                     fits: { $0.outpostList.isEmpty && $0.hazard != "avalanche" },
+                     fits: { $0.outpostList.isEmpty && $0.hazard != "avalanche" && !$0.hasClock },
                      apply: { m, rng, p in m.fuel.burnPerSecond *= 1 + rng.double(0.03...(0.05 + 0.05 * p)) }),
-        EndlessBlock(id: "dryForest", minStage: 2,
-                     fits: { $0.fire != nil },
-                     apply: { m, rng, p in if var f = m.fire { f.spreadRate *= rng.double(1.02...(1.04 + 0.04 * p)); m.fire = f } }),
     ]
 
     public static func block(_ id: String) -> EndlessBlock? { blocks.first { $0.id == id } }
@@ -157,7 +154,8 @@ public enum EndlessGenerator {
             m.rescuePoints = m.rescuePoints.enumerated().filter { !removed.contains($0.offset) }.map(\.element)
         }
         let more = 1 + 0.03 * Double(stage - 1)
-        for i in m.rescuePoints.indices {
+        // Rising water: the people stay as designed (the order of the pads is tuned to the rising level).
+        for i in m.rescuePoints.indices where m.flood.risePerSecond == 0 {
             let n = Double(m.rescuePoints[i].people) * rng.double(0.7...1.4) * more
             m.rescuePoints[i].people = max(1, min(6, Int(n.rounded())))
         }
@@ -174,18 +172,17 @@ public enum EndlessGenerator {
         m.wind.gusts = m.wind.gusts.map { var g = $0; g.start = max(10, g.start + rng.double(-25...25)); return g }
 
         // Building blocks: more of them the later the stage.
-        let want = min(4, 1 + Int((p * 3).rounded()))
+        let want = min(m.hasClock ? 2 : 4, 1 + Int((p * 3).rounded()))
         var pool = rng.shuffled(EndlessKit.blocks.filter { $0.minStage <= stage && $0.fits(m) })
         var applied: [String] = []
         while applied.count < want, !pool.isEmpty {
             let b = pool.removeFirst()
-            if skipped.contains(b.id) {
-                // Same random numbers are used, so the other blocks stay as they were (diagnosis only).
-                var copy = m
-                b.apply(&copy, &rng, p)
-            } else {
-                b.apply(&m, &rng, p)
-            }
+            // A block that makes the data invalid is dropped (and not counted).
+            var trial = m
+            b.apply(&trial, &rng, p)
+            guard (try? trial.validate()) != nil else { continue }
+            // `skipped` (diagnosis only): the random numbers were used, so the other blocks stay as they were.
+            if !skipped.contains(b.id) { m = trial }
             applied.append(b.id)
         }
 

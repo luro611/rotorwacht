@@ -1,6 +1,6 @@
 #!/bin/bash
 # Renders all 3D art with Blender (headless) into Sources/Rotorwacht/Renders.
-# Usage: scripts/render-art.sh [heli|people|pads|terrain|panorama|passages|all]   (default: all)
+# Usage: scripts/render-art.sh [heli|people|pads|terrain|panorama|passages|obstacles|all]   (default: all)
 # Needs Blender: brew install --cask blender
 set -euo pipefail
 cd "$(dirname "$0")/.."
@@ -21,4 +21,5 @@ run() {
 [ "$what" = all ] || [ "$what" = terrain ] && run terrain
 [ "$what" = all ] || [ "$what" = panorama ] && run panorama
 [ "$what" = all ] || [ "$what" = passages ] && run passages
+[ "$what" = all ] || [ "$what" = obstacles ] && run obstacles
 echo "✓ done"

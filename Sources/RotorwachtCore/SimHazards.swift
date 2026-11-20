@@ -33,6 +33,7 @@ extension MissionSimulation {
         stepObjects(dt: dt, alive: alive, &events)
         stepFlows(dt: dt, alive: alive, &events)
         stepPassageRhythm(dt: dt, &events)
+        stepWeather(&events)
         for i in hz.blockedUntil.indices where hz.blockedUntil[i] > 0 && hz.blockedUntil[i] <= time {
             hz.blockedUntil[i] = 0
             events.append(.padCleared(pointIndex: i))
@@ -46,6 +47,7 @@ extension MissionSimulation {
         for (ci, cell) in mission.stormList.enumerated() {
             let k = hz.nextStrike[ci]
             let at = cell.start + Double(k) * cell.interval
+            if let u = cell.until, at > u { continue }
             if time >= at - cell.warn {
                 hz.nextStrike[ci] += 1
                 let r = hazardRandom(ci + 1, k + 1)

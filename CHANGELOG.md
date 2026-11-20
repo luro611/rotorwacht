@@ -4,7 +4,35 @@ Versionen: 0.x bis zum ersten fertigen Stand, dann 1.0.0.
 
 ## [0.7.0] – in Arbeit (20.11.2026)
 
-Abwechslung (Planung `docs/planung/06 Abwechslung 0.7.md`). Dieser Abschnitt: Teil 0.7b, Punkte und Endlosmodus. Teil 0.7a (Hindernisse, Wetterwechsel) kommt aus einer anderen Sitzung dazu.
+Abwechslung (Entscheidung von Lutz am 20.11.2026): Planung `docs/planung/06 Abwechslung 0.7.md`. Gebaut in zwei Teilen: 0.7a (Hindernisse, Wetter) und 0.7b (Punkte, Endlosmodus).
+
+### Hindernisse und Wetter (0.7a)
+
+#### Hindernisse (`obstacles`)
+
+- **Neuer Gefahren-Baustein**, alle Felder in der Einsatzdatei optional. Vier Arten: Hochspannungsleitung (`powerline`, zwei Drähte mit Durchhang zwischen zwei Masten), Kran (`crane`, schwenkender Ausleger mit Seil und Last), Seilbahn (`cablecar`, Gondel fährt auf dem Tragseil hin und her) und Windrad (`windmill`, drei drehende Flügel).
+- **Treffer:** Drähte, Seile und Tragseile kosten 40 Haltbarkeit (`damage`, Abklingzeit 0,7 s) mit Funken; feste Teile (Flügel, Ausleger, Last, Gondel, Türme, Masten) zerstören den Hubschrauber. Bewegung und Treffer nutzen dieselben Zeitfunktionen (`Obstacle.shapes(at:in:)`).
+- **Immer überfliegbar:** Die Hülle liegt mindestens 150 Einheiten unter der Flughöhengrenze und mindestens 70 Einheiten von Rettungspunkten, Lager, Außenposten und Durchfahrten entfernt (`validate`). Unterfliegen oder Durchfliegen der Lücken ist ein Risiko, kein Zwang.
+- **Stufen:** Schaden der Drähte × Druck (leicht 0,8, schwer 1,2).
+- **Einsätze:** Hochwasser Leitung zwischen den Rettungspunkten „Laden“ und „Hügel“, Waldbrand Leitung vor dem Stausee, Küste zwei Windräder auf dem Weg zum Lager, Altstadt Baukran auf dem Dach, Vulkan Seilbahn am Hang, Hochgebirge Leitung über dem Tal. Kein Gelände geändert.
+- **Autopilot:** steigt vor einem Hindernis auf die Hülle plus 80, hält die Höhe, bis es hinter ihm liegt, und plant Reiseflug und Anflug über der Hülle. Unter einer Brücke oder in einem Tunnel greift das nicht (dort führt die Durchfahrtslogik).
+- **Grafik:** Blender-Modelle in `art/obstacles.py` (`scripts/render-art.sh obstacles`): Mastkopf und Schaftteile, Kranturm, Ausleger, Last, Seilbahnstütze, Gondel, Windradturm, Flügel, Nabe. Drähte und Seile zeichnet die App als Linien, Ausleger, Gondel und Flügel bewegen sich nach der Einsatzzeit (`ObstacleLayer.swift`).
+- Logik: `RotorwachtCore/Obstacles.swift`.
+
+#### Wetterwechsel (`weather`)
+
+- **Zeitplan je Einsatz**, jedes Ereignis mit `start`, `duration` und `warn` (Vorwarnung): `gust` (zusätzliche Böe), `windShift` (Grundwind dreht, baut sich in wenigen Sekunden auf und ab), `fog` (Nebelbank, überall oder zwischen `x0` und `x1`, `tint` „fog“ oder „dust“) und `thunder` (aufziehendes Gewitter: Blitze wie bei `storms`, in der Vorwarnung dunkelt der Himmel).
+- **Vorwarnung:** Hinweis im Einsatz mit Signal („Böen im Anmarsch“, „Nebelbank zieht auf“) und ein **Windsack** links unten, der die Windrichtung und -stärke zeigt und vor einer Böe oder einem Windwechsel einen gelben Pfeil mit den Sekunden in der kommenden Richtung blinken lässt.
+- **Nebel** schränkt nur die Sicht ein (runder freier Fleck um den Hubschrauber, der mit der Dichte schrumpft), keine Regel ändert sich. Die Darstellung steht in `AtmosphereLayer.swift` und läuft auch in Einsätzen ohne `atmosphere`.
+- **Stufen:** Stärke, Gewitterschaden und Nebeldichte × Druck, Vorwarnzeit × Warnfaktor (leicht länger, schwer kürzer).
+- **Einsätze:** Hochwasser Nebelbank über dem Fluss, Waldbrand Gewitter, Küste Windwechsel und Sturmböen, Altstadt Staubwolke, Vulkan Windwechsel, Hochgebirge Böe mit Vorwarnung und Nebelbank.
+- Logik: `RotorwachtCore/Weather.swift`.
+
+#### Tests
+
+- 19 neue Tests, zusammen 173 grün. `ObstacleTests`: Treffer und freie Wege je Art, Zeitfunktionen, Hülle über allen Teilen, Prüfung schlechter Daten, Stufen, Wetter (Wind, Nebel, Warnung genau einmal, Gewitterfenster), **Verteilung auf die Einsätze, Platz um die Hindernisse und Autopilot ohne einen Treffer in allen sechs Einsätzen auf allen Stufen**.
+
+## Teil 0.7b: Punkte und Endlosmodus
 
 ### Punkte: Zeitbonus, Kombos, Flugbonus
 
@@ -16,10 +44,11 @@ Abwechslung (Planung `docs/planung/06 Abwechslung 0.7.md`). Dieser Abschnitt: Te
 ### Endlosmodus
 
 - Knopf **„Endlos“** im Startmenü (Fenster mit Regeln, Bestenliste, „Lauf starten“). Zufällig zusammengesetzte Einsätze aus den Grundlagen der sechs Einsätze, einer nach dem anderen, immer schwerer; **5 Hubschrauber für den ganzen Lauf** (nach je 3 geschafften Stufen einer dazu, höchstens 6). Eine Stufe ist geschafft mit mindestens einem Stern; sonst endet der Lauf.
-- **Bausteine zentral** in `EndlessKit.blocks` (Gewitter, Trümmer, Zusatzböen, Dauerwind, durstiger Motor, trockener Wald); neue Bausteine (0.7a) werden dort als ein Eintrag ergänzt. Der Startwert legt Reihenfolge der Einsätze und alle Abwandlungen fest (`SeededRandom`, überall gleich).
+- **Bausteine zentral** in `EndlessKit.blocks` (Gewitter, Nebelbank, Windwechsel, Zusatzböen, durstiger Motor); neue Bausteine (0.7a) werden dort als ein Eintrag ergänzt. Der Startwert legt Reihenfolge der Einsätze und alle Abwandlungen fest (`SeededRandom`, überall gleich).
 - **Eigene Bestenliste** (`~/Library/Application Support/Rotorwacht/endless.json`): Stufen, dann Punkte, Top 10, Name wie bei den Einsätzen. Endlos-Ergebnisse berühren Einsatz-Listen und Fortschritt nicht. Die Wertungskarte zeigt Stand des Laufs (Stufen, Punkte, Hubschrauber im Bestand), „Nächster Einsatz“ bzw. „Neuer Lauf“.
 - **Lösbarkeit geprüft:** `EndlessTests` lässt den Autopiloten jede Grundlage auf fünf Stufen (bis 20) mit je sechs Startwerten fliegen; bei der Entwicklung 720 Läufe über zwölf Startwerte und Stufen bis 30 ohne Ausfall. Dabei sind Bausteine eingeschränkt worden (siehe Detailentwurf in der Planung).
 - Neue Dateien: `Endless.swift`, `EndlessScores.swift`, `Scoring.swift`, `EndlessViews.swift` (App), `EndlessTests`, `ScoringTests`.
+- **Zusammen mit 0.7a:** Die Grundlagen bringen jetzt `obstacles` und `weather` mit (Windräder, Leitungen, Kran, Seilbahn; Nebel, Windwechsel, Gewitter). Der Generator fügt Nebelbank und Windwechsel als Bausteine hinzu, setzt keine eigenen Hindernisse dazu (jede Grundlage hat schon ihre, mit Platz um Landeplätze und Durchfahrten), legt Gewitter nie in Einsätze mit eigenem Gewitter, Salven oder „Uhr“ (Lava, Feuer, steigendes Wasser) und lässt bei Einsätzen mit Uhr höchstens zwei Bausteine zu; bei steigendem Wasser bleiben die Menschenzahlen wie entworfen. Ein Baustein, der die Daten ungültig macht, wird verworfen. Die Probe lief über 1200 Läufe (20 Startwerte, Stufen 1 bis 30) mit einem Ausfall (Altstadt, Stufe 16, Startwert 17: 9 von 19 gerettet, der Autopilot ist dort knapp); die Tests nutzen sechs Startwerte auf fünf Stufen.
 - **Ungeprüft:** Spielgefühl (Schwierigkeitskurve, Bestand an Hubschraubern, Höhe der Boni) und die Darstellung der neuen Oberfläche mit echter Hand. Der Startwert eines Laufs wird noch nicht angezeigt.
 
 ## [0.6.0] – 2026-11-20

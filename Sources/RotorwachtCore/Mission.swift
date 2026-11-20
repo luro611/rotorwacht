@@ -149,13 +149,17 @@ public struct Mission: Codable, Equatable, Sendable {
     public var outposts: [Outpost]? = nil
     /// Underpasses and tunnels that must be flown through.
     public var passages: [Passage]? = nil
+    /// Power lines, cranes, cable cars and wind turbines.
+    public var obstacles: [Obstacle]? = nil
+    /// Weather changes over time (gusts, wind shifts, fog banks, thunderstorm).
+    public var weather: [WeatherEvent]? = nil
     /// Practice mode (set by `practiced`): unlimited helicopters, restart at `startX`.
     public var practice: Bool? = nil
     public var startX: Double? = nil
     /// Landscape style for the picture: "valley" (default), "coast", "town", "volcano", "alpine".
     public var look: String? = nil
 
-    public var stormList: [StormCell] { storms ?? [] }
+    public var stormList: [StormCell] { (storms ?? []) + weatherStorms }
     public var volleyList: [Volley] { volleys ?? [] }
     public var flowList: [Flow] { flows ?? [] }
     public var outpostList: [Outpost] { outposts ?? [] }
@@ -246,6 +250,7 @@ public struct Mission: Codable, Equatable, Sendable {
             let phase = (time - g.start) / g.duration
             w += g.strength * sin(Double.pi * phase)
         }
+        w += weatherWind(at: time)
         // Light turbulence on top.
         w += 10 * sin(time * 0.9) + 6 * sin(time * 2.3 + 1)
         return w
@@ -286,6 +291,8 @@ extension Mission {
         }
         for o in outpostList where o.width <= 0 { try fail("Außenposten \(o.name) unzulässig") }
         try validatePassages(fail)
+        try validateObstacles(fail)
+        try validateWeather(fail)
         if let s = flood.swell, s.period <= 0 { try fail("Wellenperiode muss größer als 0 sein") }
         for p in rescuePoints where p.isWinch && p.cableLength <= 0 { try fail("Seil von \(p.id) unzulässig") }
     }

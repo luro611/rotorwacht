@@ -100,7 +100,7 @@ public struct AutoPilot {
         let wantY: Double
         if abs(dx) > 160 {
             let lo = min(h.x, p.x) - 80, hi = max(h.x, p.x) + 80
-            wantY = max(m.maxSurface(from: lo, to: hi) + 90, p.top + 90)
+            wantY = max(m.maxSurface(from: lo, to: hi) + 90, p.top + 90, (m.obstacleTop(from: lo, to: hi) ?? 0) + Obstacle.clearMargin)
         } else {
             wantY = max(floor, p.top + p.cableLength * 0.5)
         }
@@ -152,7 +152,8 @@ public struct AutoPilot {
         if h.vx < desiredVx - 12 { input.right = true } else if h.vx > desiredVx + 12 { input.left = true }
         let lo = min(h.x, targetX) - 80, hi = max(h.x, targetX) + 80
         let clear = abs(dx) > 250 ? m.maxSurface(from: lo, to: hi) + 90 : m.maxSurface(from: h.x - 70, to: h.x + 70) + 45
-        let wantY = max(clear, hoverY)
+        let over = (m.obstacleTop(from: abs(dx) > 250 ? lo : h.x - 70, to: abs(dx) > 250 ? hi : h.x + 70) ?? -1000) + Obstacle.clearMargin
+        let wantY = max(clear, hoverY, over)
         let desiredVy = max(-110, min(110, (wantY - h.y) * 1.4))
         if desiredVy > h.vy + 8 { input.up = true } else if desiredVy < h.vy - 8 { input.down = true }
         return input
@@ -212,7 +213,7 @@ public struct AutoPilot {
                 // Just out of the passage: climb slowly until the terrain ahead is cleared, then the normal flight takes over.
                 guard past < Self.tailDistance + 320 else { continue }
                 let lo = min(h.x, h.x + dir * 420) - 70, hi = max(h.x, h.x + dir * 420) + 70
-                let need = max(m.maxSurface(from: lo, to: hi) + 70, target.top + 70)
+                let need = max(m.maxSurface(from: lo, to: hi) + 70, target.top + 70, (m.obstacleTop(from: lo, to: hi) ?? 0) + Obstacle.clearMargin)
                 if h.y < need - 15 { return steer(sim, vx: dir * 70, y: need) }
                 continue
             }
@@ -238,6 +239,30 @@ public struct AutoPilot {
         return nil
     }
 
+    // MARK: Obstacles
+
+    /// Before an obstacle on the way: stop and climb until the helicopter is above its envelope, hold the height while over it,
+    /// then the normal flight goes on (it cruises above obstacles too).
+    private func obstacleInput(_ sim: MissionSimulation, target: (x: Double, top: Double, pointIndex: Int?)) -> PilotInput? {
+        let m = sim.mission, h = sim.heli
+        // Under a roof there is no way up; the passage logic leads out first.
+        guard abs(target.x - h.x) > 1, m.passageIndex(at: h.x) == nil else { return nil }
+        let dir: Double = target.x > h.x ? 1 : -1
+        for o in m.obstacleList {
+            let e = o.envelope(in: m)
+            let entry = dir > 0 ? e.x0 : e.x1, exit = dir > 0 ? e.x1 : e.x0
+            let before = (entry - h.x) * dir, past = (h.x - exit) * dir
+            guard (target.x - entry) * dir > 0, past < 70, before < 420 else { continue }
+            let need = e.top + Obstacle.clearMargin
+            if h.y < need - 25 {
+                return steer(sim, vx: before < 200 ? 0 : dir * 60, y: need)
+            }
+            // Over the obstacle: keep the height until it is behind (other plans, like a passage, must not take the helicopter down here).
+            if before <= 25 { return steer(sim, vx: dir * 110, y: need) }
+        }
+        return nil
+    }
+
     public func input(for sim: MissionSimulation) -> PilotInput {
         let m = sim.mission
         let h = sim.heli
@@ -245,6 +270,7 @@ public struct AutoPilot {
         if let d = dodge(sim) { return d }
         if !h.onGround, let f = fightInput(sim) { return f }
         let target = pickTarget(sim)
+        if !h.onGround, !m.obstacleList.isEmpty, let o = obstacleInput(sim, target: target) { return o }
         if !h.onGround, !m.passageList.isEmpty, let p = passageInput(sim, target: target) { return p }
         if let pi = target.pointIndex, m.rescuePoints[pi].isWinch, !(h.onGround && !h.inWater && sim.people.contains { $0.state == .boarding || $0.state == .leaving }) {
             if h.onGround { return PilotInput(up: true) }
@@ -272,7 +298,8 @@ public struct AutoPilot {
         let landingZone = abs(dx) < 50
         // Cruise altitude: clear everything between here and the target.
         let lo = min(h.x, target.x) - 60, hi = max(h.x, target.x) + 60
-        let cruise = max(m.maxSurface(from: lo, to: hi) + 100, target.top + 90)
+        let overObstacles = (m.obstacleTop(from: lo, to: hi) ?? -1000) + Obstacle.clearMargin
+        let cruise = max(m.maxSurface(from: lo, to: hi) + 100, target.top + 90, overObstacles)
         let surfaceHere = max(m.maxSurface(from: h.x - 45, to: h.x + 45), sim.floodLevel)
 
         var desiredVx = max(-260, min(260, dx * 0.9))
@@ -288,7 +315,7 @@ public struct AutoPilot {
             desiredVy = -max(18, min(70, height * 1.0))
         } else {
             let corridor = m.maxSurface(from: min(h.x, target.x) - 70, to: max(h.x, target.x) + 70) + 60
-            let wantY = abs(dx) < 300 ? max(target.top + 70, surfaceHere + 40, corridor) : cruise
+            let wantY = abs(dx) < 300 ? max(target.top + 70, surfaceHere + 40, corridor, overObstacles) : cruise
             desiredVy = max(-110, min(110, (wantY - h.y) * 1.4))
         }
         if desiredVy > h.vy + 8 { input.up = true }

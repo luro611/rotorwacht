@@ -19,6 +19,8 @@ public struct StormCell: Codable, Equatable, Sendable {
     /// Helicopter within this distance (x) of the strike is hit.
     public var radius: Double
     public var damage: Double
+    /// Last moment a strike may be announced. Nil: until the end (thunderstorms of the weather schedule set it).
+    public var until: Double? = nil
 }
 
 /// Objects that fall or fly: `kind` is "debris" (falls straight down), "lavaBomb" or "rock" (launched, ballistic).
@@ -190,6 +192,8 @@ public struct HazardState: Equatable, Sendable {
     var flowHurtTimer = 0.0
     var refuelSaid = false
     var passageContactCooldown = 0.0
+    var obstacleCooldown = 0.0
+    var weatherWarned: Set<Int> = []
     var shutterWarnCycle: [Int: Int] = [:]
     var shutterCloseCycle: [Int: Int] = [:]
     var nextID = 0

@@ -34,11 +34,10 @@ import Foundation
     }
 
     @Test func laterStagesBringMoreBlocksAndPressure() throws {
-        func hazards(_ m: Mission) -> Int { m.stormList.count + m.volleyList.count + m.wind.gusts.count }
         var early = 0, late = 0
         for seed in UInt64(1)...30 {
-            early += hazards(try EndlessGenerator.mission(seed: seed, stage: 1, helicopters: 5))
-            late += hazards(try EndlessGenerator.mission(seed: seed, stage: 12, helicopters: 5))
+            early += try EndlessGenerator.generate(seed: seed, stage: 1, helicopters: 5).blocks.count
+            late += try EndlessGenerator.generate(seed: seed, stage: 12, helicopters: 5).blocks.count
         }
         #expect(late > early)
         #expect(EndlessGenerator.pressure(stage: 1) == 0 && EndlessGenerator.pressure(stage: 12) == 1 && EndlessGenerator.pressure(stage: 99) == 1)

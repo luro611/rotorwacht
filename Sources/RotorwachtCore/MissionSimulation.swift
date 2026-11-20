@@ -63,6 +63,9 @@ public enum SimEvent: Equatable, Sendable {
     case comboBroken(was: Int)
     /// A flight that brought many people home at once (`all`: everybody of the Einsatz in one flight).
     case flightBonus(points: Int, people: Int, all: Bool)
+    // Obstacles and weather
+    case obstacleHit(kind: String, damage: Double, x: Double, y: Double)
+    case weatherWarning(kind: String, seconds: Double)
 }
 
 public enum MissionOutcome: Equatable, Sendable {
@@ -271,6 +274,7 @@ public struct MissionSimulation {
         applyHeat(dt: dt, &events)
         stepWinch(dt: dt, &events)
         stepPassages(dt: dt, &events)
+        stepObstacles(dt: dt, &events)
 
         if heli.durability <= 0 {
             crash(&events)
