@@ -2,7 +2,7 @@
 
 Versionen: 0.x bis zum ersten fertigen Stand, dann 1.0.0.
 
-## [0.5.0] – in Arbeit
+## [0.5.0] – in Arbeit (Gamepad und Musik zusammengeführt)
 
 ### Gamepad
 
@@ -13,6 +13,17 @@ Controller (Xbox, PlayStation, MFi) zusätzlich zur Tastatur, über das Framewor
 - Hinweis zum Controller im Startmenü und im neuen Einstellungsfenster (Cmd+,) mit Belegung und Totzone-Regler. Abtrennen im Einsatz pausiert und zeigt es im Pausenfenster an.
 - Logik ohne Oberfläche in `RotorwachtCore/Gamepad.swift` (`GamepadInterpreter`, `GridFocus`), `PilotInput` hat dafür optionale Analogachsen (`axisX`, `axisY`); Anbindung in `Sources/Rotorwacht/GamepadController.swift`.
 - 11 neue Tests (Totzone, Kurve, Steuerkreuz, Hysterese, Tasten, Wiederholung, Fokus, analoges Steigen); zusammen 110. Mit echtem Controller noch nicht geprüft.
+
+### Musik und Klang
+
+Eigene Musik, vollständig im Code erzeugt (keine Aufnahmen, keine fremden Stücke, nichts zu lizenzieren).
+
+- **Menümusik** (ruhig, D-dorisch, Glockenmelodie) und **je Einsatz ein eigener Musikteppich** mit eigener Tonart, Tonleiter, Tempo und Melodie: Hochwasser (a-Moll, Flöte), Waldbrand (E-phrygisch, Blech, kräftiger Puls), Sturmnacht (fis-Moll, tief und weit), Altstadt (d-harmonisch Moll, gezupft, drängend), Vulkan (C-phrygisch-dominant, schwer und langsam), Hochgebirge (Es-lydisch, Glocken, offen). Die Melodie je Thema ist über den Startwert festgelegt und bleibt von Spiel zu Spiel erkennbar.
+- **Intensität aus dem Spielzustand:** Zeitdruck (letztes Drittel), knapper Treibstoff, steigende Flut, Feuer, Rauch und Hitze, Schaden, dazu kurze Schübe bei verlorenen Personen, Treffern und verlorenen Hubschraubern. Bei höherer Intensität kommen nacheinander Bass, Arpeggio, Schlagwerk und hohe Tickstimmen dazu, das Tempo steigt um bis zu 14 %; sie steigt in etwa zwei Sekunden, fällt in etwa acht.
+- **Abschluss bei der Wertung:** kurzes Siegesmotiv (mindestens ein Stern) oder ruhiger, absteigender Ausklang (sonst); danach Stille bis zum Menü, dort kehrt die Menümusik zurück.
+- **Einstellungen** in Startmenü und Pausenkarte: Musik an/aus, Lautstärke Musik, Lautstärke Effekte (getrennt, wird gespeichert). Alle Pegeländerungen laufen als Rampen: Themenwechsel blenden über, Pause und Fensterwechsel blenden aus und halten die Musik an derselben Stelle an.
+- **Technik:** Logik ohne Oberfläche in `RotorwachtCore` (`Music.swift` Themen, Tonleitern, Muster; `MusicSynth.swift` Synthesizer und Sequenzer; `MusicMixer.swift` Überblenden, Lautstärke, Pause; `MusicIntensity.swift` Intensitätskurve und Einstellungen), Wiedergabe mit eigener `AVAudioEngine` in `MusicPlayer.swift`, getrennt von den Effekten.
+- 17 neue Tests (`MusicTests`): Startwert und Determinismus, alle Töne in der Tonleiter, Schichten je Intensität, Intensitätskurve, Überblenden, Pause, Aus/An, Abschlüsse sowie Offline-Rendern aller Themen bei drei Intensitäten (Spitzenpegel unter 0,95, Effektivpegel 0,08–0,15, keine stille Sekunde, keine Sprünge zwischen Samples). Der Klang selbst ist nicht automatisch prüfbar und muss von Lutz probegehört werden.
 
 ## [0.4.0] – 2026-11-20
 

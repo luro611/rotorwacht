@@ -175,6 +175,7 @@ struct PauseOverlay: View {
                     Text("Controller getrennt. Wieder anschließen oder mit der Tastatur weiterfliegen.")
                         .font(Theme.mono(11)).foregroundColor(Theme.accentStrong)
                 }
+                SoundSettingsView()
             }
             .padding(26)
             .background(Theme.surface)

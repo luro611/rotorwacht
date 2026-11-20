@@ -4,7 +4,7 @@ Eigenes Hubschrauber-Rettungsspiel für den Mac, nur zum eigenen Gebrauch. Inspi
 
 ## Stand
 
-- **Phase:** Version 0.4.0 gebaut (20.11.2026): Grafik aus gerenderten Blender-Modellen (Hubschrauber, Menschen, Landeplätze, Gelände, Panoramen), ebene Landeflächen, Wartende am Rand. Davor 0.3.0 (19.11.2026): alle sechs Einsätze (Hochwasser, Waldbrand, Sturmnacht an der Küste, Erdbeben in der Altstadt, Vulkanausbruch, Lawinen im Hochgebirge) von Start bis Wertung spielbar, drei Stufen, Freischalten und lokaler Fortschritt, 99 Tests grün. Tags `v0.1.0` bis `v0.4.0` gesetzt und gepusht (20.11.2026; v0.3.0 und v0.4.0 auf den Commits mit den Review-Fixes).
+- **Phase:** Version 0.5.0 (Gamepad, Musik) gemerged, 127 Tests grün, noch nicht von Lutz mit Controller und Ohr geprüft, kein Tag. Davor Version 0.4.0 gebaut (20.11.2026): Grafik aus gerenderten Blender-Modellen (Hubschrauber, Menschen, Landeplätze, Gelände, Panoramen), ebene Landeflächen, Wartende am Rand. Davor 0.3.0 (19.11.2026): alle sechs Einsätze (Hochwasser, Waldbrand, Sturmnacht an der Küste, Erdbeben in der Altstadt, Vulkanausbruch, Lawinen im Hochgebirge) von Start bis Wertung spielbar, drei Stufen, Freischalten und lokaler Fortschritt, 99 Tests grün. Tags `v0.1.0` bis `v0.4.0` gesetzt und gepusht (20.11.2026; v0.3.0 und v0.4.0 auf den Commits mit den Review-Fixes).
 - Nächster Schritt: Grafik und Effekte ausbauen, Feinschliff der Einsätze (Spielbarkeit mit echter Hand prüfen), siehe Fahrplan in `docs/planung/02 Spielkonzept.md`.
 - Bis 19.11.2026 hieß das Projekt „Wühltisch“ (erster Entwurf mit Kaufhaus-Thema, Missverständnis: gemeint war Choplifter, nicht „Shoplifter“).
 
@@ -15,6 +15,12 @@ Eigenes Hubschrauber-Rettungsspiel für den Mac, nur zum eigenen Gebrauch. Inspi
 - Code: `Sources/RotorwachtCore` (Logik, ohne UI, getestet), `Sources/Rotorwacht` (App). Einsätze als JSON in `Sources/RotorwachtCore/Missions/` (`MissionLibrary.all` listet die im Menü angebotenen, in Reihenfolge). Feuer: `Fire.swift` (Zellen, Ausbreitung, Löschen), Tank und Tropfen in `MissionSimulation`. Gefahren-Bausteine (`Hazards.swift` Daten und Zustand, `SimHazards.swift` Regeln): Gewitterzellen `storms`, Salven `volleys` (Trümmer, Lavabrocken), Bodenströme `flows` (Lava, Lawine), Seilwinde (`access: "winch"` am Rettungspunkt), `outposts`, Seegang `flood.swell`, `atmosphere`, `look`; alle Felder optional. Stufen: `Difficulty.swift` (`Mission.scaled(for:)`), Fortschritt: `PlayerProgress.swift`. Die App zeichnet die Gefahren in `HazardLayer.swift` (Weltebene) und `AtmosphereLayer.swift` (Wetter, Nacht, Blitzlicht), Landschaftsstile in `ArtLooks.swift`.
 - Koordinaten: x nach rechts, y nach oben, Einheiten = Bildpunkte der 1280x720-Szene. Das Lager steht rechts.
 - Entwicklungshilfe: `ROTORWACHT_SHOTS=<Ordner>` (mit `ROTORWACHT_MISSION=<id>`, `ROTORWACHT_UNLOCK_ALL=1` und `ROTORWACHT_TIMES=10,20,…` für die Zeitpunkte) startet den Einsatz mit Autopilot und legt Bildschirmfotos ab (`DebugShots.swift`). Der Fortschritt wird dabei nicht angefasst.
+
+## Musik (seit 0.5.0)
+
+- Alles synthetisch, keine Tondateien. Core: `Music.swift` (Themen `MusicTheme`, Tonleitern, 8-Takt-Form, `MusicScore`), `MusicSynth.swift` (Sequenzer, Stimmen, Echo, Limiter; keine Allokation beim Rendern), `MusicMixer.swift` (Überblenden, Nutzerlautstärke, Pause), `MusicIntensity.swift` (`IntensityTracker`, `SoundSettings`). App: `MusicPlayer.swift` (eigene AVAudioEngine, getrennt von `AudioEngine` für Effekte), `SoundSettingsView.swift`. `AppModel` füttert die Intensität aus dem `HUDSnapshot`.
+- Neue Einsatz-Musik: `MusicTheme.forMission` ergänzen und `spec` im Enum; `MusicTests` verlangen ein eigenes Thema je Einsatz.
+- Klang nur per Kennzahlen geprüft (Offline-Rendern), nicht abgehört.
 
 ## Grafik (seit 0.4.0)
 
@@ -34,7 +40,7 @@ Liegt unter `docs/planung/`:
 
 - **Name:** Rotorwacht (Ordner und Repo `rotorwacht`).
 - **Plattform:** GitHub `luro611/rotorwacht` (privat). Nicht Codeberg.
-- **Lizenz:** später festlegen.
+- **Lizenz:** MIT für den Code (`LICENSE`), CC BY 4.0 für eigene Grafik und Ton (`LICENSE-ASSETS.md`), Schriften OFL (festgelegt 20.11.2026).
 - **Versionen:** 0.x bis zum ersten fertigen Stand, dann 1.0.0.
 - **Technik:** native Mac-App mit Swift, SpriteKit und SwiftUI, unnotarisiert (kein Apple-Entwicklerkonto; nicht wieder ansprechen).
 - **Steuerung:** Pfeiltasten zum Fliegen, Leertaste für Löschwasser, Esc Pause.
