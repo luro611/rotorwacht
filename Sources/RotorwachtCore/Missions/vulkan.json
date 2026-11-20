@@ -213,5 +213,32 @@
     }
    ]
   }
+ ],
+ "obstacles": [
+  {
+   "id": "seilbahn",
+   "kind": "cablecar",
+   "x": 1860,
+   "x1": 2480,
+   "height": 120,
+   "height1": 110,
+   "period": 24
+  }
+ ],
+ "weather": [
+  {
+   "kind": "windShift",
+   "start": 120,
+   "duration": 60,
+   "warn": 8,
+   "strength": -85
+  },
+  {
+   "kind": "windShift",
+   "start": 300,
+   "duration": 60,
+   "warn": 8,
+   "strength": 85
+  }
  ]
 }

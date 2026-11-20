@@ -246,5 +246,28 @@
     "strength": -100
    }
   ]
- }
+ },
+ "obstacles": [
+  {
+   "id": "schneise",
+   "kind": "powerline",
+   "x": 4700,
+   "x1": 4990,
+   "height": 150,
+   "height1": 150
+  }
+ ],
+ "weather": [
+  {
+   "kind": "thunder",
+   "start": 220,
+   "duration": 80,
+   "warn": 12,
+   "x0": 3200,
+   "x1": 6200,
+   "interval": 10,
+   "radius": 160,
+   "damage": 18
+  }
+ ]
 }

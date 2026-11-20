@@ -2,6 +2,36 @@
 
 Versionen: 0.x bis zum ersten fertigen Stand, dann 1.0.0.
 
+## [0.7.0] – in Arbeit
+
+Abwechslung (Entscheidung von Lutz am 20.11.2026): Planung `docs/planung/06 Abwechslung 0.7.md`. Gebaut in zwei Teilen; dieser Abschnitt ist Teil 0.7a.
+
+### Hindernisse und Wetter (0.7a)
+
+#### Hindernisse (`obstacles`)
+
+- **Neuer Gefahren-Baustein**, alle Felder in der Einsatzdatei optional. Vier Arten: Hochspannungsleitung (`powerline`, zwei Drähte mit Durchhang zwischen zwei Masten), Kran (`crane`, schwenkender Ausleger mit Seil und Last), Seilbahn (`cablecar`, Gondel fährt auf dem Tragseil hin und her) und Windrad (`windmill`, drei drehende Flügel).
+- **Treffer:** Drähte, Seile und Tragseile kosten 40 Haltbarkeit (`damage`, Abklingzeit 0,7 s) mit Funken; feste Teile (Flügel, Ausleger, Last, Gondel, Türme, Masten) zerstören den Hubschrauber. Bewegung und Treffer nutzen dieselben Zeitfunktionen (`Obstacle.shapes(at:in:)`).
+- **Immer überfliegbar:** Die Hülle liegt mindestens 150 Einheiten unter der Flughöhengrenze und mindestens 70 Einheiten von Rettungspunkten, Lager, Außenposten und Durchfahrten entfernt (`validate`). Unterfliegen oder Durchfliegen der Lücken ist ein Risiko, kein Zwang.
+- **Stufen:** Schaden der Drähte × Druck (leicht 0,8, schwer 1,2).
+- **Einsätze:** Hochwasser Leitung zwischen den Rettungspunkten „Laden“ und „Hügel“, Waldbrand Leitung vor dem Stausee, Küste zwei Windräder auf dem Weg zum Lager, Altstadt Baukran auf dem Dach, Vulkan Seilbahn am Hang, Hochgebirge Leitung über dem Tal. Kein Gelände geändert.
+- **Autopilot:** steigt vor einem Hindernis auf die Hülle plus 80, hält die Höhe, bis es hinter ihm liegt, und plant Reiseflug und Anflug über der Hülle. Unter einer Brücke oder in einem Tunnel greift das nicht (dort führt die Durchfahrtslogik).
+- **Grafik:** Blender-Modelle in `art/obstacles.py` (`scripts/render-art.sh obstacles`): Mastkopf und Schaftteile, Kranturm, Ausleger, Last, Seilbahnstütze, Gondel, Windradturm, Flügel, Nabe. Drähte und Seile zeichnet die App als Linien, Ausleger, Gondel und Flügel bewegen sich nach der Einsatzzeit (`ObstacleLayer.swift`).
+- Logik: `RotorwachtCore/Obstacles.swift`.
+
+#### Wetterwechsel (`weather`)
+
+- **Zeitplan je Einsatz**, jedes Ereignis mit `start`, `duration` und `warn` (Vorwarnung): `gust` (zusätzliche Böe), `windShift` (Grundwind dreht, baut sich in wenigen Sekunden auf und ab), `fog` (Nebelbank, überall oder zwischen `x0` und `x1`, `tint` „fog“ oder „dust“) und `thunder` (aufziehendes Gewitter: Blitze wie bei `storms`, in der Vorwarnung dunkelt der Himmel).
+- **Vorwarnung:** Hinweis im Einsatz mit Signal („Böen im Anmarsch“, „Nebelbank zieht auf“) und ein **Windsack** links unten, der die Windrichtung und -stärke zeigt und vor einer Böe oder einem Windwechsel einen gelben Pfeil mit den Sekunden in der kommenden Richtung blinken lässt.
+- **Nebel** schränkt nur die Sicht ein (runder freier Fleck um den Hubschrauber, der mit der Dichte schrumpft), keine Regel ändert sich. Die Darstellung steht in `AtmosphereLayer.swift` und läuft auch in Einsätzen ohne `atmosphere`.
+- **Stufen:** Stärke, Gewitterschaden und Nebeldichte × Druck, Vorwarnzeit × Warnfaktor (leicht länger, schwer kürzer).
+- **Einsätze:** Hochwasser Nebelbank über dem Fluss, Waldbrand Gewitter, Küste Windwechsel und Sturmböen, Altstadt Staubwolke, Vulkan Windwechsel, Hochgebirge Böe mit Vorwarnung und Nebelbank.
+- Logik: `RotorwachtCore/Weather.swift`.
+
+#### Tests
+
+- 19 neue Tests, zusammen 173 grün. `ObstacleTests`: Treffer und freie Wege je Art, Zeitfunktionen, Hülle über allen Teilen, Prüfung schlechter Daten, Stufen, Wetter (Wind, Nebel, Warnung genau einmal, Gewitterfenster), **Verteilung auf die Einsätze, Platz um die Hindernisse und Autopilot ohne einen Treffer in allen sechs Einsätzen auf allen Stufen**.
+
 ## [0.6.0] – 2026-11-20
 
 Mehr Spannung (Rückmeldung von Lutz nach 0.5.0: zu langweilig): Durchfahrten und eine Bestenliste. Entwurf und Regeln: `docs/planung/05 Mehr Spannung.md`.
