@@ -14,13 +14,13 @@ S = 1.25
 E = math.radians(12)
 
 PAL = {   # far ridges (back, front), mist, hills (dark, light), snow
-    "valley": dict(far=(0x8497aa, 0x6d8294), mist=0xd3d7d3, hill=(0x4f6a58, 0x6a8a6f), trees=True, snow=False, jag=0.12),
+    "valley": dict(far=(0x91a4b5, 0x7e93a5), mist=0xd3d7d3, hill=(0x4f6a58, 0x6a8a6f), trees=True, snow=False, jag=0.12, scale=0.62, mistk=0.8),
     "coast": dict(far=(0x56626e, 0x445059), mist=0x6c7882, hill=(0x38464c, 0x4c5d63), trees=False, snow=False, jag=0.3),
     "town": dict(far=(0xb8a392, 0x9f8b7c), mist=0xe0cdb2, hill=(0x84736a, 0x9d8b7b), trees=False, snow=False, jag=0.3),
     "volcano": dict(far=(0x56433d, 0x3d302d), mist=0x82604a, hill=(0x2c2522, 0x40342f), trees=False, snow=False, jag=0.7),
     "alpine": dict(far=(0xb4c4d4, 0x97aabd), mist=0xe9eff3, hill=(0x6c7c8e, 0x8b9bad), trees=False, snow=True, jag=1.0),
 }
-NIGHT = dict(far=(0x1d2836, 0x151e2b), mist=0x1f2b3b, hill=(0x131c25, 0x1c2733), snow=False)
+NIGHT = dict(far=(0x2e3d52, 0x25344a), mist=0x3a4d66, hill=(0x1f2d3b, 0x2c3c4d), snow=False)
 
 
 def ridge_h(x, depth, seed, base, amp, jag):
@@ -54,7 +54,7 @@ def heightfield(W_u, depth_m, seed, base, amp, jag, material):
     return o
 
 
-def ridge_material(color, mist, hmax, snow=False):
+def ridge_material(color, mist, hmax, snow=False, mistk=0.45):
     """colour fading into mist towards the bottom, optional snow on the heights"""
     m = bpy.data.materials.new("ridge")
     m.use_nodes = True
@@ -68,7 +68,7 @@ def ridge_material(color, mist, hmax, snow=False):
     nt.links.new(tc.outputs["Object"], sep.inputs[0])
     fac = nt.nodes.new("ShaderNodeMapRange")
     fac.inputs["From Min"].default_value = 0.0
-    fac.inputs["From Max"].default_value = hmax * 0.45
+    fac.inputs["From Max"].default_value = hmax * mistk
     nt.links.new(sep.outputs[2], fac.inputs["Value"])
     mix = nt.nodes.new("ShaderNodeMix"); mix.data_type = "RGBA"
     mix.inputs[6].default_value = srgb(mist)
@@ -130,9 +130,10 @@ def main():
         hm = Hf * U
         for i, (depth, base, amp, col) in enumerate(((22, 0.42, 0.20, pal["far"][1]), (12, 0.30, 0.17, pal["far"][0]))):
             pass
-        back = heightfield(Wf, 20, 3.1, hm * 0.40, hm * 0.30, pal.get("jag", 0.12), ridge_material(pal["far"][0], pal["mist"], hm * 0.8, pal.get("snow", False)))
+        sc = pal.get("scale", 1.0); mk = pal.get("mistk", 0.45)
+        back = heightfield(Wf, 20, 3.1, hm * 0.40 * sc, hm * 0.30 * sc, pal.get("jag", 0.12), ridge_material(pal["far"][0], pal["mist"], hm * 0.8, pal.get("snow", False), mk))
         back.location.y = 14
-        front = heightfield(Wf, 14, 7.7, hm * 0.22, hm * 0.18, pal.get("jag", 0.12), ridge_material(pal["far"][1], pal["mist"], hm * 0.8, pal.get("snow", False)))
+        front = heightfield(Wf, 14, 7.7, hm * 0.22 * sc, hm * 0.18 * sc, pal.get("jag", 0.12), ridge_material(pal["far"][1], pal["mist"], hm * 0.8, pal.get("snow", False), mk))
         meta[mission["id"] + "-far"] = render_layer("far-" + mission["id"], Wf, Hf, preview)
         # wooded hills
         reset()
