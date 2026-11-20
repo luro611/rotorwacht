@@ -56,6 +56,13 @@ public enum SimEvent: Equatable, Sendable {
     case shutterClosing(passage: Int, shutter: Int)
     case shutterCrush(passage: Int)
     case passageContact(kind: String, damage: Double)
+    // Score
+    /// A person arrived at the camp: points with the bonuses of that moment (`combo` = chain length including this one).
+    case scored(points: Int, combo: Int)
+    /// The chain was cut by damage or a loss (`was` = length of the chain).
+    case comboBroken(was: Int)
+    /// A flight that brought many people home at once (`all`: everybody of the Einsatz in one flight).
+    case flightBonus(points: Int, people: Int, all: Bool)
 }
 
 public enum MissionOutcome: Equatable, Sendable {
@@ -74,12 +81,20 @@ public struct MissionResult: Equatable, Sendable {
     public var helicoptersLost: Int
     public var score: Int
     public var stars: Int
+    /// What the score is made of besides 100 per rescued person (all included in `score`).
+    public var timeBonus: Int
+    public var comboBonus: Int
+    public var flightBonus: Int
+    /// Longest chain of rescues without damage or loss.
+    public var bestCombo: Int
 
     public init(outcome: MissionOutcome, total: Int, rescued: Int, lost: Int, injured: Int, timeUsed: Double,
-                helicoptersLost: Int, score: Int, stars: Int) {
+                helicoptersLost: Int, score: Int, stars: Int,
+                timeBonus: Int = 0, comboBonus: Int = 0, flightBonus: Int = 0, bestCombo: Int = 0) {
         self.outcome = outcome; self.total = total; self.rescued = rescued; self.lost = lost
         self.injured = injured; self.timeUsed = timeUsed; self.helicoptersLost = helicoptersLost
         self.score = score; self.stars = stars
+        self.timeBonus = timeBonus; self.comboBonus = comboBonus; self.flightBonus = flightBonus; self.bestCombo = bestCombo
     }
 }
 
@@ -124,6 +139,11 @@ public struct MissionSimulation {
     /// Seconds each rescue point has been close to a fire (0 when safe).
     public private(set) var fireExposure: [Double]
     public internal(set) var hz: HazardState
+    /// Bonus points and the current chain of rescues (see `Scoring.swift`).
+    public internal(set) var tally = ScoreTally()
+    var flightPaid = false
+    /// Durability at the end of the last step: any drop since then counts as damage.
+    var durabilityMark = 0.0
     private var dropAccumulator = 0.0
     private var nextDropID = 0
     private var tankWasFull = true
@@ -153,6 +173,7 @@ public struct MissionSimulation {
             x: sx, y: mission.surfaceHeight(at: sx),
             fuel: mission.fuel.capacity, durability: spec.maxDurability)
         self.heli.water = mission.tankSpec.capacity
+        self.durabilityMark = spec.maxDurability
         var list: [Person] = []
         var id = 0
         for (pi, p) in mission.rescuePoints.enumerated() {
@@ -199,6 +220,7 @@ public struct MissionSimulation {
     public mutating func step(input: PilotInput, dt: Double) -> [SimEvent] {
         if isFinished { return [] }
         var events: [SimEvent] = []
+        let harmedBefore = lostCount + injuredCount
         time += dt
         floodLevel = mission.floodLevel(at: time)
         wind = mission.windAcceleration(at: time)
@@ -218,6 +240,9 @@ public struct MissionSimulation {
         }
 
         updatePeopleProgress(dt: dt, &events)
+        // Damage to the helicopter or people lost cut the chain (repairs in the camp only raise durability).
+        if heli.durability < durabilityMark - 0.001 || lostCount + injuredCount > harmedBefore { breakCombo(&events) }
+        durabilityMark = heli.durability
         checkFinish(dt: dt, &events)
         return events
     }
@@ -261,9 +286,11 @@ public struct MissionSimulation {
             }
             boardTimer = 0
             disembarkTimer = 0
+            flightPaid = false
             return
         }
 
+        if !inBaseZone { flightPaid = false }
         if inBaseZone {
             heli.fuel = min(mission.fuel.capacity, heli.fuel + mission.fuel.refuelPerSecond * dt)
             heli.durability = min(spec.maxDurability, heli.durability + Self.repairPerSecond * dt)
@@ -271,6 +298,7 @@ public struct MissionSimulation {
             disembarkTimer += dt
             if disembarkTimer >= Self.boardInterval,
                let i = people.firstIndex(where: { $0.state == .aboard }) {
+                awardFlight(delivered: aboardCount, &events)
                 people[i].state = .leaving
                 people[i].progress = 0
                 disembarkTimer = 0
@@ -315,6 +343,7 @@ public struct MissionSimulation {
                     people[i].state = .rescued
                     people[i].progress = 0
                     events.append(.rescued(personID: people[i].id))
+                    awardRescue(&events)
                 }
             default: break
             }
@@ -448,9 +477,12 @@ public struct MissionSimulation {
         for i in people.indices where people[i].state == .aboard || people[i].state == .boarding
             || people[i].state == .leaving || people[i].state == .hoisting {
             // Those already stepping out at the camp count as rescued; the rest are injured.
-            people[i].state = people[i].state == .leaving ? .rescued : .injured
+            let stepping = people[i].state == .leaving
+            people[i].state = stepping ? .rescued : .injured
             people[i].progress = 0
+            if stepping { awardRescue(&events) }
         }
+        breakCombo(&events)
         // The cable goes down with the helicopter: no stale cable or winch bar while the replacement is on its way.
         hz.winchProgress = Array(repeating: 0, count: mission.rescuePoints.count)
         hz.winchHolding = false
@@ -497,7 +529,8 @@ public struct MissionSimulation {
         let lost = lostCount
         let injured = injuredCount + people.filter { [.waiting, .aboard, .boarding, .hoisting].contains($0.state) }.count
         let heliLost = mission.helicopters - helicoptersLeft
-        var score = rescued * 100 - heliLost * 50
+        var score = rescued * Scoring.perPerson - heliLost * Scoring.perHelicopterLost
+            + tally.timeBonus + tally.comboBonus + tally.flightBonus
         if outcome == .completed { score += Int(timeLeft) }
         score = max(0, score)
         var stars = 0
@@ -507,7 +540,9 @@ public struct MissionSimulation {
         if rescued == total && heliLost == 0 { stars = 3 }
         let result = MissionResult(
             outcome: outcome, total: total, rescued: rescued, lost: lost, injured: injured,
-            timeUsed: min(time, mission.timeLimit), helicoptersLost: heliLost, score: score, stars: stars)
+            timeUsed: min(time, mission.timeLimit), helicoptersLost: heliLost, score: score, stars: stars,
+            timeBonus: tally.timeBonus, comboBonus: tally.comboBonus, flightBonus: tally.flightBonus,
+            bestCombo: tally.bestCombo)
         phase = .finished(result)
         events.append(.finished)
     }

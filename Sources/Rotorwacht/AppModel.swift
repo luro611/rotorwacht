@@ -38,6 +38,13 @@ final class AppModel: ObservableObject {
     @Published var scoreMission = MissionLibrary.all[0]
     @Published var scoreLevel: Difficulty = .medium
     @Published var nameDraft = ""
+    /// Endless mode: the run in progress (or just ended), what its last stage led to, and the best runs.
+    @Published private(set) var endless: EndlessRun?
+    @Published private(set) var endlessNext: EndlessRun.Next?
+    @Published private(set) var endlessScores: EndlessScores
+    @Published private(set) var lastEndlessEntry: (place: Int, date: Date)?
+    @Published var showEndless = false
+    private(set) var endlessActive = false
     @Published var nameConfirmed: Bool {
         didSet { UserDefaults.standard.set(nameConfirmed, forKey: "playerNameConfirmed") }
     }
@@ -74,7 +81,13 @@ final class AppModel: ObservableObject {
             .appendingPathComponent("Rotorwacht/highscores.json")
     }
 
+    static var endlessScoresURL: URL {
+        FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
+            .appendingPathComponent("Rotorwacht/endless.json")
+    }
+
     init() {
+        endlessScores = DebugShots.active ? EndlessScores() : EndlessScores.load(from: Self.endlessScoresURL)
         highScores = DebugShots.active ? HighScores() : HighScores.load(from: Self.highScoresURL)
         playerName = UserDefaults.standard.string(forKey: "playerName") ?? HighScores.cleanName(NSUserName())
         nameConfirmed = UserDefaults.standard.bool(forKey: "playerNameConfirmed")
@@ -144,7 +157,7 @@ final class AppModel: ObservableObject {
             // The fire button may still be pressed when the card appears; give it a moment.
             guard Date().timeIntervalSince(resultShownAt) > 1.0 else { return }
             if out.back { backToStart() }
-            else if out.confirm { if overlayFocus == 0 { startMission(missionID) } else { backToStart() } }
+            else if out.confirm { if overlayFocus == 0 { playAgain() } else { backToStart() } }
         }
     }
 
@@ -190,10 +203,37 @@ final class AppModel: ObservableObject {
     func startMission(_ id: String? = nil) {
         let id = id ?? missionID
         guard isUnlocked(id), let base = loadMission(id) else { return }
+        endless = nil
         launch(base.scaled(for: difficulty), id: id, practice: false)
     }
 
-    private func launch(_ m: Mission, id: String, practice: Bool) {
+    /// Starts a new endless run with a fresh seed.
+    func startEndless() {
+        showEndless = false
+        endless = EndlessRun(seed: UInt64.random(in: 1...UInt64(UInt32.max)))
+        launchEndlessStage()
+    }
+
+    private func launchEndlessStage() {
+        guard let run = endless else { return }
+        do {
+            let m = try run.mission()
+            endlessNext = nil
+            lastEndlessEntry = nil
+            launch(m, id: m.id, practice: false, endless: true)
+        } catch {
+            loadError = "Endlos-Einsatz konnte nicht erzeugt werden: \(error)"
+        }
+    }
+
+    /// The main button of the result card: repeat the Einsatz, or go on in the endless run (a new run when it is over).
+    func playAgain() {
+        if let run = endless { if run.isOver { startEndless() } else { launchEndlessStage() } }
+        else { startMission(missionID) }
+    }
+
+    private func launch(_ m: Mission, id: String, practice: Bool, endless isEndless: Bool = false) {
+        endlessActive = isEndless
         practicing = practice
         missionID = id
         mission = m
@@ -239,6 +279,10 @@ final class AppModel: ObservableObject {
         let name = HighScores.cleanName(raw)
         playerName = name
         nameConfirmed = true
+        if endlessActive, let e = lastEndlessEntry {
+            if endlessScores.rename(place: e.place, date: e.date, to: name), !DebugShots.active { endlessScores.save(to: Self.endlessScoresURL) }
+            return
+        }
         if let e = lastEntry, highScores.rename(place: e.place, date: e.date, mission: missionID, level: difficulty, to: name) {
             if !DebugShots.active { highScores.save(to: Self.highScoresURL) }
         }
@@ -268,8 +312,29 @@ final class AppModel: ObservableObject {
             return
         }
         result = r
-        let entry = ScoreEntry(name: playerName, score: r.score, stars: r.stars, date: Date())
         nameDraft = playerName
+        if endlessActive, var run = endless {
+            // Endless runs have their own list; stage results touch neither the Einsatz lists nor the progress.
+            endlessNext = run.finish(r)
+            endless = run
+            lastEndlessEntry = nil
+            if run.isOver {
+                let e = EndlessEntry(name: playerName, stages: run.stagesCleared, score: run.score, date: Date())
+                if let place = endlessScores.add(e) {
+                    lastEndlessEntry = (place, e.date)
+                    if !DebugShots.active { endlessScores.save(to: Self.endlessScoresURL) }
+                }
+            }
+            lastEntry = nil
+            InputController.shared.capturing = false
+            InputController.shared.releaseAll()
+            overlayFocus = 0
+            resultShownAt = Date().addingTimeInterval(0.6)
+            if !DebugShots.active { music.play(MusicTheme.ending(for: r), crossfade: 0.6) }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) { [weak self] in self?.screen = .result }
+            return
+        }
+        let entry = ScoreEntry(name: playerName, score: r.score, stars: r.stars, date: Date())
         if let place = highScores.add(entry, mission: missionID, level: difficulty) {
             lastEntry = (place, entry.date)
             if !DebugShots.active { highScores.save(to: Self.highScoresURL) }

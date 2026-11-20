@@ -582,6 +582,13 @@ final class GameScene: SKScene {
                 audio.play(.crash)
                 shake = max(shake, 16)
                 say("Vom Shutter erwischt: Dieser Hubschrauber ist verloren.", seconds: 5)
+            case .scored(let points, let combo):
+                say(combo >= 2 ? "+\(points) Punkte · Kombo ×\(combo)" : "+\(points) Punkte", seconds: 2.5)
+            case .comboBroken(let was):
+                say("Kombo ×\(was) abgebrochen.", seconds: 3)
+            case .flightBonus(let points, let people, let all):
+                audio.play(.ding)
+                say(all ? "Alle in einem Flug! +\(points) Punkte" : "Voller Flug mit \(people) Menschen: +\(points) Punkte", seconds: 4)
             case .passageContact(let kind, let d):
                 if d > 1 {
                     audio.play(.thump(0.7))
@@ -1029,6 +1036,8 @@ final class GameScene: SKScene {
         snap.lost = sim.lostCount + sim.injuredCount
         snap.timeLeft = sim.timeLeft
         snap.helicoptersLeft = sim.helicoptersLeft
+        snap.score = sim.livePoints
+        snap.combo = sim.tally.combo
         snap.helicoptersTotal = mission.isPractice ? -1 : mission.helicopters
         snap.wind = sim.wind
         snap.floodLevel = sim.floodLevel

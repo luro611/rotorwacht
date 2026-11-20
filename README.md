@@ -64,6 +64,10 @@ Durchfahrten (Einsätze 1, 4, 5, 6): Unter Brücken und durch Tunnel musst du hi
 
 Bestenliste: Je Einsatz und Stufe die zehn besten Ergebnisse, im Startmenü (Knopf neben den Stufen) und auf der Wertungskarte. Den Namen gibst du beim ersten Eintrag an, später änderst du ihn in den Einstellungen (Cmd+,).
 
+Punkte: 100 je Gerettetem, dazu Zeitbonus (bis 40 je Gerettetem, je mehr Restzeit desto mehr), Kombo (je Gerettetem 5 mehr für jeden Geretteten in Folge, höchstens 50; bricht bei Schaden am Hubschrauber oder verlorenen Menschen) und Flugbonus (50 für eine volle Kabine, 300 für alle Menschen eines Einsatzes in einem Flug). Die Sterne hängen weiter nur an den Geretteten und den verlorenen Hubschraubern.
+
+Endlos: Der Knopf „Endlos“ startet einen Lauf aus zufällig zusammengesetzten Einsätzen, einer nach dem anderen und immer schwerer. Du hast 5 Hubschrauber für den ganzen Lauf (nach je 3 geschafften Stufen kommt einer dazu). Eine Stufe ist geschafft, wenn mindestens die Hälfte gerettet ist; sonst endet der Lauf. Eigene Bestenliste nach Stufen und Punkten.
+
 Üben: Der Knopf „Üben“ im Startmenü bietet neun kurze Strecken (Unterführung, Tunnel, Galerie, Brücke, Blitze, Trümmer, Lava, Lawinen mit Seilwinde, Löschen) mit Stufenwahl und „Langsamer“. Unbegrenzt Hubschrauber, sofort weiter am Start, keine Wertung und keine Bestenliste.
 
 Seilwinde (Einsatz 6): Auf Felsvorsprüngen nicht landen. Schwebe ruhig über dem Vorsprung, nicht höher als das Seil (Pfeil runter holt es näher): Die Winde zieht eine Person nach der anderen hoch. Zu viel Bewegung lässt das Seil die Person wieder verlieren.

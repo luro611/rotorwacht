@@ -65,6 +65,9 @@ struct StartView: View {
                 Button("Üben") { model.showPractice = true }
                     .buttonStyle(LevelButtonStyle(selected: false))
                     .accessibilityLabel("Übungsmodus")
+                Button("Endlos") { model.showEndless = true }
+                    .buttonStyle(LevelButtonStyle(selected: false))
+                    .accessibilityLabel("Endlosmodus")
             }
             .padding(.top, 16)
 
@@ -89,6 +92,7 @@ struct StartView: View {
         .onAppear { model.loadMissionList() }
         .sheet(isPresented: $model.showScores) { HighScoreSheet().environmentObject(model) }
         .sheet(isPresented: $model.showPractice) { PracticeSheet().environmentObject(model) }
+        .sheet(isPresented: $model.showEndless) { EndlessSheet().environmentObject(model) }
     }
 
     /// Title with the last word as the accent word, as on the website.

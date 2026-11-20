@@ -2,6 +2,26 @@
 
 Versionen: 0.x bis zum ersten fertigen Stand, dann 1.0.0.
 
+## [0.7.0] – in Arbeit (20.11.2026)
+
+Abwechslung (Planung `docs/planung/06 Abwechslung 0.7.md`). Dieser Abschnitt: Teil 0.7b, Punkte und Endlosmodus. Teil 0.7a (Hindernisse, Wetterwechsel) kommt aus einer anderen Sitzung dazu.
+
+### Punkte: Zeitbonus, Kombos, Flugbonus
+
+- Neben den 100 Punkten je Gerettetem gibt es **Zeitbonus** (bis 40 je Gerettetem, anteilig zur Restzeit), **Kombo** (5 je früherem Glied der Kette, höchstens 50; die Kette bricht bei Schaden am Hubschrauber, verlorenen oder verletzten Menschen und verlorenem Hubschrauber) und **Flugbonus** (50 bei voller Kabine, 300, wenn alle Menschen des Einsatzes in einem Flug ankommen). Abzüge und Restsekunden wie bisher.
+- **Sterne bleiben unberührt**, alte Punktzahlen waren nie höher als die neue Formel (Boni kommen nur dazu), bestehende Tests unverändert.
+- Im Einsatz oben „Punkte“ und „Kombo ×n“, Meldungen bei Rettung, Kettenbruch und Flugbonus; auf der Wertungskarte die Zeilen Bonus Zeit, Kombo (längste Serie) und Flüge. Die Bestenliste nimmt die neuen Punkte. Logik: `RotorwachtCore/Scoring.swift`, `MissionResult` hat dafür vier neue Felder (`timeBonus`, `comboBonus`, `flightBonus`, `bestCombo`), die Simulation hat drei neue Ereignisse (`scored`, `comboBroken`, `flightBonus`).
+- 7 neue Tests (`ScoringTests`).
+
+### Endlosmodus
+
+- Knopf **„Endlos“** im Startmenü (Fenster mit Regeln, Bestenliste, „Lauf starten“). Zufällig zusammengesetzte Einsätze aus den Grundlagen der sechs Einsätze, einer nach dem anderen, immer schwerer; **5 Hubschrauber für den ganzen Lauf** (nach je 3 geschafften Stufen einer dazu, höchstens 6). Eine Stufe ist geschafft mit mindestens einem Stern; sonst endet der Lauf.
+- **Bausteine zentral** in `EndlessKit.blocks` (Gewitter, Trümmer, Zusatzböen, Dauerwind, durstiger Motor, trockener Wald); neue Bausteine (0.7a) werden dort als ein Eintrag ergänzt. Der Startwert legt Reihenfolge der Einsätze und alle Abwandlungen fest (`SeededRandom`, überall gleich).
+- **Eigene Bestenliste** (`~/Library/Application Support/Rotorwacht/endless.json`): Stufen, dann Punkte, Top 10, Name wie bei den Einsätzen. Endlos-Ergebnisse berühren Einsatz-Listen und Fortschritt nicht. Die Wertungskarte zeigt Stand des Laufs (Stufen, Punkte, Hubschrauber im Bestand), „Nächster Einsatz“ bzw. „Neuer Lauf“.
+- **Lösbarkeit geprüft:** `EndlessTests` lässt den Autopiloten jede Grundlage auf fünf Stufen (bis 20) mit je sechs Startwerten fliegen; bei der Entwicklung 720 Läufe über zwölf Startwerte und Stufen bis 30 ohne Ausfall. Dabei sind Bausteine eingeschränkt worden (siehe Detailentwurf in der Planung).
+- Neue Dateien: `Endless.swift`, `EndlessScores.swift`, `Scoring.swift`, `EndlessViews.swift` (App), `EndlessTests`, `ScoringTests`.
+- **Ungeprüft:** Spielgefühl (Schwierigkeitskurve, Bestand an Hubschraubern, Höhe der Boni) und die Darstellung der neuen Oberfläche mit echter Hand. Der Startwert eines Laufs wird noch nicht angezeigt.
+
 ## [0.6.0] – 2026-11-20
 
 Mehr Spannung (Rückmeldung von Lutz nach 0.5.0: zu langweilig): Durchfahrten und eine Bestenliste. Entwurf und Regeln: `docs/planung/05 Mehr Spannung.md`.

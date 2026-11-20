@@ -44,4 +44,7 @@ struct HUDSnapshot: Equatable {
     var winchSteady = true
     var messages: [String] = []
     var crashed = false
+    /// Points so far and the current chain of rescues without damage.
+    var score = 0
+    var combo = 0
 }
