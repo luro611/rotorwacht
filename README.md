@@ -7,10 +7,14 @@
 
 Eigenes Hubschrauber-Rettungsspiel für den Mac (Swift, SpriteKit, SwiftUI): nach Naturkatastrophen Menschen von Dächern und Anhöhen holen und ins Lager bringen, bevor Wetter, Wasser oder Treibstoff dir einen Strich durch die Rechnung machen.
 
-**Status:** Version 0.3.0 (alle sechs Einsätze: Hochwasser, Waldbrand, Sturmnacht an der Küste, Erdbeben in der Altstadt, Vulkanausbruch, Lawinen im Hochgebirge; drei Stufen, Freischalten, Fortschritt). Nur zum eigenen Gebrauch, unnotarisiert.
+**Status:** Version 0.4.0 (alle sechs Einsätze, drei Stufen, Freischalten; Grafik aus gerenderten 3D-Modellen). Nur zum eigenen Gebrauch, unnotarisiert.
 
 **Lizenz:** noch nicht festgelegt
 
+![Hochwasser mit neuem Hubschrauber und Landeplätzen](docs/bilder/hochwasser-0.4.png)
+![Waldbrand: Landeplätze mit Wartenden am Rand](docs/bilder/waldbrand-landeplatz-0.4.png)
+![Altstadt](docs/bilder/altstadt-0.4.png)
+![Gebirge mit Seilwinde](docs/bilder/gebirge-seilwinde-0.4.png)
 ![Einsatz 1: Rettung vom Dach](docs/bilder/flug-0.1.png)
 ![Einsatz 2: Löschflug am Waldbrand](docs/bilder/loeschen-0.2.png)
 ![Startbildschirm mit sechs Einsätzen, Stufen und Sperren](docs/bilder/start-0.3.png)
@@ -29,7 +33,7 @@ scripts/build.sh --run
 
 Das baut `build/Rotorwacht.app` (ad hoc signiert) und startet sie. Beim ersten Start einer unnotarisierten App: Rechtsklick auf die App, „Öffnen“.
 
-Tests (Swift Testing, 94 Tests für Flugphysik, Landen, Ein-/Aussteigen, Tank, Feuer, Blitz, Trümmer, Lava, Lawinen, Seilwinde, Fortschritt und Autopilot-Proben aller sechs Einsätze auf allen Stufen):
+Tests (Swift Testing, 99 Tests für Flugphysik, Landen, Ein-/Aussteigen, Tank, Feuer, Blitz, Trümmer, Lava, Lawinen, Seilwinde, Fortschritt und Autopilot-Proben aller sechs Einsätze auf allen Stufen):
 
 ```bash
 scripts/test.sh
@@ -63,6 +67,6 @@ Löschen: Den Tank füllst du im Tiefflug über See, Fluss oder Flut (und im Lag
 - `Sources/Rotorwacht`: die Mac-App (SpriteKit-Szene, SwiftUI-Menüs und Anzeige, synthetisierter Ton).
 - `scripts/`: `build.sh` (App bauen), `test.sh` (Tests).
 - `docs/planung/`: Spielkonzept und offene Fragen.
-- Grafik und Ton entstehen im Code, es gibt keine fremden Dateien. Schriften: siehe `assets/QUELLEN.md`.
+- `art/`: Blender-Skripte (Python), die alle 3D-Modelle erzeugen und rendern; `scripts/render-art.sh` rendert alles neu (Blender nötig: `brew install --cask blender`), die Bilder liegen fertig in `Sources/Rotorwacht/Renders`. Ton entsteht im Code. Herkunft und Schriften: `assets/QUELLEN.md`.
 
 Entwicklungshilfe: `ROTORWACHT_SHOTS=<Ordner> build/Rotorwacht.app/Contents/MacOS/Rotorwacht` startet den Einsatz selbst, lässt einen Autopiloten fliegen und legt Bildschirmfotos ab.

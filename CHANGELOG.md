@@ -2,6 +2,18 @@
 
 Versionen: 0.x bis zum ersten fertigen Stand, dann 1.0.0.
 
+## [0.4.0] – 2026-11-20
+
+Grafik-Überarbeitung: alles aus gerenderten 3D-Modellen (Blender, per Python-Skript, `art/`).
+
+- **Hubschrauber:** moderner zweimotoriger Rettungshubschrauber (eigenes Design, rot-weiß) mit ummanteltem Heckrotor, Seilwinde, Suchscheinwerfer und Kufen; 9 Blickwinkel für das Wenden von links über die Frontansicht nach rechts, drehender Rotor als Scheibe, blinkende Lichter, Schatten auf dem Untergrund.
+- **Menschen:** fünf Figurtypen mit Winken, Laufen, Einsteigen und Hochziehen; die Füße stehen immer auf der Fläche (Fehler „schwebende Personen“ behoben).
+- **Landeplätze:** jeder Rettungspunkt hat eine erkennbare, ebene Landefläche mit H-Markierung (Dach, Turm, Plattform, Wiese, Pflaster, Bootsdeck, Leuchtturm); mindestens so breit wie die Kufen, die Wartenden stehen am Rand. Seilwinden-Vorsprünge haben eine Markierung. Einsatzdateien entsprechend angepasst (Geländeplateaus, breitere Flächen, Altstadt-Plätze).
+- **Gelände, Gebäude und Panoramen** je Einsatz gerendert (Gras, Erde, Fels, Schnee, Asche, Häuserfassaden, Bäume, Felsen, ferne Berge und Hügel); Wetter und Feuer bleiben SpriteKit-Partikel.
+- Lager als gerendertes Bild mit ebener Fläche.
+- Tests: neue `PadTests` (Fläche eben und breit genug, Personen auf der Fläche, Sprites vorhanden); zusammen 99.
+- Werkzeug: Blender (`brew install --cask blender`), `scripts/render-art.sh` erzeugt alle Bilder neu; die Bilder liegen im Repository (`Sources/Rotorwacht/Renders`, etwa 50 MB).
+
 ## [0.3.0] – 2026-11-19
 
 Die Einsätze 3 bis 6 und die Kampagne.

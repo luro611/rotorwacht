@@ -1,0 +1,50 @@
+{
+ "waldbrand-far": {
+  "w": 2144,
+  "h": 460
+ },
+ "waldbrand-hill": {
+  "w": 3800,
+  "h": 400
+ },
+ "altstadt-far": {
+  "w": 2120,
+  "h": 460
+ },
+ "altstadt-hill": {
+  "w": 3730,
+  "h": 400
+ },
+ "gebirge-far": {
+  "w": 2192,
+  "h": 460
+ },
+ "gebirge-hill": {
+  "w": 3940,
+  "h": 400
+ },
+ "hochwasser-far": {
+  "w": 2144,
+  "h": 460
+ },
+ "hochwasser-hill": {
+  "w": 3800,
+  "h": 400
+ },
+ "kueste-far": {
+  "w": 2192,
+  "h": 460
+ },
+ "kueste-hill": {
+  "w": 3940,
+  "h": 400
+ },
+ "vulkan-far": {
+  "w": 2216,
+  "h": 460
+ },
+ "vulkan-hill": {
+  "w": 4010,
+  "h": 400
+ }
+}

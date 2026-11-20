@@ -173,9 +173,26 @@ final class GameScene: SKScene {
             clouds.append((n, n.position.x, CGFloat(4 + (i % 4) * 2), 0.03 + CGFloat(i % 3) * 0.015))
         }
 
-        // Layers: far mountains (0.12), wooded hills (0.35)
-        addParallax(factor: 0.12, z: -90, height: 460) { x0, w, h in Art.mountainChunk(x0: x0, w: w, h: h, look: look) }
-        addParallax(factor: 0.35, z: -80, height: 400) { x0, w, h in Art.hillChunk(x0: x0, w: w, h: h, look: look) }
+        // Layers: far mountains (0.12), wooded hills (0.35): rendered panoramas, code-drawn chunks as fallback
+        addPanorama(name: "far", factor: 0.12, z: -90, height: 460) { x0, w, h in Art.mountainChunk(x0: x0, w: w, h: h, look: look) }
+        addPanorama(name: "hill", factor: 0.35, z: -80, height: 400) { x0, w, h in Art.hillChunk(x0: x0, w: w, h: h, look: look) }
+    }
+
+    private func addPanorama(name: String, factor f: CGFloat, z: CGFloat, height: CGFloat,
+                             _ fallback: (CGFloat, CGFloat, CGFloat) -> SKTexture) {
+        guard let tex = Render.texture("panorama", "\(name)-\(mission.id)") else {
+            addParallax(factor: f, z: z, height: height, fallback)
+            return
+        }
+        let total = CGFloat(mission.world.width) * f + 1280
+        let layer = SKNode()
+        layer.zPosition = z
+        let s = SKSpriteNode(texture: tex, size: CGSize(width: total.rounded(.down), height: height))
+        s.anchorPoint = .zero
+        s.position = CGPoint(x: -640, y: f * 360 - 420)
+        layer.addChild(s)
+        addChild(layer)
+        parallaxLayers.append((layer, f))
     }
 
     private func addParallax(factor f: CGFloat, z: CGFloat, height: CGFloat,
@@ -207,14 +224,22 @@ final class GameScene: SKScene {
         let lowest = CGFloat(mission.terrain.map(\.y).min() ?? 0), highest = CGFloat(mission.terrain.map(\.y).max() ?? 0)
         let yMin: CGFloat = max(-120, min(0, lowest - 10)), yMax: CGFloat = max(480, highest + 40)
         var x: CGFloat = 0
+        var index = 0
         while x < CGFloat(mission.world.width) {
             let w = min(chunk, CGFloat(mission.world.width) - x)
-            let s = SKSpriteNode(texture: Art.terrainChunk(mission: mission, x0: x, w: w, yMin: yMin, yMax: yMax))
+            let s: SKSpriteNode
+            if let t = Render.texture("terrain", "\(mission.id)-\(index)") {
+                s = SKSpriteNode(texture: t)
+                s.size = CGSize(width: chunk, height: yMax - yMin)   // the render always covers a full chunk
+            } else {
+                s = SKSpriteNode(texture: Art.terrainChunk(mission: mission, x0: x, w: w, yMin: yMin, yMax: yMax))
+                s.size = CGSize(width: w, height: yMax - yMin)
+            }
             s.anchorPoint = .zero
-            s.size = CGSize(width: w, height: yMax - yMin)
             s.position = CGPoint(x: x, y: yMin)
             terrain.addChild(s)
             x += chunk
+            index += 1
         }
 
         // Landing pads (rendered per rescue point) and markers

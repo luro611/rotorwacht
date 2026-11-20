@@ -2,7 +2,7 @@
 
 ## Grafik und Ton
 
-Alle Grafiken des Spielfelds werden im Code erzeugt (Formen, Verläufe, Prozedurales), alle Geräusche synthetisiert. Es gibt keine fremden Bild- oder Tondateien. Nichts stammt aus Choplifter oder einem anderen bestehenden Spiel.
+Alle Grafiken des Spielfelds (Hubschrauber, Menschen, Landeplätze, Gebäude, Gelände, Panoramen) sind eigene 3D-Modelle, die per Python-Skript in Blender (Version 5.3, GPL, nur als Werkzeug; die Bilder sind eigene Werke) erzeugt und gerendert werden: `art/*.py`, Ausgabe in `Sources/Rotorwacht/Renders`. Keine fremden Modelle oder Texturen. Effekte und das Menü entstehen im Code, alle Geräusche werden synthetisiert. Es gibt keine fremden Bild- oder Tondateien. Nichts stammt aus Choplifter oder einem anderen bestehenden Spiel.
 
 ## Luro-Siegel
 

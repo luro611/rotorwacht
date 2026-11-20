@@ -1,0 +1,44 @@
+{
+ "waldbrand": {
+  "chunks": 8,
+  "yMin": -50,
+  "yMax": 600,
+  "chunk": 1024,
+  "ppu": 1.5
+ },
+ "altstadt": {
+  "chunks": 7,
+  "yMin": 0,
+  "yMax": 480,
+  "chunk": 1024,
+  "ppu": 1.5
+ },
+ "gebirge": {
+  "chunks": 8,
+  "yMin": 0,
+  "yMax": 900,
+  "chunk": 1024,
+  "ppu": 1.5
+ },
+ "hochwasser": {
+  "chunks": 8,
+  "yMin": 0,
+  "yMax": 480,
+  "chunk": 1024,
+  "ppu": 1.5
+ },
+ "kueste": {
+  "chunks": 8,
+  "yMin": -90,
+  "yMax": 480,
+  "chunk": 1024,
+  "ppu": 1.5
+ },
+ "vulkan": {
+  "chunks": 8,
+  "yMin": -70,
+  "yMax": 640,
+  "chunk": 1024,
+  "ppu": 1.5
+ }
+}
