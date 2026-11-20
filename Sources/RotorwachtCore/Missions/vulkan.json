@@ -188,5 +188,30 @@
    "damage": 14,
    "blockTime": 14
   }
+ ],
+ "passages": [
+  {
+   "id": "hangtunnel",
+   "kind": "tunnel",
+   "x0": 6060,
+   "x1": 6560,
+   "roof": 300,
+   "shutters": [
+    {
+     "x": 6085,
+     "period": 10,
+     "open": 6.0,
+     "phase": 0,
+     "warn": 1.5
+    },
+    {
+     "x": 6535,
+     "period": 10,
+     "open": 6.0,
+     "phase": 4.5,
+     "warn": 1.5
+    }
+   ]
+  }
  ]
 }

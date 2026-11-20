@@ -280,5 +280,14 @@
    "damage": 14,
    "blockTime": 20
   }
+ ],
+ "passages": [
+  {
+   "id": "viadukt",
+   "kind": "bridge",
+   "x0": 5820,
+   "x1": 6040,
+   "roof": 250
+  }
  ]
 }

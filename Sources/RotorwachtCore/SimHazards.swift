@@ -32,6 +32,7 @@ extension MissionSimulation {
         stepVolleys(dt: dt, &events)
         stepObjects(dt: dt, alive: alive, &events)
         stepFlows(dt: dt, alive: alive, &events)
+        stepPassageRhythm(dt: dt, &events)
         for i in hz.blockedUntil.indices where hz.blockedUntil[i] > 0 && hz.blockedUntil[i] <= time {
             hz.blockedUntil[i] = 0
             events.append(.padCleared(pointIndex: i))
@@ -119,6 +120,8 @@ extension MissionSimulation {
             o.x += o.vx * dt
             o.y += o.vy * dt
             if o.x < 0 || o.x > mission.world.width { continue }
+            // Over a passage the span is solid: what falls onto it is gone.
+            if let pi = mission.passageIndex(at: o.x), o.y > mission.passageList[pi].roof { continue }
             if alive, hypot(o.x - heli.x, o.y - (heli.y + 30)) <= o.radius + Self.bodyRadius {
                 heli.durability = max(0, heli.durability - o.damage)
                 events.append(.struckByObject(kind: o.kind, damage: o.damage))
@@ -188,7 +191,7 @@ extension MissionSimulation {
                 }
             }
 
-            if alive, heli.x >= span.lo - 25, heli.x <= span.hi + 25,
+            if alive, heli.x >= span.lo - 25, heli.x <= span.hi + 25, mission.passageIndex(at: heli.x) == nil,
                heli.y - mission.surfaceHeight(at: heli.x) < f.clearance {
                 heli.durability = max(0, heli.durability - f.damagePerSecond * dt)
                 hz.flowHurtTimer -= dt

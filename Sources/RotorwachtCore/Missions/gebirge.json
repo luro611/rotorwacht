@@ -206,5 +206,30 @@
    "damagePerSecond": 30,
    "clearance": 80
   }
+ ],
+ "passages": [
+  {
+   "id": "galerie",
+   "kind": "tunnel",
+   "x0": 5900,
+   "x1": 6450,
+   "roof": 360,
+   "shutters": [
+    {
+     "x": 5925,
+     "period": 11,
+     "open": 6.5,
+     "phase": 0,
+     "warn": 1.5
+    },
+    {
+     "x": 6425,
+     "period": 11,
+     "open": 6.5,
+     "phase": 5.0,
+     "warn": 1.5
+    }
+   ]
+  }
  ]
 }

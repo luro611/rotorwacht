@@ -147,6 +147,8 @@ public struct Mission: Codable, Equatable, Sendable {
     public var volleys: [Volley]? = nil
     public var flows: [Flow]? = nil
     public var outposts: [Outpost]? = nil
+    /// Underpasses and tunnels that must be flown through.
+    public var passages: [Passage]? = nil
     /// Landscape style for the picture: "valley" (default), "coast", "town", "volcano", "alpine".
     public var look: String? = nil
 
@@ -280,6 +282,7 @@ extension Mission {
             try fail("Strom \(f.id) unzulässig")
         }
         for o in outpostList where o.width <= 0 { try fail("Außenposten \(o.name) unzulässig") }
+        try validatePassages(fail)
         if let s = flood.swell, s.period <= 0 { try fail("Wellenperiode muss größer als 0 sein") }
         for p in rescuePoints where p.isWinch && p.cableLength <= 0 { try fail("Seil von \(p.id) unzulässig") }
     }

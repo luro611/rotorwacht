@@ -167,5 +167,14 @@
     "strength": 200
    }
   ]
- }
+ },
+ "passages": [
+  {
+   "id": "bruecke",
+   "kind": "bridge",
+   "x0": 3150,
+   "x1": 3400,
+   "roof": 350
+  }
+ ]
 }

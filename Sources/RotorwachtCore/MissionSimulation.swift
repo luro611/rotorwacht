@@ -51,6 +51,11 @@ public enum SimEvent: Equatable, Sendable {
     case winchStarted(pointIndex: Int)
     case winchSlipped
     case refueling
+    // Passages
+    case shutterWarning(passage: Int, shutter: Int)
+    case shutterClosing(passage: Int, shutter: Int)
+    case shutterCrush(passage: Int)
+    case passageContact(kind: String, damage: Double)
 }
 
 public enum MissionOutcome: Equatable, Sendable {
@@ -239,6 +244,7 @@ public struct MissionSimulation {
         stepTank(input: input, dt: dt, &events)
         applyHeat(dt: dt, &events)
         stepWinch(dt: dt, &events)
+        stepPassages(dt: dt, &events)
 
         if heli.durability <= 0 {
             crash(&events)
