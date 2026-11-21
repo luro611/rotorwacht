@@ -53,7 +53,7 @@ final class AppModel: ObservableObject {
     /// Music on/off and volumes, stored in the user defaults.
     @Published var sound: SoundSettings {
         didSet {
-            sound = sound.clamped
+            if sound != sound.clamped { sound = sound.clamped; return }
             if let data = try? JSONEncoder().encode(sound) { UserDefaults.standard.set(data, forKey: "sound") }
             music.apply(sound)
             scene?.audio.volume = Float(sound.effectsVolume)

@@ -2,6 +2,11 @@
 
 Versionen: 0.x bis zum ersten fertigen Stand, dann 1.0.0.
 
+## [0.8.1] – 2026-11-21
+
+- **Fehler behoben:** Beim Ausschalten der Musik (und bei jeder Änderung der Tonregler) stürzte die App ab. Ursache: `AppModel.sound.didSet` setzte den Wert bei jedem Aufruf erneut und rief sich damit endlos selbst auf (Stacküberlauf). Jetzt wird nur noch neu gesetzt, wenn der Wert wirklich außerhalb des Bereichs liegt.
+- Neu: `scripts/install.sh` (App nach „Programme“) und `scripts/pack.sh` (fertige ZIP zum Weitergeben).
+
 ## [0.8.0] – 2026-11-20
 
 Feinschliff, keine neuen Spielregeln (Planung `docs/planung/07 Feinschliff 0.8.md`).
