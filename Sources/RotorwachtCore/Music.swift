@@ -25,7 +25,7 @@ public struct MusicNote: Equatable, Sendable {
 
 public enum MusicTheme: String, CaseIterable, Sendable {
     case menu, hochwasser, waldbrand, kueste, altstadt, vulkan, gebirge
-    case bohrinsel, staudamm
+    case bohrinsel, staudamm, passhoehe
     /// Short endings for the result screen; they play once.
     case win, lose
 
@@ -42,6 +42,7 @@ public enum MusicTheme: String, CaseIterable, Sendable {
         case "gebirge": return .gebirge
         case "bohrinsel": return .bohrinsel
         case "staudamm": return .staudamm
+        case "pass": return .passhoehe
         default: return .menu
         }
     }
@@ -126,6 +127,11 @@ extension MusicTheme {
                              progression: [0, 0, 5, 4, 0, 3, 4, 4], timbre: .pluck,
                              rhythms: [[(0, 2), (2, 2), (4, 4), (8, 2), (10, 2), (12, 4)], [(0, 3), (3, 3), (6, 4), (10, 6)], [(0, 4), (4, 2), (6, 2), (8, 8)]],
                              leadBase: 7, pulse: 1, bassPulse: true, arpPattern: [0, 1, 2, 1, 0, 1, 2, 2], padOctave: 1, brightness: 0.4)
+        case .passhoehe:
+            return ThemeSpec(tonic: 53, scale: [0, 2, 3, 5, 7, 8, 10], bpm: 64,
+                             progression: [0, 5, 0, 3, 6, 5, 3, 4], timbre: .bell,
+                             rhythms: [[(0, 8), (10, 6)], [(4, 4), (8, 8)], [(0, 6), (8, 4), (14, 2)]],
+                             leadBase: 7, pulse: 0.4, bassPulse: false, arpPattern: [0, 2, 1, 2, 0, 1, 2, 1], padOctave: 2, brightness: 0.6)
         case .win:
             return ThemeSpec(tonic: 50, scale: [0, 2, 4, 5, 7, 9, 11], bpm: 96, progression: [0, 3, 0], timbre: .bell,
                              rhythms: [], leadBase: 7, pulse: 0, bassPulse: false, arpPattern: [0, 1, 2], padOctave: 1, brightness: 0.55)

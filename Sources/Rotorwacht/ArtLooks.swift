@@ -57,6 +57,16 @@ struct Look {
             l.ground = [(0, 0xb5734a, 1), (0.55, 0x8c5336, 1), (1, 0x4a2c20, 1)]
             l.edgeDark = 0x6d7440; l.edgeLight = 0xa2a763; l.edgeWide = 7
             l.trees = false
+        case "blizzard":
+            l = valley
+            l.sky = [(0, 0x6c7787, 1), (0.45, 0x939fae, 1), (0.8, 0xc3ccd6, 1), (1, 0xdde3ea, 1)]
+            l.glow = (0.6, 0.3, 240, 0xffffff, 0.3)
+            l.far = [0x9fb0c2, 0x8296ab]; l.mist = 0xd5dee7
+            l.hill = [(0, 0x5f7084, 1), (0.6, 0x6f8196, 1), (1, 0x9aa9ba, 1)]
+            l.hillTrees = false
+            l.ground = [(0, 0x7f8794, 1), (0.55, 0x59606c, 1), (1, 0x2e333c, 1)]
+            l.edgeDark = 0xc9d3de; l.edgeLight = 0xfafcfe; l.edgeWide = 12
+            l.trees = false
         case "town":
             l = valley
             l.sky = [(0, 0x7d746c, 1), (0.5, 0xb59f8a, 1), (0.8, 0xd9c19c, 1), (1, 0xe8d3ae, 1)]

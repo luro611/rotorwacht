@@ -19,6 +19,8 @@ final class AtmosphereLayer: SKNode {
     private let stormDim = SKSpriteNode()
     private let sock = WindSock()
     private var fogSmooth: CGFloat = 0
+    /// Driven snow or sand while a whiteout or sandstorm is on.
+    private let drift = SKEmitterNode()
     private var stormSmooth: CGFloat = 0
     private let viewSize: CGSize
     let isNight: Bool
@@ -106,6 +108,19 @@ final class AtmosphereLayer: SKNode {
         haze.alpha = 0
         haze.zPosition = 30.6
         addChild(haze)
+        if mission.weatherList.contains(where: { $0.tint == "snow" || $0.tint == "sand" }) {
+            drift.particleTexture = Art.fleck()
+            drift.particleBirthRate = 0
+            drift.particleLifetime = 2.2
+            drift.particlePositionRange = CGVector(dx: 0, dy: size.height)
+            drift.particleSpeed = 620
+            drift.particleSpeedRange = 220
+            drift.particleSize = CGSize(width: 9, height: 3)
+            drift.particleAlpha = 0.7
+            drift.particleAlphaRange = 0.3
+            drift.zPosition = 30.8
+            addChild(drift)
+        }
         stormDim.color = SKColor(red: 0.05, green: 0.08, blue: 0.14, alpha: 1)
         stormDim.size = size
         stormDim.alpha = 0
@@ -170,7 +185,7 @@ final class AtmosphereLayer: SKNode {
             let clear = 700 - 580 * min(1, fogSmooth / 0.9)
             fog.size = CGSize(width: clear * 20, height: clear * 20)
             fog.position = heli
-            var c = f.tint == "dust" ? (0.66, 0.55, 0.42) : (0.84, 0.86, 0.88)
+            var c = f.tint == "dust" ? (0.66, 0.55, 0.42) : (f.tint == "sand" ? (0.80, 0.62, 0.38) : (f.tint == "snow" ? (0.90, 0.93, 0.97) : (0.84, 0.86, 0.88)))
             if isNight { c = (c.0 * 0.22, c.1 * 0.22, c.2 * 0.24) }
             fog.color = SKColor(red: c.0, green: c.1, blue: c.2, alpha: 1)
             fog.alpha = min(0.96, 0.55 + fogSmooth * 0.5)
@@ -178,6 +193,15 @@ final class AtmosphereLayer: SKNode {
             haze.alpha = fogSmooth * 0.3
         }
         haze.isHidden = fog.isHidden
+        if drift.parent != nil {
+            let blowing = f.tint == "snow" || f.tint == "sand" ? fogSmooth : 0
+            drift.particleBirthRate = blowing > 0.05 ? 420 * blowing : 0
+            let right = sim.wind >= 0
+            drift.position = CGPoint(x: right ? -viewSize.width / 2 - 40 : viewSize.width / 2 + 40, y: 0)
+            drift.emissionAngle = right ? 0 : .pi
+            drift.particleColor = f.tint == "sand" ? SKColor(red: 0.90, green: 0.72, blue: 0.45, alpha: 1) : .white
+            drift.particleColorBlendFactor = 1
+        }
         let target = CGFloat(sim.thunderBuildup) * 0.42
         stormSmooth += (target - stormSmooth) * k
         stormDim.alpha = stormSmooth

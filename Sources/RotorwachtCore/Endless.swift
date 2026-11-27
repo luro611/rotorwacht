@@ -95,6 +95,10 @@ public enum EndlessKit {
                                              strength: sign * rng.double(30...(40 + 15 * p)) * (m.hasClock ? 0.6 : 1)))
             }
         }),
+        // Icing: back to the camp to thaw now and then (not where the clock runs or doors wait).
+        EndlessBlock(id: "icing", minStage: 5,
+                     fits: { $0.icing == nil && !$0.hasClock && $0.passageList.isEmpty },
+                     apply: { m, _, p in m.icing = IcingSpec(rate: 0.005 + 0.003 * p, thaw: 0.25, start: 20) }),
         // Not where fuel is already the bottleneck (outposts, the high mountains).
         EndlessBlock(id: "thirstyEngine", minStage: 3,
                      fits: { $0.outpostList.isEmpty && $0.hazard != "avalanche" && !$0.hasClock },
