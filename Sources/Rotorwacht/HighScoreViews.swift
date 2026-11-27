@@ -57,9 +57,12 @@ struct HighScoreSheet: View {
                         .help(m.title)
                 }
                 Spacer()
+            }
+            HStack(spacing: 8) {
                 ForEach(Difficulty.allCases, id: \.self) { l in
                     Button(l.label) { model.scoreLevel = l }.buttonStyle(LevelButtonStyle(selected: level == l))
                 }
+                Spacer()
             }
             if let m = model.missions.first(where: { $0.id == missionID }) {
                 Text("Einsatz \(m.number ?? 1) · \(m.title)").font(Theme.mono(12)).foregroundColor(Theme.muted)
@@ -73,7 +76,7 @@ struct HighScoreSheet: View {
             .padding(.top, 6)
         }
         .padding(26)
-        .frame(width: 520)
+        .frame(width: 560)
         .background(Theme.bg)
         .onAppear { model.scoreLevel = model.difficulty; model.scoreMission = model.missions.first?.id ?? model.scoreMission }
     }

@@ -67,8 +67,8 @@ struct EndlessSidePanel: View {
                 Text("Ein Ersatzhubschrauber kommt dazu.").font(Theme.mono(11)).foregroundColor(Theme.accentStrong)
             }
             if run.isOver {
-                Eyebrow("Bestenliste · Endlos").padding(.top, 8)
-                EndlessScoreListView(entries: model.endlessScores.entries, highlight: model.lastEndlessEntry, compact: true)
+                Eyebrow("Bestenliste · Endlos · \(run.level.label)").padding(.top, 8)
+                EndlessScoreListView(entries: model.endlessScores.list(run.level), highlight: model.lastEndlessEntry, compact: true)
             } else {
                 Text("Weiter mit dem nächsten Einsatz: etwas schwerer, die Hubschrauber bleiben im Bestand.")
                     .font(Theme.text(12)).foregroundColor(Theme.muted).fixedSize(horizontal: false, vertical: true)
@@ -85,10 +85,16 @@ struct EndlessSheet: View {
         VStack(alignment: .leading, spacing: 14) {
             Eyebrow("Endlos · ohne Ende")
             AccentTitle(plain: "Einsatz um ", accent: "Einsatz", size: 34)
-            Text("Zufällig zusammengesetzte Einsätze aus den Bausteinen der sechs Kampagnen-Einsätze, einer nach dem anderen, jeder etwas schwerer. Du startest mit \(EndlessRun.startHelicopters) Hubschraubern für den ganzen Lauf, nach je \(EndlessRun.bonusEvery) geschafften Stufen kommt einer dazu (höchstens \(EndlessRun.maxHelicopters)). Eine Stufe ist geschafft, wenn mindestens die Hälfte gerettet ist. Der Lauf endet, wenn weniger gerettet wird oder kein Hubschrauber mehr da ist.")
+            Text("Zufällig zusammengesetzte Einsätze aus den Bausteinen der Kampagnen-Einsätze, einer nach dem anderen, jeder etwas schwerer. Du startest mit \(EndlessRun.startHelicopters(model.difficulty)) Hubschraubern für den ganzen Lauf, nach je \(EndlessRun.bonusEvery) geschafften Stufen kommt einer dazu (höchstens \(EndlessRun.startHelicopters(model.difficulty) + EndlessRun.maxHelicopters - EndlessRun.startHelicopters)). Eine Stufe ist geschafft, wenn mindestens die Hälfte gerettet ist. Der Lauf endet, wenn weniger gerettet wird oder kein Hubschrauber mehr da ist.")
                 .font(Theme.text(12)).foregroundColor(Theme.muted).fixedSize(horizontal: false, vertical: true)
-            Eyebrow("Bestenliste · Stufen, dann Punkte")
-            EndlessScoreListView(entries: model.endlessScores.entries)
+            HStack(spacing: 8) {
+                Eyebrow("Stufe")
+                ForEach(Difficulty.allCases, id: \.self) { l in
+                    Button(l.label) { model.difficulty = l }.buttonStyle(LevelButtonStyle(selected: model.difficulty == l))
+                }
+            }
+            Eyebrow("Bestenliste · \(model.difficulty.label) · Stufen, dann Punkte")
+            EndlessScoreListView(entries: model.endlessScores.list(model.difficulty))
             HStack {
                 Button("Schließen") { model.showEndless = false }.buttonStyle(QuietButtonStyle()).keyboardShortcut(.cancelAction)
                 Spacer()

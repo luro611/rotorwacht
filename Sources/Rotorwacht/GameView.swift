@@ -229,7 +229,7 @@ struct ResultOverlay: View {
                     Eyebrow("Endlos · Stufe \(mission?.number ?? run.stage) · \(mission?.title ?? "")")
                     AccentTitle(plain: run.isOver ? "Der Lauf ist " : "Stufe ", accent: run.isOver ? "zu Ende" : "geschafft", size: 44)
                 } else {
-                    Eyebrow("Einsatz \(mission?.number ?? 1) · \(mission?.title ?? "Hochwasser im Flusstal") · \(model.difficulty.label)")
+                    Eyebrow("Einsatz \(mission?.number ?? 1) · \(mission?.title ?? "Hochwasser im Flusstal") · \(model.playedLevel.label)")
                     AccentTitle(plain: headline.0, accent: headline.1, size: 44)
                 }
                 HStack(spacing: 4) {
@@ -267,8 +267,8 @@ struct ResultOverlay: View {
                 if let run = model.endless {
                     EndlessSidePanel(run: run, next: model.endlessNext)
                 } else {
-                Eyebrow("Bestenliste · \(model.difficulty.label)")
-                ScoreListView(entries: model.scores(model.missionID, model.difficulty), highlight: model.lastEntry, compact: true)
+                Eyebrow("Bestenliste · \(model.playedLevel.label)")
+                ScoreListView(entries: model.scores(model.missionID, model.playedLevel), highlight: model.lastEntry, compact: true)
                 }
                 if model.lastEntry != nil || model.lastEndlessEntry != nil {
                     Text("Neuer Eintrag: Platz \(((model.lastEntry?.place ?? model.lastEndlessEntry?.place) ?? 0) + 1)").font(Theme.mono(11)).foregroundColor(Theme.accentStrong)

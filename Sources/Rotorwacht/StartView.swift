@@ -46,9 +46,9 @@ struct StartView: View {
         VStack(spacing: 0) {
             Spacer(minLength: 8)
             VStack(spacing: 12) {
-                Siegel(size: 64)
+                Siegel(size: 52)
                 Eyebrow("Rettungsstaffel · Version \(appVersion)")
-                AccentTitle(plain: "Rotor", accent: "wacht", size: 48)
+                AccentTitle(plain: "Rotor", accent: "wacht", size: 42)
             }
 
             HStack(spacing: 10) {
@@ -71,8 +71,10 @@ struct StartView: View {
             }
             .padding(.top, 16)
 
-            LazyVGrid(columns: Array(repeating: GridItem(.fixed(300), spacing: 16, alignment: .top), count: 3), spacing: 16) {
-                ForEach(Array(model.missions.enumerated()), id: \.element.id) { i, m in missionCard(m, focused: padFocused(row: 1 + i / 3, col: i % 3)) }
+            LazyVGrid(columns: Array(repeating: GridItem(.flexible(minimum: 164, maximum: 236), spacing: 12, alignment: .top), count: AppModel.columns), spacing: 12) {
+                ForEach(Array(model.missions.enumerated()), id: \.element.id) { i, m in
+                    missionCard(m, focused: padFocused(row: 1 + i / AppModel.columns, col: i % AppModel.columns))
+                }
             }
             .padding(.top, 14)
 
@@ -124,17 +126,19 @@ struct StartView: View {
         let best = model.best(m.id)
         return VStack(alignment: .leading, spacing: 8) {
             Eyebrow("Einsatz \(m.number ?? 1) · \(m.tagline ?? "")")
-            AccentTitle(plain: plain, accent: accent, size: 24)
+            AccentTitle(plain: plain, accent: accent, size: 20)
+                .lineLimit(2).minimumScaleFactor(0.8)
             Text(m.summary ?? m.briefing)
-                .font(Theme.text(12)).foregroundColor(Theme.muted).fixedSize(horizontal: false, vertical: true)
-                .lineLimit(4)
+                .font(Theme.text(11)).foregroundColor(Theme.muted)
+                .lineLimit(5)
+                .help(m.summary ?? m.briefing)
             Spacer(minLength: 0)
             HStack {
                 if open {
-                    Button("Einsatz starten") { model.startMission(m.id) }
+                    Button("Starten") { model.startMission(m.id) }
                         .buttonStyle(PrimaryButtonStyle())
                         .modifier(DefaultActionIf(first))
-                    if first { Text("Eingabetaste").font(Theme.mono(10)).foregroundColor(Theme.muted) }
+
                 } else {
                     Text("Gesperrt · schaffe zuerst Einsatz \((m.number ?? 2) - 1)")
                         .font(Theme.mono(10)).foregroundColor(Theme.muted)
@@ -149,8 +153,8 @@ struct StartView: View {
                 }
             }
         }
-        .padding(18)
-        .frame(width: 300, height: 180, alignment: .leading)
+        .padding(14)
+        .frame(maxWidth: .infinity, minHeight: 196, maxHeight: 196, alignment: .leading)
         .background(Theme.surface)
         .opacity(open ? 1 : 0.55)
         .overlay(RoundedRectangle(cornerRadius: Theme.radius).stroke(focused ? Theme.accent : Theme.line, lineWidth: focused ? 2 : 1))

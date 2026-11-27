@@ -1,22 +1,39 @@
 import Foundation
 
-/// Three levels per Einsatz. They scale numbers of the mission data; the data files stay "medium".
+/// Five levels per Einsatz. They scale numbers of the mission data; the data files stay "medium".
+/// The raw values of the three older levels are unchanged, so stored progress and lists keep loading.
 public enum Difficulty: String, Codable, CaseIterable, Sendable {
-    case easy, medium, hard
+    case beginner, easy, medium, hard, pro
 
     public var label: String {
-        switch self { case .easy: "Leicht"; case .medium: "Mittel"; case .hard: "Schwer" }
+        switch self {
+        case .beginner: "Anfänger"
+        case .easy: "Leicht"
+        case .medium: "Mittel"
+        case .hard: "Schwer"
+        case .pro: "Profi"
+        }
+    }
+
+    /// Position from easiest (0) to hardest (4).
+    public var rank: Int { Self.allCases.firstIndex(of: self)! }
+
+    /// The level `steps` harder (negative: easier), staying within the five.
+    public func shifted(by steps: Int) -> Difficulty {
+        Self.allCases[max(0, min(Self.allCases.count - 1, rank + steps))]
     }
 
     /// Time allowed.
-    var time: Double { switch self { case .easy: 1.3; case .medium: 1; case .hard: 0.85 } }
+    var time: Double { switch self { case .beginner: 1.6; case .easy: 1.3; case .medium: 1; case .hard: 0.85; case .pro: 0.75 } }
     /// Fuel burn, wind, flood and fire speed, hazard damage and flow speed.
-    var pressure: Double { switch self { case .easy: 0.8; case .medium: 1; case .hard: 1.2 } }
+    var pressure: Double { switch self { case .beginner: 0.6; case .easy: 0.8; case .medium: 1; case .hard: 1.2; case .pro: 1.35 } }
     /// Warning times (longer when easy).
-    var warning: Double { switch self { case .easy: 1.3; case .medium: 1; case .hard: 0.8 } }
+    var warning: Double { switch self { case .beginner: 1.7; case .easy: 1.3; case .medium: 1; case .hard: 0.8; case .pro: 0.65 } }
+    /// How long the shutters stay open (on pro a little more generous than the warnings, else no window fits two doors).
+    var doors: Double { switch self { case .beginner: 1.6; case .easy: 1.3; case .medium: 1; case .hard: 0.8; case .pro: 0.74 } }
     /// Height of the openings of passages.
-    var opening: Double { switch self { case .easy: 1.15; case .medium: 1; case .hard: 0.9 } }
-    var helicopters: Int { switch self { case .easy: 4; case .medium: 3; case .hard: 2 } }
+    var opening: Double { switch self { case .beginner: 1.3; case .easy: 1.15; case .medium: 1; case .hard: 0.9; case .pro: 0.85 } }
+    var helicopters: Int { switch self { case .beginner: 6; case .easy: 4; case .medium: 3; case .hard: 2; case .pro: 1 } }
 }
 
 extension Mission {
@@ -62,8 +79,11 @@ extension Mission {
         q.shutters = p.shutters?.map { s in
             var t = s
             let closed = s.period - s.open
-            t.open = s.open * level.warning
-            t.period = t.open + closed * (2 - level.warning)
+            t.open = s.open * level.doors
+            // Never so short that the door has no time to close and stay closed (beginner).
+            t.period = t.open + max(closed * (2 - level.doors), 2 * s.moveTime + 0.7)
+            // The two new levels keep the offset between the doors in step with the longer or shorter cycle.
+            if level == .beginner || level == .pro { t.phase = s.phase * t.period / s.period }
             t.warn = s.warn * level.warning
             if let g = s.gap { t.gap = max(Passage.heliHeight + Passage.doorMargin + 4, min(g * level.opening, newOpen)) }
             return t

@@ -11,11 +11,20 @@ public struct EndlessEntry: Codable, Equatable, Sendable {
     }
 }
 
-/// The best endless runs (top 10): more stages first, then more points, then the earlier one. Stored locally as JSON.
+/// The best endless runs per level (top 10): more stages first, then more points, then the earlier one. Stored locally as JSON.
+/// The medium list is `entries` (the only list older files have); the other levels are kept in `others`.
 public struct EndlessScores: Codable, Equatable, Sendable {
     public static let limit = 10
     public private(set) var entries: [EndlessEntry] = []
+    /// Lists of the other levels, keyed by the raw value of the level. Missing in files of older versions.
+    private var others: [String: [EndlessEntry]]? = nil
     public init() {}
+
+    public func list(_ level: Difficulty) -> [EndlessEntry] { level == .medium ? entries : others?[level.rawValue] ?? [] }
+
+    private mutating func set(_ l: [EndlessEntry], _ level: Difficulty) {
+        if level == .medium { entries = l } else { var o = others ?? [:]; o[level.rawValue] = l; others = o }
+    }
 
     private static func ranks(before a: EndlessEntry, _ b: EndlessEntry) -> Bool {
         if a.stages != b.stages { return a.stages > b.stages }
@@ -24,30 +33,33 @@ public struct EndlessScores: Codable, Equatable, Sendable {
     }
 
     /// Place (0 = best) a run would take, nil when it does not make the list. Runs without points never qualify.
-    public func place(stages: Int, score: Int) -> Int? {
+    public func place(stages: Int, score: Int, level: Difficulty = .medium) -> Int? {
         guard score > 0 else { return nil }
         let e = EndlessEntry(name: "", stages: stages, score: score, date: .distantFuture)
-        let i = entries.firstIndex { Self.ranks(before: e, $0) } ?? entries.count
+        let l = list(level)
+        let i = l.firstIndex { Self.ranks(before: e, $0) } ?? l.count
         return i < Self.limit ? i : nil
     }
 
     @discardableResult
-    public mutating func add(_ entry: EndlessEntry) -> Int? {
-        guard place(stages: entry.stages, score: entry.score) != nil else { return nil }
+    public mutating func add(_ entry: EndlessEntry, level: Difficulty = .medium) -> Int? {
+        guard place(stages: entry.stages, score: entry.score, level: level) != nil else { return nil }
         var e = entry
         e.name = HighScores.cleanName(entry.name)
-        var l = entries
+        var l = list(level)
         l.append(e)
         l.sort(by: Self.ranks(before:_:))
         let place = l.firstIndex(of: e)
-        entries = Array(l.prefix(Self.limit))
+        set(Array(l.prefix(Self.limit)), level)
         return place
     }
 
     @discardableResult
-    public mutating func rename(place: Int, date: Date, to name: String) -> Bool {
-        guard entries.indices.contains(place), entries[place].date == date else { return false }
-        entries[place].name = HighScores.cleanName(name)
+    public mutating func rename(place: Int, date: Date, to name: String, level: Difficulty = .medium) -> Bool {
+        var l = list(level)
+        guard l.indices.contains(place), l[place].date == date else { return false }
+        l[place].name = HighScores.cleanName(name)
+        set(l, level)
         return true
     }
 

@@ -13,8 +13,10 @@ final class AppModel: ObservableObject {
     @Published var loadError: String?
     /// Name of the connected controller (nil = none); drives the hints in the menu and settings.
     @Published private(set) var controllerName: String?
+    /// Einsatz cards per row in the start menu.
+    static let columns = 5
     /// Controller focus: start menu grid (row 0 = Stufen, then the Einsätze), pause and result buttons.
-    @Published var startFocus = GridFocus(rowLengths: [3, 3, 3], row: 1)
+    @Published var startFocus = GridFocus(rowLengths: [5, 5, 5], row: 1)
     @Published var overlayFocus = 0
     /// Shown in the pause card when the controller was unplugged during the flight.
     @Published var controllerLost = false
@@ -22,6 +24,8 @@ final class AppModel: ObservableObject {
     private var cancellables = Set<AnyCancellable>()
     private(set) var scene: GameScene?
     private(set) var mission: Mission?
+    /// Level the running or last Einsatz was started on (the menu setting may change meanwhile).
+    private(set) var playedLevel: Difficulty = .medium
     /// Which mission is running or was played last (for "Noch einmal").
     private(set) var missionID = MissionLibrary.all[0]
     @Published var missions: [Mission] = []
@@ -134,7 +138,7 @@ final class AppModel: ObservableObject {
         let n = missions.count
         var rows = [Difficulty.allCases.count]
         var left = n
-        while left > 0 { rows.append(min(3, left)); left -= 3 }
+        while left > 0 { rows.append(min(Self.columns, left)); left -= Self.columns }
         startFocus = GridFocus(rowLengths: rows, row: n > 0 ? 1 : 0)
     }
 
@@ -166,7 +170,7 @@ final class AppModel: ObservableObject {
         if f.row == 0 {
             difficulty = Difficulty.allCases[min(f.col, Difficulty.allCases.count - 1)]
         } else {
-            let i = (f.row - 1) * 3 + f.col
+            let i = (f.row - 1) * Self.columns + f.col
             if missions.indices.contains(i) { startMission(missions[i].id) }
         }
     }
@@ -204,13 +208,14 @@ final class AppModel: ObservableObject {
         let id = id ?? missionID
         guard isUnlocked(id), let base = loadMission(id) else { return }
         endless = nil
+        playedLevel = difficulty
         launch(base.scaled(for: difficulty), id: id, practice: false)
     }
 
     /// Starts a new endless run with a fresh seed.
     func startEndless() {
         showEndless = false
-        endless = EndlessRun(seed: UInt64.random(in: 1...UInt64(UInt32.max)))
+        endless = EndlessRun(seed: UInt64.random(in: 1...UInt64(UInt32.max)), level: difficulty)
         launchEndlessStage()
     }
 
@@ -280,10 +285,10 @@ final class AppModel: ObservableObject {
         playerName = name
         nameConfirmed = true
         if endlessActive, let e = lastEndlessEntry {
-            if endlessScores.rename(place: e.place, date: e.date, to: name), !DebugShots.active { endlessScores.save(to: Self.endlessScoresURL) }
+            if endlessScores.rename(place: e.place, date: e.date, to: name, level: endless?.level ?? difficulty), !DebugShots.active { endlessScores.save(to: Self.endlessScoresURL) }
             return
         }
-        if let e = lastEntry, highScores.rename(place: e.place, date: e.date, mission: missionID, level: difficulty, to: name) {
+        if let e = lastEntry, highScores.rename(place: e.place, date: e.date, mission: missionID, level: playedLevel, to: name) {
             if !DebugShots.active { highScores.save(to: Self.highScoresURL) }
         }
     }
@@ -320,7 +325,7 @@ final class AppModel: ObservableObject {
             lastEndlessEntry = nil
             if run.isOver {
                 let e = EndlessEntry(name: playerName, stages: run.stagesCleared, score: run.score, date: Date())
-                if let place = endlessScores.add(e) {
+                if let place = endlessScores.add(e, level: run.level) {
                     lastEndlessEntry = (place, e.date)
                     if !DebugShots.active { endlessScores.save(to: Self.endlessScoresURL) }
                 }
@@ -335,14 +340,14 @@ final class AppModel: ObservableObject {
             return
         }
         let entry = ScoreEntry(name: playerName, score: r.score, stars: r.stars, date: Date())
-        if let place = highScores.add(entry, mission: missionID, level: difficulty) {
+        if let place = highScores.add(entry, mission: missionID, level: playedLevel) {
             lastEntry = (place, entry.date)
             if !DebugShots.active { highScores.save(to: Self.highScoresURL) }
         } else {
             lastEntry = nil
         }
         if !DebugShots.active {
-            progress.record(missionID: missionID, level: difficulty, result: r)
+            progress.record(missionID: missionID, level: playedLevel, result: r)
             progress.save(to: Self.progressURL)
         }
         InputController.shared.capturing = false
