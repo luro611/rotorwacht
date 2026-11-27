@@ -45,6 +45,16 @@ import Testing
         try sv.validate(); try sg.validate(); try sk.validate()
     }
 
+    @Test func slowedAlsoEasesIceSandAndSway() throws {
+        let p = try MissionLibrary.load("pass"), d = try MissionLibrary.load("wueste"), r = try MissionLibrary.load("bohrinsel")
+        let sp = p.slowed(), sd = d.slowed(), sr = r.slowed()
+        #expect(sp.icing!.rate < p.icing!.rate && sp.icing!.thaw > p.icing!.thaw)
+        #expect(sd.weatherList[0].density! < d.weatherList[0].density! && abs(sd.weatherList[1].strength!) < abs(d.weatherList[1].strength!))
+        #expect(sd.heatwave!.base < d.heatwave!.base)
+        #expect(sr.rescuePoints[1].heave!.amplitude < r.rescuePoints[1].heave!.amplitude)
+        try sp.validate(); try sd.validate(); try sr.validate()
+    }
+
     @Test func practiceNeverEndsInDefeat() throws {
         let c = try #require(Practice.course("blitze"))
         let m = try MissionLibrary.load(c.missionID).practiced(course: c, level: .hard, slow: false)

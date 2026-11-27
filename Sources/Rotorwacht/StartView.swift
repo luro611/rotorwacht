@@ -45,7 +45,14 @@ struct StartView: View {
     var body: some View {
         // Scrolls only when the window is too low for all rows of Einsätze.
         GeometryReader { g in
-            ScrollView { content.frame(maxWidth: .infinity, minHeight: g.size.height) }
+            ScrollViewReader { scroll in
+                ScrollView { content.frame(maxWidth: .infinity, minHeight: g.size.height) }
+                    // The controller focus takes the picture with it (levels at the top, then the card).
+                    .onChange(of: model.startFocus) { _, f in
+                        guard model.controllerName != nil else { return }
+                        withAnimation { scroll.scrollTo(f.row == 0 ? "levels" : "card-\((f.row - 1) * AppModel.columns + f.col)", anchor: .center) }
+                    }
+            }
         }
         .onAppear { model.loadMissionList() }
         .sheet(isPresented: $model.showScores) { HighScoreSheet().environmentObject(model) }
@@ -81,10 +88,12 @@ struct StartView: View {
                     .accessibilityLabel("Endlosmodus")
             }
             .padding(.top, 16)
+            .id("levels")
 
             LazyVGrid(columns: Array(repeating: GridItem(.flexible(minimum: 164, maximum: 236), spacing: 12, alignment: .top), count: AppModel.columns), spacing: 12) {
                 ForEach(Array(model.missions.enumerated()), id: \.element.id) { i, m in
                     missionCard(m, focused: padFocused(row: 1 + i / AppModel.columns, col: i % AppModel.columns))
+                        .id("card-\(i)")
                 }
             }
             .padding(.top, 14)

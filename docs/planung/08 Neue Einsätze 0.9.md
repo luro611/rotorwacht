@@ -47,3 +47,8 @@ Anfänger und Profi verschieben zudem die Phase der Shutter mit dem Takt, sonst 
 8. **Schlucht und Staudamm** (`staudamm`): Flutwelle vom gebrochenen Damm im Westen, Felsnadeln, zwei Brücken zum Unterfliegen, Menschen auf dem Talgrund zuerst in Gefahr.
 9. **Schneesturm am Pass** (`pass`): eingeschneite Autos und Berghütten, Whiteout, Vereisung, Außenposten zum Enteisen und Tanken, Lawinengalerie mit Shuttern.
 10. **Wüste mit Sandsturm** (`wueste`): verschüttete Karawane und Forschungsstation, Sandstürme, Hitze, zwei Außenposten.
+
+### Nachtrag aus der Prüfung
+
+- Endlosmodus: Jeder erzeugte Einsatz wird vorab per Autopilot geflogen (mindestens ein Stern mit zwei Hubschraubern) und sonst schrittweise entschärft: ohne Zusatzbausteine, weniger Menschen und mehr Zeit, dann eine Datenstufe leichter. Der Nachweis gilt für den Autopiloten, nicht für das Spielgefühl.
+- Flutwelle: Brücken schützen nicht, nur Tunnel.

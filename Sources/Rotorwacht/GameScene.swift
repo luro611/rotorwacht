@@ -518,7 +518,7 @@ final class GameScene: SKScene {
                 audio.play(.ding)
                 say("Tank voll.", seconds: 2)
             case .tankEmpty:
-                say("Tank leer. Tief über See oder Fluss füllen, oder im Lager.", seconds: 5)
+                say(mission.hazard == "rig" ? "Tank leer. Tief über dem Meer füllen, oder im Lager." : "Tank leer. Tief über See oder Fluss füllen, oder im Lager.", seconds: 5)
             case .boarded: audio.play(.ding)
             case .rescued: audio.play(.rescued)
             case .lost(_, let pi):

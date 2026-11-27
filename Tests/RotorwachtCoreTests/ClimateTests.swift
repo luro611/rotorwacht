@@ -65,6 +65,22 @@ import Foundation
         #expect(rig.scaled(for: .beginner).rescuePoints[1].heave!.amplitude < rig.rescuePoints[1].heave!.amplitude)
     }
 
+    /// Under a bridge the flood wave reaches the helicopter; only a tunnel shelters.
+    @Test func aBridgeDoesNotShelterFromTheFloodWave() throws {
+        let m = try MissionLibrary.load("staudamm")
+        let p = m.passageList[0]
+        var sim = MissionSimulation(mission: m)
+        let x = (p.x0 + p.x1) / 2
+        let start = m.flowList[0].start + (x - m.flowList[0].x0) / m.flowList[0].speed + 3
+        while sim.time < start {
+            sim.debugPlaceHelicopter(HelicopterState(x: m.base.x, y: m.baseSurface, fuel: 100))
+            sim.step(input: PilotInput(), dt: 1.0 / 30)
+        }
+        sim.debugPlaceHelicopter(HelicopterState(x: x, y: m.surfaceHeight(at: x), fuel: 100))
+        for _ in 0..<60 { sim.step(input: PilotInput(), dt: 1.0 / 60) }
+        #expect(sim.heli.durability < 90)
+    }
+
     @Test func theNewEinsaetzeUseTheirBlocks() throws {
         let rig = try MissionLibrary.load("bohrinsel")
         #expect(rig.heaves && rig.fire != nil && rig.rescuePoints.contains(where: \.isWinch) && !rig.stormList.isEmpty)

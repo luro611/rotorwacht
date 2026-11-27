@@ -43,7 +43,7 @@ scripts/build.sh --run
 
 Das baut `build/Rotorwacht.app` (ad hoc signiert) und startet sie. Beim ersten Start einer unnotarisierten App: Rechtsklick auf die App, „Öffnen“.
 
-Tests (Swift Testing, 204 Tests für Flugphysik, Landen, Ein-/Aussteigen, Tank, Feuer, Blitz, Trümmer, Lava, Lawinen, Seilwinde, Durchfahrten, Hindernisse, Wetterwechsel, Punkte, Endlosmodus, Übungsmodus, Bestenliste, Fortschritt und Autopilot-Proben aller zehn Einsätze auf allen fünf Stufen):
+Tests (Swift Testing, 208 Tests für Flugphysik, Landen, Ein-/Aussteigen, Tank, Feuer, Blitz, Trümmer, Lava, Lawinen, Seilwinde, Durchfahrten, Hindernisse, Wetterwechsel, Punkte, Endlosmodus, Übungsmodus, Bestenliste, Fortschritt und Autopilot-Proben aller zehn Einsätze auf allen fünf Stufen):
 
 ```bash
 scripts/test.sh

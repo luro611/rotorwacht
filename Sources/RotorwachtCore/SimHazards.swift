@@ -193,7 +193,7 @@ extension MissionSimulation {
                 }
             }
 
-            if alive, heli.x >= span.lo - 25, heli.x <= span.hi + 25, mission.passageIndex(at: heli.x) == nil,
+            if alive, heli.x >= span.lo - 25, heli.x <= span.hi + 25, mission.passageIndex(at: heli.x).map({ !mission.passageList[$0].isTunnel }) ?? true,
                heli.y - mission.surfaceHeight(at: heli.x) < f.clearance {
                 heli.durability = max(0, heli.durability - f.damagePerSecond * dt)
                 hz.flowHurtTimer -= dt

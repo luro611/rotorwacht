@@ -1,7 +1,7 @@
 import Foundation
 
-/// A simple scripted pilot. Used by tests to prove a mission can be won, and by the screenshot helper.
-/// Not part of normal play.
+/// A simple scripted pilot. Used by tests to prove a mission can be won, by the screenshot helper, and by the
+/// endless mode to check that a generated Einsatz is solvable. It never flies for the player.
 public struct AutoPilot {
     /// Fight fires before rescuing anybody (used for demonstration screenshots).
     public var fireFirst = false
@@ -250,7 +250,7 @@ public struct AutoPilot {
             // A ground flow in front of the doors: fly and wait as high as the opening allows.
             let hot = m.flowList.enumerated().filter { fi, f in
                 guard let s = sim.hz.flows[fi].span else { return false }
-                return (f.kind == "lava" || f.kind == "surge") && s.hi > min(entry - dir * 260, entry) && s.lo < max(entry - dir * 260, entry)
+                return (f.kind == "lava" || f.kind == "surge") && s.hi > min(entry - dir * 260, exit) && s.lo < max(entry - dir * 260, exit)
             }
             if let h = hot.map(\.element.clearance).max() { y = max(y, min(floor + h + 4, min(p.roof, limit) - Passage.heliHeight - 12)) }
             let inBand = h.y >= floor + 10 && h.y + Passage.heliHeight <= min(p.roof, limit) - 6

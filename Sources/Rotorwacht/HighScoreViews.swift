@@ -144,7 +144,7 @@ struct PracticeSheet: View {
                 Spacer()
                 Button(model.practiceSlow ? "Langsamer: an" : "Langsamer: aus") { model.practiceSlow.toggle() }
                     .buttonStyle(LevelButtonStyle(selected: model.practiceSlow))
-                    .help("Shutter, Blitze, Salven, Lava und Lawinen langsamer und milder")
+                    .help("Shutter, Gefahren, Wetter, Eis, Hitze und Seegang langsamer und milder")
             }
             HStack {
                 Button("Schließen") { model.showPractice = false }.buttonStyle(QuietButtonStyle()).keyboardShortcut(.cancelAction)

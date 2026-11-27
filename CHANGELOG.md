@@ -29,10 +29,19 @@ Neue Einsätze und fünf Stufen (Entscheidung von Lutz am 27.11.2026): Planung `
 ### Autopilot und Tests
 
 - Der Autopilot plant auf den hohen Stufen Treibstoff, Wartezeit an Shuttern und den Rückweg ein und enteist.
-- Alle zehn Einsätze sind auf allen fünf Stufen per Autopilot lösbar (ohne Ausfall, mindestens 66 % gerettet). 204 Tests.
+- Alle zehn Einsätze sind auf allen fünf Stufen per Autopilot lösbar (ohne Ausfall, mindestens 66 % gerettet). 208 Tests.
 - `scripts/test.sh` baut jetzt mit `-O`: Die Tests selbst laufen in Sekunden statt Minuten.
 - `scripts/render-art.sh` reicht `--only=<Einsatz>` an die Skripte durch (bisher wurde immer alles neu gerendert).
 - Übungsfenster mit zwei Spalten; die Kartenüberschriften im Startmenü brechen um.
+
+### Nach der Prüfung (Opus, 27.11.2026)
+
+- **Endlosmodus immer schaffbar:** Der Generator lässt den Autopiloten jeden erzeugten Einsatz einmal fliegen (mindestens ein Stern, mit zwei Hubschraubern). Gelingt es nicht, wird so wenig wie möglich entschärft: zuerst ohne Zusatzbausteine, dann mit weniger Menschen und mehr Zeit, erst dann eine Datenstufe leichter. In einer Probe mit je 500 Einsätzen blieb Anfänger bis Mittel unverändert, Schwer und Profi wurden in rund 6 % entschärft, keiner blieb unlösbar; die Erzeugung dauert im Mittel 0,1 s, höchstens 0,5 s. `EndlessTests` prüfen jetzt alle fünf Stufen.
+- Hitze und Vereisung kommen nicht mehr zusammen in einen Endlos-Einsatz.
+- Unter Brücken ist man vor der Flutwelle nicht mehr sicher (nur Tunnel schützen); die Welle wird so hoch gezeichnet, wie sie schadet.
+- „Langsamer“ im Übungsmodus mildert auch Wind, Wetter, Eis, Hitze und Seegang.
+- Startmenü: Der Controller-Fokus scrollt mit.
+- Bohrinsel: Der Hinweis beim leeren Tank nennt das Meer.
 
 ### Ungeprüft
 

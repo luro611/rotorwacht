@@ -195,7 +195,7 @@ final class HazardLayer: SKNode {
             guard hi > lo else { shape.isHidden = true; glow.isHidden = true; continue }
             shape.isHidden = false; glow.isHidden = false
             let surge = f.kind == "surge"
-            let thick = lava ? 12.0 : (surge ? 40.0 : 34.0)
+            let thick = lava ? 12.0 : (surge ? f.clearance - 6 : 34.0)
             let wobble = lava ? 3.0 : 6.0
             let step = 14.0
             let top = CGMutablePath(), halo = CGMutablePath()

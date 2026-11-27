@@ -97,7 +97,7 @@ public enum EndlessKit {
         }),
         // Icing: back to the camp to thaw now and then (not where the clock runs or doors wait).
         EndlessBlock(id: "icing", minStage: 5,
-                     fits: { $0.icing == nil && !$0.hasClock && $0.passageList.isEmpty },
+                     fits: { $0.icing == nil && $0.heatwave == nil && !$0.hasClock && $0.passageList.isEmpty },
                      apply: { m, _, p in m.icing = IcingSpec(rate: 0.005 + 0.003 * p, thaw: 0.25, start: 20) }),
         // Heat of the day: thirstier and weaker in the climb.
         EndlessBlock(id: "heat", minStage: 4,
@@ -145,16 +145,69 @@ public enum EndlessGenerator {
     /// The Einsatz of a stage. `helicopters` is what is left of the stock; `base` forces the ground (for tests).
     public static func mission(seed: UInt64, stage: Int, helicopters: Int, base forced: String? = nil,
                                level chosen: Difficulty = .medium) throws -> Mission {
+        // See `generate`: what comes out has been flown once by the scripted pilot.
         try generate(seed: seed, stage: stage, helicopters: helicopters, base: forced, level: chosen).mission
     }
 
+    /// Helicopters the scripted pilot gets to prove an Einsatz solvable. Fixed, so a seed gives the same Einsatz
+    /// whatever is left in the stock.
+    static let proofStock = 2
+
+    /// Whether the scripted pilot gets at least one star (half of the people) and keeps a helicopter.
+    public static func isSolvable(_ mission: Mission, base: String) -> Bool {
+        var m = mission
+        m.helicopters = proofStock
+        var sim = MissionSimulation(mission: m)
+        let pilot = AutoPilot(fireFirst: base == "waldbrand")
+        var t = 0.0
+        while !sim.isFinished && t < m.timeLimit + 10 { sim.step(input: pilot.input(for: sim), dt: 1.0 / 60); t += 1.0 / 60 }
+        guard let r = sim.result else { return false }
+        return r.outcome != .failed && r.stars >= 1
+    }
+
     /// Like `mission`, with the ids of the building blocks that were added (for the stage card and for diagnosis).
+    ///
+    /// With `verified` the Einsatz is proven solvable before it is handed out. If the scripted pilot cannot manage it,
+    /// it is eased until he can, as little as possible: without the added blocks; with fewer people and more time;
+    /// only then one data level easier (and the same again), down to beginner.
     public static func generate(seed: UInt64, stage: Int, helicopters: Int, base forced: String? = nil,
                                 level chosen: Difficulty = .medium,
-                                skipping skipped: Set<String> = []) throws -> (mission: Mission, blocks: [String]) {
+                                skipping skipped: Set<String> = [],
+                                verified: Bool = true) throws -> (mission: Mission, blocks: [String]) {
         let stage = max(1, stage)
+        let base = forced ?? Self.baseID(seed: seed, stage: stage)
+        let none = Set(EndlessKit.blocks.map(\.id))
+        var data = level(stage: stage, chosen: chosen)
+        var last: (mission: Mission, blocks: [String])?
+        while true {
+            for step in 0..<3 {
+                var out = try build(seed: seed, stage: stage, helicopters: helicopters, base: base, data: data,
+                                    skipping: step == 0 ? skipped : none)
+                if step > 0 { out.blocks = [] }
+                if step == 2 { out.mission = relieved(out.mission) }
+                if !verified || isSolvable(out.mission, base: base) { return out }
+                last = out
+            }
+            if data == .beginner { break }
+            data = data.shifted(by: -1)
+        }
+        // Not reached in any sample; as a last resort the easiest variant with half the people.
+        var out = last!
+        out.mission = relieved(relieved(out.mission))
+        return out
+    }
+
+    /// A quarter fewer people on every rescue point (at least one stays) and a fifth more time.
+    static func relieved(_ mission: Mission) -> Mission {
+        var m = mission
+        m.rescuePoints = m.rescuePoints.map { var p = $0; p.people = max(1, Int((Double(p.people) * 0.75).rounded(.down))); return p }
+        m.timeLimit = (m.timeLimit * 1.2).rounded()
+        return m
+    }
+
+    private static func build(seed: UInt64, stage: Int, helicopters: Int, base baseID: String, data: Difficulty,
+                              skipping skipped: Set<String>) throws -> (mission: Mission, blocks: [String]) {
         var rng = SeededRandom(seed: seed &* 31 &+ UInt64(stage) &* 0x2545_F491)
-        let baseID = forced ?? Self.baseID(seed: seed, stage: stage)
         var m = try MissionLibrary.load(baseID)
         let p = pressure(stage: stage)
         let basePeople = max(1, m.totalPeople)
@@ -191,6 +244,8 @@ public enum EndlessGenerator {
         var applied: [String] = []
         while applied.count < want, !pool.isEmpty {
             let b = pool.removeFirst()
+            // Checked again: an earlier block may rule this one out (heat and icing).
+            guard b.fits(m) else { continue }
             // A block that makes the data invalid is dropped (and not counted).
             var trial = m
             b.apply(&trial, &rng, p)
@@ -202,7 +257,7 @@ public enum EndlessGenerator {
 
         // Fighting fires burns fuel far from the camp: a bigger tank there (the endless Einsätze have no outposts to land at).
         if m.fire != nil { m.fuel.capacity *= 1.35 }
-        m = m.scaled(for: level(stage: stage, chosen: chosen))
+        m = m.scaled(for: data)
         let od = overdrive(stage: stage)
         if od > 0 {
             m.timeLimit = (m.timeLimit * (1 - 0.25 * od)).rounded()
