@@ -722,7 +722,7 @@ final class GameScene: SKScene {
                 node.isHidden = false
                 let t = CGFloat(p.progress)
                 let hy = CGFloat(h.y) + 8
-                node.position = CGPoint(x: p.spotX + (CGFloat(h.x) - CGFloat(p.spotX)) * t, y: gy + (hy - gy - 40) * t)
+                node.position = CGPoint(x: p.spotX + (CGFloat(h.x) - CGFloat(p.spotX)) * t, y: gy + (hy - gy - 40 * FigureSprite.scale) * t)
                 node.alpha = 1
                 fig.show("hoist", phase: 0)
                 node.xScale = 1
@@ -757,7 +757,7 @@ final class GameScene: SKScene {
         if let w = sim.hz.winch, let p = sim.people.first(where: { $0.id == w.personID }), let node = personNodes[p.id] {
             let path = CGMutablePath()
             path.move(to: CGPoint(x: h.x, y: h.y + 6))
-            path.addLine(to: CGPoint(x: node.position.x, y: node.position.y + 36))
+            path.addLine(to: CGPoint(x: node.position.x, y: node.position.y + 36 * FigureSprite.scale))
             cable.path = path
             cable.strokeColor = w.steady ? SKColor(red: 0.95, green: 0.9, blue: 0.8, alpha: 1) : SKColor(red: 1, green: 0.5, blue: 0.3, alpha: 1)
             cable.isHidden = false
