@@ -130,8 +130,9 @@ struct StartView: View {
         let (plain, accent) = split(m.title)
         let open = model.isUnlocked(m.id)
         let best = model.best(m.id)
-        return VStack(alignment: .leading, spacing: 8) {
+        return VStack(alignment: .leading, spacing: 6) {
             Eyebrow("Einsatz \(m.number ?? 1) · \(m.tagline ?? "")")
+                .lineLimit(2).fixedSize(horizontal: false, vertical: true)
             AccentTitle(plain: plain, accent: accent, size: 20)
                 .lineLimit(2).minimumScaleFactor(0.8)
             Text(m.summary ?? m.briefing)
@@ -160,7 +161,7 @@ struct StartView: View {
             }
         }
         .padding(14)
-        .frame(maxWidth: .infinity, minHeight: 178, maxHeight: 178, alignment: .leading)
+        .frame(maxWidth: .infinity, minHeight: 192, maxHeight: 192, alignment: .leading)
         .background(Theme.surface)
         .opacity(open ? 1 : 0.55)
         .overlay(RoundedRectangle(cornerRadius: Theme.radius).stroke(focused ? Theme.accent : Theme.line, lineWidth: focused ? 2 : 1))
