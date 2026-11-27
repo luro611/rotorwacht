@@ -22,7 +22,8 @@ public enum Practice {
         PracticeCourse(id: "salven", title: "Trümmer und Nachbeben", hint: "Trümmer fallen, Plätze werden gesperrt.", missionID: "altstadt", startX: 2300),
         PracticeCourse(id: "lava", title: "Lava und Lavabrocken", hint: "Gestrichelte Bahnen zeigen die Brocken.", missionID: "vulkan", startX: 4400),
         PracticeCourse(id: "lawine", title: "Lawinen und Seilwinde", hint: "Schwebe ruhig über dem Vorsprung, das Seil zieht hoch.", missionID: "gebirge", startX: 3700),
-        PracticeCourse(id: "deck", title: "Schwankende Decks", hint: "Sanft aufsetzen, der Hubschrauber fährt mit der Fläche.", missionID: "bohrinsel", startX: 2000),
+        PracticeCourse(id: "flutwelle", title: "Flutwelle und Brücken", hint: "Unter den Brücken hindurch, die Welle kommt von hinten.", missionID: "staudamm", startX: 2800),
+        PracticeCourse(id: "deck", title: "Schwankende Decks", hint: "Sanft aufsetzen, der Hubschrauber fährt mit der Fläche.", missionID: "bohrinsel", startX: 6500),
         PracticeCourse(id: "feuer", title: "Löschen", hint: "Tank über dem See füllen, Leertaste wirft Wasser ab.", missionID: "waldbrand", startX: 600),
     ]
 

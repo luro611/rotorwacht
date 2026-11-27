@@ -199,7 +199,8 @@ struct ResultOverlay: View {
         case "fire": return nil
         case "volcano": return "Von der Lava erreicht"
         case "avalanche": return "Von Lawinen erfasst"
-        case "storm", "quake": return nil
+        case "surge": return "Von der Flutwelle erreicht"
+        case "storm", "quake", "rig", "blizzard", "sandstorm": return nil
         default: return "Vom Wasser erreicht"
         }
     }

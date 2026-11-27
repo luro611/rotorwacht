@@ -18,6 +18,9 @@ PAL = {   # far ridges (back, front), mist, hills (dark, light), snow
     "coast": dict(far=(0x56626e, 0x445059), mist=0x6c7882, hill=(0x38464c, 0x4c5d63), trees=False, snow=False, jag=0.3),
     "town": dict(far=(0xb8a392, 0x9f8b7c), mist=0xe0cdb2, hill=(0x84736a, 0x9d8b7b), trees=False, snow=False, jag=0.3),
     "volcano": dict(far=(0x56433d, 0x3d302d), mist=0x82604a, hill=(0x2c2522, 0x40342f), trees=False, snow=False, jag=0.7),
+    "canyon": dict(far=(0xb98466, 0x9a674e), mist=0xd8b69a, hill=(0x87543c, 0xa76c4c), trees=False, snow=False, jag=0.85),
+    "blizzard": dict(far=(0x9fb0c2, 0x8296ab), mist=0xd5dee7, hill=(0x5f7084, 0x7e8ea0), trees=False, snow=True, jag=0.9),
+    "desert": dict(far=(0xd8ab72, 0xc28f58), mist=0xeccf9e, hill=(0xb4824c, 0xd2a266), trees=False, snow=False, jag=0.06, scale=0.55),
     "offshore": dict(far=(0x5a6874, 0x47545f), mist=0x6f7d89, hill=(0x3a4a54, 0x4b5c68), trees=False, snow=False, jag=0.05, scale=0.28),
     "alpine": dict(far=(0xb4c4d4, 0x97aabd), mist=0xe9eff3, hill=(0x6c7c8e, 0x8b9bad), trees=False, snow=True, jag=1.0),
 }

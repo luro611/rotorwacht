@@ -20,6 +20,9 @@ LOOKS = {
     "coast": dict(grass=(0x78905f, 0x5d7550), soil=(0x7c746b, 0x5a544e), rock=0x35312e, band=0.5, trees=None, rocks=True),
     "town": dict(grass=(0x8d8072, 0x6d6258), soil=(0xc4ab88, 0x9c866a), rock=0x6e5f4e, band=0.2, trees=None, rocks=False),
     "volcano": dict(grass=(0x4b4541, 0x35302d), soil=(0x3a322e, 0x28221f), rock=0x171311, band=1.4, trees=None, rocks=True),
+    "canyon": dict(grass=(0x8a8f4e, 0x6d7440), soil=(0xb5734a, 0x8c5336), rock=0x59382a, band=0.7, trees=None, rocks=True),
+    "blizzard": dict(grass=(0xf6f8fb, 0xdce4ee), soil=(0x7f8794, 0x59606c), rock=0x343a45, band=2.4, trees=None, rocks=True),
+    "desert": dict(grass=(0xe8c987, 0xd3ad68), soil=(0xc89c5c, 0xa77d46), rock=0x6e4f2e, band=1.6, trees=None, rocks=True),
     "offshore": dict(grass=(0xd9b24a, 0xb8913a), soil=(0x6a737a, 0x4d555c), rock=0x2a2f34, band=0.7, trees=None, rocks=False),
     "alpine": dict(grass=(0xf3f6f9, 0xd4dde5), soil=(0x959ba3, 0x6b7179), rock=0x3d4249, band=1.8, trees=None, rocks=True),
 }
@@ -298,7 +301,7 @@ def scatter(mission, gh, look):
             gx += 38
     if L["rocks"]:
         rs = hexrand(55)
-        col = {"coast": 0x6b6862, "volcano": 0x2b2522, "alpine": 0x8a9098}[look]
+        col = {"blizzard": 0x7d8794, "desert": 0xb98f58, "canyon": 0x9a6a4c, "coast": 0x6b6862, "volcano": 0x2b2522, "alpine": 0x8a9098}[look]
         gx = 0.0
         while gx < W:
             wx = gx + rs.uniform(0, 70)

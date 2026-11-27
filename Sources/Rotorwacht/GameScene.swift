@@ -574,15 +574,18 @@ final class GameScene: SKScene {
                 if mission.flowList[fi].kind == "avalanche" { say("Eine Lawine geht ab!", seconds: 4) }
             case .flowWarning(let fi, let pi):
                 audio.play(.warn)
-                let lava = mission.flowList[fi].kind == "lava"
+                let kind = mission.flowList[fi].kind
                 if let pi = pi {
-                    say(lava ? "Lava nähert sich: \(mission.rescuePoints[pi].name)!" : "Lawine auf Kurs: \(mission.rescuePoints[pi].name)!", seconds: 6)
+                    let name = mission.rescuePoints[pi].name
+                    say(kind == "lava" ? "Lava nähert sich: \(name)!" : (kind == "surge" ? "Die Flutwelle nähert sich: \(name)!" : "Lawine auf Kurs: \(name)!"), seconds: 6)
                 } else {
-                    say(lava ? "Ein Lavastrom setzt sich in Bewegung. Hole die Menschen weiter oben zuerst." : "Eine Lawine löst sich gleich. Wen sie erreicht, ist verloren.", seconds: 7)
+                    say(kind == "lava" ? "Ein Lavastrom setzt sich in Bewegung. Hole die Menschen weiter oben zuerst."
+                        : (kind == "surge" ? "Der Damm bricht: Die Flutwelle läuft los. Hole die Menschen am Damm zuerst." : "Eine Lawine löst sich gleich. Wen sie erreicht, ist verloren."), seconds: 7)
                 }
             case .flowScorched(let fi):
                 shake = max(shake, 5)
-                say(mission.flowList[fi].kind == "lava" ? "Hitze der Lava! Flieg höher." : "Die Lawine reißt am Hubschrauber! Flieg höher.", seconds: 4)
+                let kind = mission.flowList[fi].kind
+                say(kind == "lava" ? "Hitze der Lava! Flieg höher." : (kind == "surge" ? "Die Flutwelle reißt am Hubschrauber! Flieg höher." : "Die Lawine reißt am Hubschrauber! Flieg höher."), seconds: 4)
             case .winchStarted:
                 sayOnce("winch", "Seilwinde läuft: Halte den Hubschrauber ruhig über dem Vorsprung.", seconds: 5)
             case .winchSlipped:

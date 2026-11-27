@@ -54,5 +54,29 @@
  "bohrinsel-hill": {
   "w": 3940,
   "h": 400
+ },
+ "pass-far": {
+  "w": 2216,
+  "h": 460
+ },
+ "pass-hill": {
+  "w": 4010,
+  "h": 400
+ },
+ "staudamm-far": {
+  "w": 2216,
+  "h": 460
+ },
+ "staudamm-hill": {
+  "w": 4010,
+  "h": 400
+ },
+ "wueste-far": {
+  "w": 2240,
+  "h": 460
+ },
+ "wueste-hill": {
+  "w": 4080,
+  "h": 400
  }
 }

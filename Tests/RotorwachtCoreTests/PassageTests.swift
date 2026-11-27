@@ -166,7 +166,8 @@ private func fly(_ m: Mission, x: Double, y: Double, vx: Double = 0, vy: Double 
     // MARK: The Einsätze
 
     @Test func theEinsaetzeWithPassagesHaveThemBetweenCampAndPeople() throws {
-        let expected = ["hochwasser": "bridge", "altstadt": "bridge", "vulkan": "tunnel", "gebirge": "tunnel"]
+        let expected = ["hochwasser": "bridge", "altstadt": "bridge", "vulkan": "tunnel", "gebirge": "tunnel",
+                        "staudamm": "bridge"]
         for id in MissionLibrary.all {
             let m = try MissionLibrary.load(id)
             guard let kind = expected[id] else { #expect(m.passageList.isEmpty); continue }
@@ -199,7 +200,7 @@ private func fly(_ m: Mission, x: Double, y: Double, vx: Double = 0, vy: Double 
     }
 
     /// The scripted pilot flies the passages without a single hit.
-    @Test(arguments: ["hochwasser", "altstadt", "vulkan", "gebirge"], Difficulty.allCases)
+    @Test(arguments: ["hochwasser", "altstadt", "vulkan", "gebirge", "staudamm"], Difficulty.allCases)
     func autopilotCrossesWithoutHits(id: String, level: Difficulty) throws {
         let m = try MissionLibrary.load(id).scaled(for: level)
         var sim = MissionSimulation(mission: m)

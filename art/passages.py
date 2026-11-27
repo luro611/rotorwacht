@@ -5,7 +5,7 @@ Outputs in Renders/passages/:
   mass-<mission>-<passage>.png   the solid above the roof (x0..x1, roof..ceiling), bottom edge = underside of the roof
   shutter-door.png, shutter-bar.png, shutter-housing.png, lamp-green/amber/red.png
 
-Usage: blender -b -P art/passages.py [-- --preview]
+Usage: blender -b -P art/passages.py [-- --preview] [--masses] [--only=<mission>]
 """
 import sys, os
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -92,6 +92,8 @@ PALETTES = {
     "gebirge": ((0x6b6f74, 0xc9ccd0), 0xd6d4cf),
     "hochwasser": ((0x8c877d, 0xc3beb2), 0xcfcabd),
     "altstadt": ((0x9a8f80, 0xcdbfa8), 0xd6cdbd),
+    "staudamm": ((0x8a5a40, 0xc08a64), 0xc7b29a),
+    "pass": ((0x70767f, 0xe2e8ee), 0xd9dde2),
 }
 
 
@@ -173,7 +175,10 @@ def build_masses(preview):
             m = json.load(open(os.path.join(MISSIONS, fn)))
             for p in m.get("passages", []):
                 from_missions.append((m, p))
+    only = [a.split("=")[1] for a in argv() if a.startswith("--only=")]
     for m, p in from_missions:
+        if only and m["id"] not in only:
+            continue
         w_u = (p["x1"] - p["x0"]) + 2 * 16    # collars of 16 units on both sides
         h_u = m["world"]["ceiling"] - p["roof"] + 12
         pal = PALETTES.get(m["id"], PALETTES["hochwasser"])

@@ -14,6 +14,7 @@ import Testing
             // Not inside a passage and not under water at the start.
             #expect(m.passageIndex(at: c.startX) == nil)
             #expect(m.surfaceHeight(at: c.startX) > m.floodLevel(at: 0) - 1 || m.flood.risePerSecond == 0)
+            #expect(m.surfaceHeight(at: c.startX) > m.floodLevel(at: 0), "Start im Wasser: \(c.id)")
             let sim = MissionSimulation(mission: m)
             #expect(sim.heli.x == c.startX && sim.heli.y == m.surfaceHeight(at: c.startX))
         }

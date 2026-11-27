@@ -59,4 +59,14 @@ import Foundation
             for p in m.rescuePoints { #expect(meta["pad-\(m.id)-\(p.id)"] != nil, "Sprite fehlt: \(m.id)/\(p.id)") }
         }
     }
+
+    @Test func everyPassageHasARenderedStructure() throws {
+        let dir = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent()
+            .appendingPathComponent("Sources/Rotorwacht/Renders/passages")
+        for m in try all() {
+            for p in m.passageList {
+                #expect(FileManager.default.fileExists(atPath: dir.appendingPathComponent("mass-\(m.id)-\(p.id).png").path), "Bild fehlt: \(m.id)/\(p.id)")
+            }
+        }
+    }
 }

@@ -24,16 +24,17 @@ final class HazardLayer: SKNode {
         zPosition = 12
         for (i, f) in mission.flowList.enumerated() {
             let lava = f.kind == "lava"
+            let surge = f.kind == "surge"
             let shape = SKShapeNode()
-            shape.fillColor = lava ? SKColor(red: 1.0, green: 0.42, blue: 0.08, alpha: 0.96) : SKColor(red: 0.95, green: 0.97, blue: 1.0, alpha: 0.95)
-            shape.strokeColor = lava ? SKColor(red: 1.0, green: 0.86, blue: 0.42, alpha: 1) : SKColor(white: 1, alpha: 1)
+            shape.fillColor = lava ? SKColor(red: 1.0, green: 0.42, blue: 0.08, alpha: 0.96) : (surge ? SKColor(red: 0.27, green: 0.42, blue: 0.46, alpha: 0.92) : SKColor(red: 0.95, green: 0.97, blue: 1.0, alpha: 0.95))
+            shape.strokeColor = lava ? SKColor(red: 1.0, green: 0.86, blue: 0.42, alpha: 1) : SKColor(white: 1, alpha: surge ? 0.75 : 1)
             shape.lineWidth = lava ? 3 : 2
             shape.zPosition = 2.5 + CGFloat(i) * 0.01
             shape.isHidden = true
             addChild(shape)
             flowShapes.append(shape)
             let glow = SKShapeNode()
-            glow.fillColor = lava ? SKColor(red: 1.0, green: 0.5, blue: 0.1, alpha: 0.28) : SKColor(white: 1, alpha: 0.22)
+            glow.fillColor = lava ? SKColor(red: 1.0, green: 0.5, blue: 0.1, alpha: 0.28) : (surge ? SKColor(red: 0.5, green: 0.68, blue: 0.72, alpha: 0.25) : SKColor(white: 1, alpha: 0.22))
             glow.strokeColor = .clear
             glow.zPosition = 2.4
             glow.isHidden = true
@@ -193,7 +194,8 @@ final class HazardLayer: SKNode {
             let lo = max(span.lo, Double(camX) - 900), hi = min(span.hi, Double(camX) + 900)
             guard hi > lo else { shape.isHidden = true; glow.isHidden = true; continue }
             shape.isHidden = false; glow.isHidden = false
-            let thick = lava ? 12.0 : 34.0
+            let surge = f.kind == "surge"
+            let thick = lava ? 12.0 : (surge ? 40.0 : 34.0)
             let wobble = lava ? 3.0 : 6.0
             let step = 14.0
             let top = CGMutablePath(), halo = CGMutablePath()
@@ -223,6 +225,7 @@ final class HazardLayer: SKNode {
                 let fxClamped = min(max(fx, lo), hi)
                 let gy = mission.surfaceHeight(at: fxClamped) + thick
                 let puff = SKSpriteNode(texture: Art.puff(), size: CGSize(width: lava ? 40 : 70, height: lava ? 40 : 70))
+                if surge { puff.color = SKColor(red: 0.8, green: 0.9, blue: 0.92, alpha: 1); puff.colorBlendFactor = 1 }
                 if lava { puff.color = SKColor(red: 0.2, green: 0.17, blue: 0.16, alpha: 1); puff.colorBlendFactor = 1 }
                 puff.alpha = lava ? 0.35 : 0.6
                 puff.position = CGPoint(x: fxClamped, y: gy + 6)

@@ -47,5 +47,26 @@
   "yMax": 480,
   "chunk": 1024,
   "ppu": 1.5
+ },
+ "pass": {
+  "chunks": 8,
+  "yMin": 0,
+  "yMax": 560,
+  "chunk": 1024,
+  "ppu": 1.5
+ },
+ "staudamm": {
+  "chunks": 8,
+  "yMin": 0,
+  "yMax": 600,
+  "chunk": 1024,
+  "ppu": 1.5
+ },
+ "wueste": {
+  "chunks": 8,
+  "yMin": 0,
+  "yMax": 480,
+  "chunk": 1024,
+  "ppu": 1.5
  }
 }
