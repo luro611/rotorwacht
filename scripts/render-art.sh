@@ -1,6 +1,6 @@
 #!/bin/bash
 # Renders all 3D art with Blender (headless) into Sources/Rotorwacht/Renders.
-# Usage: scripts/render-art.sh [heli|people|pads|terrain|panorama|passages|obstacles|all]   (default: all)
+# Usage: scripts/render-art.sh [heli|people|pads|terrain|panorama|passages|obstacles|clouds|all]   (default: all)
 # Further arguments go to the Python script, e.g. `pads --only=wueste` (pads, terrain, panorama). Re-rendering changes
 # the pictures slightly even without changes, so render only what changed.
 # Needs Blender: brew install --cask blender
@@ -24,4 +24,5 @@ run() {
 [ "$what" = all ] || [ "$what" = panorama ] && run panorama "${@:2}"
 [ "$what" = all ] || [ "$what" = passages ] && run passages "${@:2}"
 [ "$what" = all ] || [ "$what" = obstacles ] && run obstacles "${@:2}"
+[ "$what" = all ] || [ "$what" = clouds ] && run clouds "${@:2}"
 echo "✓ done"

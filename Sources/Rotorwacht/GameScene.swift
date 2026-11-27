@@ -189,19 +189,34 @@ final class GameScene: SKScene {
         skyNode.zPosition = -100
         cam.addChild(skyNode)
 
-        // Clouds drifting at their own speed, fixed to the camera with a small parallax.
-        for i in 0..<7 {
-            let w = CGFloat(300 + (i * 97) % 220)
-            let n = SKSpriteNode(texture: Art.cloud(width: w, seed: UInt64(10 + i), alpha: i % 3 == 0 ? 0.45 : 0.6))
-            n.size = CGSize(width: w, height: w * 0.32)
-            n.zPosition = -95
-            n.position = CGPoint(x: -700 + CGFloat(i) * 230, y: 130 + CGFloat((i * 53) % 150))
+        // Clouds drifting at their own speed, fixed to the camera with a small parallax. Rendered sprites
+        // (art/clouds.py), tinted to the light and as dense as the weather of the Einsatz.
+        let sky = look.clouds
+        for i in 0..<sky.count {
+            let far = i % 3 == 0
+            let flat = sky.flat || far
+            let name = flat ? "bank-\(i % 2)" : "cumulus-\(i % 4)"
+            var w = CGFloat(360 + (i * 137) % 300) * (flat ? 1.35 : 1) * (far ? 0.8 : 1)
+            let n: SKSpriteNode
+            if let t = Render.texture("sky", name) {
+                n = SKSpriteNode(texture: t, size: CGSize(width: w, height: w * t.size().height / t.size().width))
+                n.color = SKColor(cgColor: Art.c(sky.tint)) ?? .white
+                n.colorBlendFactor = 1
+                n.alpha = sky.alpha * (far ? 0.75 : 1)
+            } else {
+                w = CGFloat(300 + (i * 97) % 220)
+                n = SKSpriteNode(texture: Art.cloud(width: w, seed: UInt64(10 + i), alpha: 0.5), size: CGSize(width: w, height: w * 0.32))
+            }
+            if i % 2 == 1 { n.xScale = -1 }
+            n.zPosition = far ? -96 : -95
+            let y = far ? CGFloat(70 + (i * 41) % 90) : CGFloat(150 + (i * 53) % 170)
+            n.position = CGPoint(x: -1000 + CGFloat(i) * 2000 / CGFloat(sky.count), y: y)
             cam.addChild(n)
-            clouds.append((n, n.position.x, CGFloat(4 + (i % 4) * 2), 0.03 + CGFloat(i % 3) * 0.015))
+            clouds.append((n, n.position.x, CGFloat(4 + (i % 4) * 2) * (far ? 0.5 : 1), 0.03 + CGFloat(i % 3) * 0.015))
         }
 
         // Layers: far mountains (0.12), wooded hills (0.35): rendered panoramas, code-drawn chunks as fallback
-        addPanorama(name: "far", factor: 0.12, z: -90, height: 460) { x0, w, h in Art.mountainChunk(x0: x0, w: w, h: h, look: look) }
+        addPanorama(name: "far", factor: 0.12, z: -90, height: 640) { x0, w, h in Art.mountainChunk(x0: x0, w: w, h: h, look: look) }
         addPanorama(name: "hill", factor: 0.35, z: -80, height: 400) { x0, w, h in Art.hillChunk(x0: x0, w: w, h: h, look: look) }
     }
 

@@ -1,7 +1,7 @@
 {
  "waldbrand-far": {
   "w": 2144,
-  "h": 460
+  "h": 640
  },
  "waldbrand-hill": {
   "w": 3800,
@@ -9,7 +9,7 @@
  },
  "altstadt-far": {
   "w": 2120,
-  "h": 460
+  "h": 640
  },
  "altstadt-hill": {
   "w": 3730,
@@ -17,7 +17,7 @@
  },
  "gebirge-far": {
   "w": 2192,
-  "h": 460
+  "h": 640
  },
  "gebirge-hill": {
   "w": 3940,
@@ -25,7 +25,7 @@
  },
  "hochwasser-far": {
   "w": 2144,
-  "h": 460
+  "h": 640
  },
  "hochwasser-hill": {
   "w": 3800,
@@ -33,7 +33,7 @@
  },
  "kueste-far": {
   "w": 2192,
-  "h": 460
+  "h": 640
  },
  "kueste-hill": {
   "w": 3940,
@@ -41,7 +41,7 @@
  },
  "vulkan-far": {
   "w": 2216,
-  "h": 460
+  "h": 640
  },
  "vulkan-hill": {
   "w": 4010,
@@ -49,7 +49,7 @@
  },
  "bohrinsel-far": {
   "w": 2192,
-  "h": 460
+  "h": 640
  },
  "bohrinsel-hill": {
   "w": 3940,
@@ -57,7 +57,7 @@
  },
  "pass-far": {
   "w": 2216,
-  "h": 460
+  "h": 640
  },
  "pass-hill": {
   "w": 4010,
@@ -65,7 +65,7 @@
  },
  "staudamm-far": {
   "w": 2216,
-  "h": 460
+  "h": 640
  },
  "staudamm-hill": {
   "w": 4010,
@@ -73,7 +73,7 @@
  },
  "wueste-far": {
   "w": 2240,
-  "h": 460
+  "h": 640
  },
  "wueste-hill": {
   "w": 4080,
