@@ -1002,6 +1002,7 @@ final class GameScene: SKScene {
         let k = CGFloat(1 - exp(-3.5 * dt))
         camPos.x += (tx - camPos.x) * k
         camPos.y += (ty - camPos.y) * CGFloat(1 - exp(-2.5 * dt))
+        if let c = DebugShots.cameraOverride { camPos = CGPoint(x: min(max(c.x, 640), CGFloat(mission.world.width) - 640), y: c.y) }
         shake *= CGFloat(exp(-6 * dt))
         applyCamera()
     }

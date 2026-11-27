@@ -9,6 +9,8 @@ enum DebugShots {
     static let active = ProcessInfo.processInfo.environment["ROTORWACHT_SHOTS"] != nil
     static var script: ((Double) -> PilotInput)?
     private static var t0 = Date()
+    /// `ROTORWACHT_CAMERA=x[:y],…`: the camera jumps to these places (helicopter stays at the camp) and each one is photographed.
+    static var cameraOverride: CGPoint?
 
     @MainActor static func runIfRequested(model: AppModel) {
         guard let dir = ProcessInfo.processInfo.environment["ROTORWACHT_SHOTS"] else { return }
@@ -58,6 +60,17 @@ enum DebugShots {
             "waldbrand": [14, 17, 20, 23, 26, 29, 33, 37, 42, 50, 60],
         ]
         let custom = ProcessInfo.processInfo.environment["ROTORWACHT_TIMES"]?.split(separator: ",").compactMap { Double($0) }
+        let places = (ProcessInfo.processInfo.environment["ROTORWACHT_CAMERA"] ?? "").split(separator: ",").map { $0.split(separator: ":").compactMap { Double($0) } }.filter { !$0.isEmpty }
+        if !places.isEmpty {
+            script = { _ in PilotInput() }
+            for (i, c) in places.enumerated() {
+                let at = 4.0 + Double(i) * 0.8
+                DispatchQueue.main.asyncAfter(deadline: .now() + 3.0 + at) { cameraOverride = CGPoint(x: c[0], y: c.count > 1 ? c[1] : 440) }
+                DispatchQueue.main.asyncAfter(deadline: .now() + 3.0 + at + 0.7) { snap(dir, "\(missionID)-x\(Int(c[0]))", window: false, model: model) }
+            }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 3.0 + 6.0 + Double(places.count) * 0.8) { NSApp.terminate(nil) }
+            return
+        }
         let list = custom ?? defaults[missionID] ?? [6, 20, 30, 45, 60, 80]
         for t in list {
             DispatchQueue.main.asyncAfter(deadline: .now() + 3.0 + t) { snap(dir, "\(missionID)-t\(Int(t))", window: false, model: model) }
