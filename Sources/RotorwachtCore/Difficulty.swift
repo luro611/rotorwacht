@@ -53,6 +53,9 @@ extension Mission {
         m.volleys = m.volleys?.map { var v = $0; v.damage *= p; v.warn *= level.warning; return v }
         m.flows = m.flows?.map { var f = $0; f.speed *= p; f.damagePerSecond *= p; f.warn *= level.warning; return f }
         m.passages = m.passages?.map { scaledPassage($0, level) }
+        if var i = m.icing { i.rate *= p; m.icing = i }
+        if var h = m.heatwave { h.base = min(1, h.base * p); h.pulses = h.pulses.map { var g = $0; g.strength *= p; return g }; m.heatwave = h }
+        m.rescuePoints = m.rescuePoints.map { var r = $0; if var h = r.heave { h.amplitude *= min(1.2, p); r.heave = h }; return r }
         m.obstacles = m.obstacles?.map { var o = $0; o.damage = ($0.damage ?? Obstacle.defaultWireDamage) * p; return o }
         m.weather = m.weather?.map { e in
             var w = e

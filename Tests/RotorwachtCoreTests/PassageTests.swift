@@ -165,7 +165,7 @@ private func fly(_ m: Mission, x: Double, y: Double, vx: Double = 0, vy: Double 
 
     // MARK: The Einsätze
 
-    @Test func theFourEinsaetzeHavePassagesBetweenCampAndPeople() throws {
+    @Test func theEinsaetzeWithPassagesHaveThemBetweenCampAndPeople() throws {
         let expected = ["hochwasser": "bridge", "altstadt": "bridge", "vulkan": "tunnel", "gebirge": "tunnel"]
         for id in MissionLibrary.all {
             let m = try MissionLibrary.load(id)

@@ -33,7 +33,7 @@ public struct AutoPilot {
     }
 
     private func pickTarget(_ sim: MissionSimulation) -> (x: Double, top: Double, pointIndex: Int?) {
-        let m = sim.mission
+        let m = sim.live
         let heli = sim.heli
         // People hoisted by the cable are not counted until they are aboard (else the pilot would give up mid-hoist).
         let settled = sim.people.filter { $0.state == .aboard || $0.state == .boarding }.count
@@ -43,6 +43,11 @@ public struct AutoPilot {
             sim.people.contains { $0.pointIndex == i && ($0.state == .waiting || $0.state == .hoisting) }
         }
         let usable = open.filter { !sim.isBlocked($0.offset) }
+        // Iced up: back to a place where the ice melts.
+        if sim.ice > 0.7 {
+            let r = refuelPlace(sim, from: heli.x)
+            return (r.x, r.top, nil)
+        }
         if full || open.isEmpty {
             return refuelOr(sim, (m.base.x, m.baseSurface, nil))
         }
@@ -73,11 +78,12 @@ public struct AutoPilot {
     private func refuelOr(_ sim: MissionSimulation, _ t: (x: Double, top: Double, pointIndex: Int?)) -> (x: Double, top: Double, pointIndex: Int?) {
         let m = sim.mission
         // Without outposts a normal engine has plenty: only the highest levels need the planning.
-        guard !m.outpostList.isEmpty || m.fuel.burnPerSecond > 0.63, sim.heli.fuel < m.fuel.capacity * 0.9 else { return t }
-        let burn = m.fuel.burnPerSecond * 1.4
+        guard !m.outpostList.isEmpty || sim.fuelBurn > 0.63, sim.heli.fuel < m.fuel.capacity * 0.9 else { return t }
+        let burn = sim.fuelBurn * 1.4
         let toTarget = abs(t.x - sim.heli.x) / 190 * burn
         let back = refuelPlace(sim, from: t.x)
         let backCost = abs(back.x - t.x) / 190 * burn + 10
+        // Heat and icy rotors eat into the margin.
         // Without outposts there is only the camp, and a thirsty engine leaves no slack: also count the hovering over a
         // winch and waiting at shutters on the way back.
         var work = 0.0
@@ -186,9 +192,15 @@ public struct AutoPilot {
             if sim.aboardCount >= m.capacity - 1 { return nil }
         }
         if h.water < 18 || (sim.filling && h.water < 90) {
-            guard let lake = m.lakeList.min(by: { abs(($0.x0 + $0.x1) / 2 - h.x) < abs(($1.x0 + $1.x1) / 2 - h.x) }) else { return nil }
-            let cx = (lake.x0 + lake.x1) / 2
-            return cruise(sim, x: cx, hoverY: lake.level + 28, maxSpeed: 200)
+            if let lake = m.lakeList.min(by: { abs(($0.x0 + $0.x1) / 2 - h.x) < abs(($1.x0 + $1.x1) / 2 - h.x) }) {
+                let cx = (lake.x0 + lake.x1) / 2
+                return cruise(sim, x: cx, hoverY: lake.level + 28, maxSpeed: 200)
+            }
+            // No lake: skim the sea, wherever there is enough open water nearest.
+            guard let sea = stride(from: 200.0, to: m.world.width - 200, by: 100)
+                .filter({ m.maxSurface(from: $0 - 130, to: $0 + 130) < sim.floodLevel - 20 })
+                .min(by: { abs($0 - h.x) < abs($1 - h.x) }) else { return nil }
+            return cruise(sim, x: sea, hoverY: sim.floodLevel + 28, maxSpeed: 200)
         }
         let tx = sim.fire.center(of: worst.cell)
         var input = cruise(sim, x: tx, hoverY: m.groundHeight(at: tx) + 85)
@@ -238,7 +250,7 @@ public struct AutoPilot {
             // A ground flow in front of the doors: fly and wait as high as the opening allows.
             let hot = m.flowList.enumerated().filter { fi, f in
                 guard let s = sim.hz.flows[fi].span else { return false }
-                return f.kind == "lava" && s.hi > min(entry - dir * 260, entry) && s.lo < max(entry - dir * 260, entry)
+                return (f.kind == "lava" || f.kind == "surge") && s.hi > min(entry - dir * 260, entry) && s.lo < max(entry - dir * 260, entry)
             }
             if let h = hot.map(\.element.clearance).max() { y = max(y, min(floor + h + 4, min(p.roof, limit) - Passage.heliHeight - 12)) }
             let inBand = h.y >= floor + 10 && h.y + Passage.heliHeight <= min(p.roof, limit) - 6
@@ -295,7 +307,7 @@ public struct AutoPilot {
     }
 
     public func input(for sim: MissionSimulation) -> PilotInput {
-        let m = sim.mission
+        let m = sim.live
         let h = sim.heli
         guard case .flying = sim.phase else { return PilotInput() }
         if let d = dodge(sim) { return d }
@@ -312,7 +324,8 @@ public struct AutoPilot {
         if h.onGround && !h.inWater {
             let busy = sim.people.contains { $0.state == .boarding || $0.state == .leaving }
             if busy { return PilotInput() }
-            if sim.outpostUnderHelicopter() != nil, h.fuel < m.fuel.capacity * 0.97 { return PilotInput() }
+            if sim.outpostUnderHelicopter() != nil, h.fuel < m.fuel.capacity * 0.97 || sim.ice > 0.1 { return PilotInput() }
+            if sim.inBaseZone, sim.ice > 0.1 { return PilotInput() }
             if sim.inBaseZone {
                 let aboard = sim.aboardCount > 0
                 let needFuel = h.fuel < m.fuel.capacity * 0.97

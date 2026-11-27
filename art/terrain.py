@@ -20,6 +20,7 @@ LOOKS = {
     "coast": dict(grass=(0x78905f, 0x5d7550), soil=(0x7c746b, 0x5a544e), rock=0x35312e, band=0.5, trees=None, rocks=True),
     "town": dict(grass=(0x8d8072, 0x6d6258), soil=(0xc4ab88, 0x9c866a), rock=0x6e5f4e, band=0.2, trees=None, rocks=False),
     "volcano": dict(grass=(0x4b4541, 0x35302d), soil=(0x3a322e, 0x28221f), rock=0x171311, band=1.4, trees=None, rocks=True),
+    "offshore": dict(grass=(0xd9b24a, 0xb8913a), soil=(0x6a737a, 0x4d555c), rock=0x2a2f34, band=0.7, trees=None, rocks=False),
     "alpine": dict(grass=(0xf3f6f9, 0xd4dde5), soil=(0x959ba3, 0x6b7179), rock=0x3d4249, band=1.8, trees=None, rocks=True),
 }
 PLASTER = [0xe3d3b6, 0xd8bf9c, 0xcfae90, 0xdcd4c4, 0xc9b79a, 0xe0c9a6, 0xd2c1a8]
@@ -244,6 +245,36 @@ def tree(kind, x_m, y_m, z_m, size_m, rng, parts):
             parts.append(prim("sphere", "leaf", (x_m + dx * size_m, y_m, z_m + dz * size_m), (r * 2 * size_m, r * 2 * size_m, r * 1.8 * size_m), mats=[cols[rng.randrange(2)]], seg=10, rings=6))
 
 
+def platforms(mission, gh):
+    """Offshore: steel columns and braces on the front of every platform block, a drill tower behind the big ones."""
+    t = mission["terrain"]
+    steel = mat("steel", 0x8a949c, 0.5, metal=0.6)
+    dark = mat("steeld", 0x4a535a, 0.6, metal=0.5)
+    red = mat("steelr", 0xc75d3b, 0.6)
+    blocks = [(a[0], b[0], a[1]) for a, b in zip(t, t[1:]) if a[1] == b[1] and a[1] > 100 and b[0] < mission["base"]["x"] - mission["base"]["width"]]
+    for x0, x1, top in blocks:
+        w = x1 - x0
+        n = max(1, int(w / 110))
+        for i in range(n + 1):
+            x = (x0 + 4 + (w - 8) * i / n) * U
+            tube("col", [(x, -0.8, -90 * U), (x, -0.8, (top - 8) * U)], 0.45 if w > 150 else 0.2, steel, 6)
+        for i in range(n):
+            xa, xb = (x0 + 4 + (w - 8) * i / n) * U, (x0 + 4 + (w - 8) * (i + 1) / n) * U
+            for k in range(int((top + 40) / 100)):
+                za, zb = (k * 100 - 20) * U, min(top - 12, k * 100 + 80) * U
+                tube("br", [(xa, -0.9, za), (xb, -0.9, zb)], 0.12, dark, 4)
+                tube("br", [(xb, -0.9, za), (xa, -0.9, zb)], 0.12, dark, 4)
+        slab_m = prim("cube", "lip", ((x0 + x1) / 2 * U, -0.7, (top - 7) * U), (w * U, 0.5, 0.45), mats=[red], bevel=0.05)
+        if w > 300:      # drill tower behind the deck, out of the flight path
+            cx, base_z = (x0 + 90) * U, (top - 4) * U
+            for s in (-1, 1):
+                tube("leg", [(cx + s * 2.2, 3.5, base_z), (cx + s * 0.4, 3.5, base_z + 11)], 0.16, red, 5)
+            for k in range(1, 6):
+                half = 2.2 - 1.8 * k / 6
+                z = base_z + 11 * k / 6
+                tube("rung", [(cx - half, 3.5, z), (cx + half, 3.5, z)], 0.07, steel, 4)
+
+
 def scatter(mission, gh, look):
     L = LOOKS[look]
     rng = hexrand(901)
@@ -301,6 +332,8 @@ def main():
         ymax = max(480, highest + 40)
         build_ground(mission, gh, ymin, look)
         scatter(mission, gh, look)
+        if look == "offshore":
+            platforms(mission, gh)
         H_px = int(math.ceil((ymax - ymin) * S))
         W = mission["world"]["width"]
         n = int(math.ceil(W / CHUNK))

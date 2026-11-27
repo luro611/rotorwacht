@@ -51,7 +51,8 @@ public struct Volley: Codable, Equatable, Sendable {
     public var blockTime: Double
 }
 
-/// A band that moves across the ground and hurts what it covers: lava stream ("lava") or avalanche ("avalanche").
+/// A band that moves across the ground and hurts what it covers: lava stream ("lava"), avalanche ("avalanche") or
+/// flood wave of a broken dam ("surge").
 public struct Flow: Codable, Equatable, Sendable {
     public var id: String
     public var kind: String

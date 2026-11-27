@@ -40,5 +40,12 @@
   "yMax": 640,
   "chunk": 1024,
   "ppu": 1.5
+ },
+ "bohrinsel": {
+  "chunks": 8,
+  "yMin": -90,
+  "yMax": 480,
+  "chunk": 1024,
+  "ppu": 1.5
  }
 }

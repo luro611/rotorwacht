@@ -43,6 +43,17 @@ struct StartView: View {
     @EnvironmentObject var model: AppModel
 
     var body: some View {
+        // Scrolls only when the window is too low for all rows of Einsätze.
+        GeometryReader { g in
+            ScrollView { content.frame(maxWidth: .infinity, minHeight: g.size.height) }
+        }
+        .onAppear { model.loadMissionList() }
+        .sheet(isPresented: $model.showScores) { HighScoreSheet().environmentObject(model) }
+        .sheet(isPresented: $model.showPractice) { PracticeSheet().environmentObject(model) }
+        .sheet(isPresented: $model.showEndless) { EndlessSheet().environmentObject(model) }
+    }
+
+    private var content: some View {
         VStack(spacing: 0) {
             Spacer(minLength: 8)
             VStack(spacing: 12) {
@@ -90,11 +101,6 @@ struct StartView: View {
             footer
         }
         .padding(.horizontal, 32)
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .onAppear { model.loadMissionList() }
-        .sheet(isPresented: $model.showScores) { HighScoreSheet().environmentObject(model) }
-        .sheet(isPresented: $model.showPractice) { PracticeSheet().environmentObject(model) }
-        .sheet(isPresented: $model.showEndless) { EndlessSheet().environmentObject(model) }
     }
 
     /// Title with the last word as the accent word, as on the website.
@@ -130,7 +136,7 @@ struct StartView: View {
                 .lineLimit(2).minimumScaleFactor(0.8)
             Text(m.summary ?? m.briefing)
                 .font(Theme.text(11)).foregroundColor(Theme.muted)
-                .lineLimit(5)
+                .lineLimit(4)
                 .help(m.summary ?? m.briefing)
             Spacer(minLength: 0)
             HStack {
@@ -154,7 +160,7 @@ struct StartView: View {
             }
         }
         .padding(14)
-        .frame(maxWidth: .infinity, minHeight: 196, maxHeight: 196, alignment: .leading)
+        .frame(maxWidth: .infinity, minHeight: 178, maxHeight: 178, alignment: .leading)
         .background(Theme.surface)
         .opacity(open ? 1 : 0.55)
         .overlay(RoundedRectangle(cornerRadius: Theme.radius).stroke(focused ? Theme.accent : Theme.line, lineWidth: focused ? 2 : 1))

@@ -15,8 +15,9 @@ import Foundation
 
     @Test func theBasesRotateAndNeverRepeatBackToBack() {
         for seed in UInt64(1)...40 {
-            let ids = (1...18).map { EndlessGenerator.baseID(seed: seed, stage: $0) }
-            for round in 0..<3 { #expect(Set(ids[(round * 6)..<(round * 6 + 6)]) == Set(EndlessKit.bases)) }
+            let n = EndlessKit.bases.count
+            let ids = (1...(3 * n)).map { EndlessGenerator.baseID(seed: seed, stage: $0) }
+            for round in 0..<3 { #expect(Set(ids[(round * n)..<(round * n + n)]) == Set(EndlessKit.bases)) }
             for (a, b) in zip(ids, ids.dropFirst()) { #expect(a != b) }
         }
     }

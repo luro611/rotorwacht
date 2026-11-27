@@ -70,6 +70,8 @@ struct HUDView: View {
                         Bar(label: "Treibstoff", value: hud.fuel)
                         Bar(label: "Haltbarkeit", value: hud.durability)
                         Bar(label: hud.filling ? "Wasser · füllt" : "Wasser", value: hud.water, warnBelow: 0.12, tint: Theme.ink)
+                        if hud.ice >= 0 { Bar(label: "Eis", value: hud.ice, warnBelow: 0, tint: hud.ice > 0.5 ? Theme.accentStrong : Theme.muted) }
+                        if hud.swelter >= 0 { Bar(label: "Hitze", value: hud.swelter, warnBelow: 0, tint: Theme.accentStrong) }
                     }
                 }
                 panel {

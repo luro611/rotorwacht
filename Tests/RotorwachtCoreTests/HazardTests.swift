@@ -377,8 +377,8 @@ private func events(_ sim: inout MissionSimulation, seconds: Double, input: Pilo
 // MARK: The shipped missions
 
 @Suite struct CampaignTests {
-    @Test func allSixLoadInOrderAndAreValid() throws {
-        #expect(MissionLibrary.all.count == 6)
+    @Test func allLoadInOrderAndAreValid() throws {
+        #expect(MissionLibrary.all.count == 7)
         for (i, id) in MissionLibrary.all.enumerated() {
             let m = try MissionLibrary.load(id)
             #expect(m.id == id && m.number == i + 1)

@@ -109,6 +109,7 @@ struct PracticeSheet: View {
             AccentTitle(plain: "Gefahren ", accent: "üben", size: 34)
             Text("Unbegrenzt Hubschrauber, nach einem Verlust geht es sofort am Start weiter. Kein Punktestand, keine Bestenliste, der Fortschritt bleibt unverändert.")
                 .font(Theme.text(12)).foregroundColor(Theme.muted).fixedSize(horizontal: false, vertical: true)
+            ScrollView {
             VStack(spacing: 0) {
                 ForEach(Practice.courses, id: \.id) { c in
                     let on = model.practiceCourse == c.id
@@ -126,6 +127,8 @@ struct PracticeSheet: View {
                     .buttonStyle(.plain)
                 }
             }
+            }
+            .frame(height: 330)
             HStack(spacing: 10) {
                 Eyebrow("Stufe")
                 ForEach(Difficulty.allCases, id: \.self) { l in

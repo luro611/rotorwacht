@@ -44,6 +44,8 @@ public struct RescuePointSpec: Codable, Equatable, Sendable {
     public var access: String? = nil
     /// Length of the winch cable (world units).
     public var cable: Double? = nil
+    /// Swaying deck: the landing surface rises and falls around `top`.
+    public var heave: HeaveSpec? = nil
     public var isWinch: Bool { access == "winch" }
     public var cableLength: Double { cable ?? 130 }
 }
@@ -153,6 +155,8 @@ public struct Mission: Codable, Equatable, Sendable {
     public var obstacles: [Obstacle]? = nil
     /// Weather changes over time (gusts, wind shifts, fog banks, thunderstorm).
     public var weather: [WeatherEvent]? = nil
+    public var icing: IcingSpec? = nil
+    public var heatwave: HeatSpec? = nil
     /// Practice mode (set by `practiced`): unlimited helicopters, restart at `startX`.
     public var practice: Bool? = nil
     public var startX: Double? = nil
@@ -286,13 +290,14 @@ extension Mission {
         for s in stormList where s.x1 <= s.x0 || s.interval <= 0 || s.warn < 0 || s.radius <= 0 { try fail("Gewitterzelle unzulässig") }
         for v in volleyList where v.count <= 0 || v.repeats <= 0 || v.x1 < v.x0 || v.stagger < 0 || v.radius <= 0
             || !["debris", "lavaBomb", "rock"].contains(v.kind) { try fail("Salve \(v.kind) unzulässig") }
-        for f in flowList where f.speed <= 0 || f.warn < 0 || (f.length ?? 1) <= 0 || !["lava", "avalanche"].contains(f.kind) {
+        for f in flowList where f.speed <= 0 || f.warn < 0 || (f.length ?? 1) <= 0 || !["lava", "avalanche", "surge"].contains(f.kind) {
             try fail("Strom \(f.id) unzulässig")
         }
         for o in outpostList where o.width <= 0 { try fail("Außenposten \(o.name) unzulässig") }
         try validatePassages(fail)
         try validateObstacles(fail)
         try validateWeather(fail)
+        try validateClimate(fail)
         if let s = flood.swell, s.period <= 0 { try fail("Wellenperiode muss größer als 0 sein") }
         for p in rescuePoints where p.isWinch && p.cableLength <= 0 { try fail("Seil von \(p.id) unzulässig") }
     }
@@ -300,7 +305,7 @@ extension Mission {
 
 public enum MissionLibrary {
     /// Missions offered in the start menu, in order.
-    public static let all = ["hochwasser", "waldbrand", "kueste", "altstadt", "vulkan", "gebirge"]
+    public static let all = ["hochwasser", "waldbrand", "kueste", "altstadt", "vulkan", "gebirge", "bohrinsel"]
 
     public enum LoadError: Error { case notFound(String) }
 

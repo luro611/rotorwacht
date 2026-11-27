@@ -46,5 +46,13 @@
  "vulkan-hill": {
   "w": 4010,
   "h": 400
+ },
+ "bohrinsel-far": {
+  "w": 2192,
+  "h": 460
+ },
+ "bohrinsel-hill": {
+  "w": 3940,
+  "h": 400
  }
 }

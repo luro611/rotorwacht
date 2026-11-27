@@ -96,6 +96,21 @@ def building(p, seed, below_m, palette=None):
     return dict(above=3.0)
 
 
+def rig(p, below_m):
+    """Helideck of an offshore platform: steel deck on short struts, safety net, lamps."""
+    w = p["width"] * U
+    steel, dark = M("rigsteel", 0x8a949c, 0.5, metal=0.6), M("rigdark", 0x3a4248, 0.7)
+    deck(w, DEPTH - 0.8, 0.3, M("rigdeck", 0x34503f, 0.85), M("rigedge", 0xe9c85a, 0.5))
+    helipad_marks(w, DEPTH - 0.8)
+    railing_back(w, DEPTH - 0.8, col=0xe9c85a)
+    corner_lights(w, DEPTH - 0.8)
+    for sx in (-1, -0.35, 0.35, 1):
+        tube("strut", [(sx * w * 0.42, -2.6, -below_m), (sx * w * 0.48, -3.2, -0.3)], 0.14, steel, 6)
+    slab("under", (0, 0, -0.5), (w * 0.96, DEPTH - 1.6, 0.3), dark, 0.02)
+    prim("cyl", "mast", (w / 2 - 0.6, DEPTH / 2 - 1.2, 1.5), (0.1, 0.1, 3.0), mats=[M("rigr", 0xc75d3b, 0.6)])
+    return dict(above=3.2)
+
+
 def wood_tower(p, below_m, hunting=False):
     w = p["width"] * U
     wood = M("wood", 0x8a6240, 0.85)
@@ -254,6 +269,8 @@ def build_point(mission, p, below_m):
     seed = sum(ord(c) for c in mission["id"] + pid)
     if p.get("access") == "winch":
         return ledge_marker(p)
+    if kind == "rig":
+        return rig(p, below_m)
     if kind == "boat":
         return boat(p, below_m)
     if kind == "lighthouse":

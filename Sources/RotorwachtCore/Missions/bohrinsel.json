@@ -1,0 +1,59 @@
+{
+ "id": "bohrinsel",
+ "number": 7,
+ "hazard": "rig",
+ "look": "offshore",
+ "tagline": "Brand auf See",
+ "summary": "Feuer auf der Bohrinsel im Sturm. Schiff und Rettungsfloß schwanken, am Kranmast hilft nur die Seilwinde.",
+ "title": "Bohrinsel im Sturm",
+ "briefing": "Vor der Küste brennt es auf zwei Bohrplattformen, mitten im Sturm. Fülle den Tank tief über dem Meer und halte die Flammen von den Wartenden fern. Versorgungsschiff und Rettungsfloß heben und senken sich mit den Wellen: setz sanft auf, der Hubschrauber fährt dann mit. Am Kranmast kann niemand landen, dort zieht die Seilwinde die Menschen hoch. Blitze kündigen sich mit rotem Strahl an.",
+ "world": {"width": 7600, "ceiling": 950},
+ "terrain": [
+  [0, -80], [780, -80], [800, 240], [1380, 240], [1400, -80],
+  [3230, -80], [3250, 300], [3850, 300], [3870, -80],
+  [4440, -80], [4450, 280], [4550, 280], [4560, -80],
+  [6000, -80], [6200, 60], [6400, 150], [6700, 240], [7600, 240]
+ ],
+ "base": {"x": 6950, "width": 420},
+ "rescuePoints": [
+  {"id": "west", "name": "Westplattform", "kind": "rig", "x": 1250, "width": 180, "top": 262, "people": 4},
+  {"id": "schiff", "name": "Versorgungsschiff", "kind": "boat", "x": 2400, "width": 180, "top": 100, "people": 4, "heave": {"amplitude": 16, "period": 8}},
+  {"id": "bohrdeck", "name": "Bohrdeck", "kind": "rig", "x": 3720, "width": 160, "top": 322, "people": 3},
+  {"id": "kranmast", "name": "Kranmast", "kind": "ledge", "x": 4500, "width": 100, "top": 280, "people": 2, "access": "winch", "cable": 130},
+  {"id": "floss", "name": "Rettungsfloß", "kind": "boat", "x": 5300, "width": 150, "top": 80, "people": 3, "heave": {"amplitude": 20, "period": 6.5, "phase": 0.4}}
+ ],
+ "helicopters": 3,
+ "capacity": 12,
+ "timeLimit": 540,
+ "fuel": {"capacity": 100, "burnPerSecond": 0.5, "refuelPerSecond": 12},
+ "flood": {"startLevel": 20, "risePerSecond": 0, "maxLevel": 20, "swell": {"amplitude": 20, "period": 7}},
+ "fire": {
+  "cellWidth": 40,
+  "burnTime": 45,
+  "spreadRate": 0.12,
+  "zones": [{"x0": 800, "x1": 1120, "fuel": 1.0}, {"x0": 3260, "x1": 3600, "fuel": 1.0}],
+  "ignitions": [
+   {"time": 20, "x": 860, "intensity": 0.6},
+   {"time": 75, "x": 3300, "intensity": 0.6},
+   {"time": 75, "x": 3340, "intensity": 0.6}
+  ]
+ },
+ "wind": {"base": -20, "gusts": [
+  {"start": 35, "duration": 9, "strength": -70},
+  {"start": 120, "duration": 10, "strength": 80},
+  {"start": 230, "duration": 10, "strength": -80},
+  {"start": 340, "duration": 10, "strength": 70}
+ ]},
+ "atmosphere": {"sky": "storm", "precipitation": "rain"},
+ "storms": [
+  {"x0": 1600, "x1": 3100, "start": 40, "interval": 15, "warn": 2.6, "radius": 160, "damage": 16},
+  {"x0": 5500, "x1": 6500, "start": 60, "interval": 17, "warn": 2.6, "radius": 160, "damage": 16}
+ ],
+ "obstacles": [
+  {"id": "deckkran", "kind": "crane", "x": 3420, "height": 150, "reach": 90, "period": 18, "phase": 0.2, "rope": 70}
+ ],
+ "weather": [
+  {"kind": "windShift", "start": 100, "duration": 60, "warn": 8, "strength": 90},
+  {"kind": "fog", "start": 220, "duration": 70, "warn": 10, "density": 0.55, "x0": 2000, "x1": 4800, "tint": "fog"}
+ ]
+}
