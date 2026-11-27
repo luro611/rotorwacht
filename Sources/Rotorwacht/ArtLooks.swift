@@ -37,6 +37,46 @@ struct Look {
             l.ground = [(0, 0x77706a, 1), (0.55, 0x5a5550, 1), (1, 0x2d2a28, 1)]
             l.edgeDark = 0x4d5a4a; l.edgeLight = 0x7d8c6d; l.edgeWide = 7
             l.trees = false
+        case "offshore":
+            l = valley
+            l.sky = [(0, 0x39434f, 1), (0.45, 0x586675, 1), (0.8, 0x808d99, 1), (1, 0x9aa6af, 1)]
+            l.glow = (0.7, 0.32, 260, 0xdfe6ec, 0.25)
+            l.far = [0x5a6874, 0x47545f]; l.mist = 0x6f7d89
+            l.hill = [(0, 0x3a4a54, 1), (0.6, 0x465762, 1), (1, 0x5a6c78, 1)]
+            l.hillTrees = false
+            l.ground = [(0, 0x6a737a, 1), (0.55, 0x4d555c, 1), (1, 0x2a2f34, 1)]
+            l.edgeDark = 0x8a6f30; l.edgeLight = 0xd9b24a; l.edgeWide = 8
+            l.trees = false
+        case "canyon":
+            l = valley
+            l.sky = [(0, 0x6e6f80, 1), (0.45, 0xa98f86, 1), (0.8, 0xdcb99a, 1), (1, 0xeccfa6, 1)]
+            l.glow = (0.62, 0.3, 300, 0xffdfb0, 0.45)
+            l.far = [0xb98466, 0x9a674e]; l.mist = 0xd8b69a
+            l.hill = [(0, 0x87543c, 1), (0.6, 0x97613f, 1), (1, 0xb4805c, 1)]
+            l.hillTrees = false
+            l.ground = [(0, 0xb5734a, 1), (0.55, 0x8c5336, 1), (1, 0x4a2c20, 1)]
+            l.edgeDark = 0x6d7440; l.edgeLight = 0xa2a763; l.edgeWide = 7
+            l.trees = false
+        case "blizzard":
+            l = valley
+            l.sky = [(0, 0x6c7787, 1), (0.45, 0x939fae, 1), (0.8, 0xc3ccd6, 1), (1, 0xdde3ea, 1)]
+            l.glow = (0.6, 0.3, 240, 0xffffff, 0.3)
+            l.far = [0x9fb0c2, 0x8296ab]; l.mist = 0xd5dee7
+            l.hill = [(0, 0x5f7084, 1), (0.6, 0x6f8196, 1), (1, 0x9aa9ba, 1)]
+            l.hillTrees = false
+            l.ground = [(0, 0x7f8794, 1), (0.55, 0x59606c, 1), (1, 0x2e333c, 1)]
+            l.edgeDark = 0xc9d3de; l.edgeLight = 0xfafcfe; l.edgeWide = 12
+            l.trees = false
+        case "desert":
+            l = valley
+            l.sky = [(0, 0x7f9cb5, 1), (0.45, 0xc3c3b4, 1), (0.8, 0xecd3a4, 1), (1, 0xf3d89c, 1)]
+            l.glow = (0.7, 0.34, 340, 0xfff2c8, 0.6)
+            l.far = [0xd8ab72, 0xc28f58]; l.mist = 0xeccf9e
+            l.hill = [(0, 0xb4824c, 1), (0.6, 0xc39158, 1), (1, 0xdcb276, 1)]
+            l.hillTrees = false
+            l.ground = [(0, 0xc89c5c, 1), (0.55, 0xa77d46, 1), (1, 0x6e4f2e, 1)]
+            l.edgeDark = 0xd3ad68; l.edgeLight = 0xf0d697; l.edgeWide = 10
+            l.trees = false
         case "town":
             l = valley
             l.sky = [(0, 0x7d746c, 1), (0.5, 0xb59f8a, 1), (0.8, 0xd9c19c, 1), (1, 0xe8d3ae, 1)]

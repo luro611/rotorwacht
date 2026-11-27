@@ -95,6 +95,14 @@ public enum EndlessKit {
                                              strength: sign * rng.double(30...(40 + 15 * p)) * (m.hasClock ? 0.6 : 1)))
             }
         }),
+        // Icing: back to the camp to thaw now and then (not where the clock runs or doors wait).
+        EndlessBlock(id: "icing", minStage: 5,
+                     fits: { $0.icing == nil && $0.heatwave == nil && !$0.hasClock && $0.passageList.isEmpty },
+                     apply: { m, _, p in m.icing = IcingSpec(rate: 0.005 + 0.003 * p, thaw: 0.25, start: 20) }),
+        // Heat of the day: thirstier and weaker in the climb.
+        EndlessBlock(id: "heat", minStage: 4,
+                     fits: { $0.heatwave == nil && !$0.hasClock && $0.outpostList.isEmpty && $0.hazard != "avalanche" && $0.icing == nil },
+                     apply: { m, _, p in m.heatwave = HeatSpec(base: 0.06 + 0.06 * p, pulses: []) }),
         // Not where fuel is already the bottleneck (outposts, the high mountains).
         EndlessBlock(id: "thirstyEngine", minStage: 3,
                      fits: { $0.outpostList.isEmpty && $0.hazard != "avalanche" && !$0.hasClock },
@@ -121,8 +129,12 @@ public enum EndlessGenerator {
         return o[k]
     }
 
-    /// Level of the data scaling for a stage: easy, then medium, then hard.
-    public static func level(stage: Int) -> Difficulty { stage <= 2 ? .easy : (stage <= 5 ? .medium : .hard) }
+    /// Level of the data scaling for a stage: easy, then medium, then hard. The chosen level of the run shifts
+    /// the whole ramp (medium: unchanged, beginner two steps easier, pro two steps harder).
+    public static func level(stage: Int, chosen: Difficulty = .medium) -> Difficulty {
+        let ramp: Difficulty = stage <= 2 ? .easy : (stage <= 5 ? .medium : .hard)
+        return ramp.shifted(by: chosen.rank - Difficulty.medium.rank)
+    }
 
     /// Growth from 0 (stage 1) to 1 (plateau).
     public static func pressure(stage: Int) -> Double { min(1, Double(max(1, stage) - 1) / Double(plateauStage - 1)) }
@@ -131,16 +143,71 @@ public enum EndlessGenerator {
     static func overdrive(stage: Int) -> Double { min(0.5, 0.04 * Double(max(0, stage - 8))) }
 
     /// The Einsatz of a stage. `helicopters` is what is left of the stock; `base` forces the ground (for tests).
-    public static func mission(seed: UInt64, stage: Int, helicopters: Int, base forced: String? = nil) throws -> Mission {
-        try generate(seed: seed, stage: stage, helicopters: helicopters, base: forced).mission
+    public static func mission(seed: UInt64, stage: Int, helicopters: Int, base forced: String? = nil,
+                               level chosen: Difficulty = .medium) throws -> Mission {
+        // See `generate`: what comes out has been flown once by the scripted pilot.
+        try generate(seed: seed, stage: stage, helicopters: helicopters, base: forced, level: chosen).mission
+    }
+
+    /// Helicopters the scripted pilot gets to prove an Einsatz solvable. Fixed, so a seed gives the same Einsatz
+    /// whatever is left in the stock.
+    static let proofStock = 2
+
+    /// Whether the scripted pilot gets at least one star (half of the people) and keeps a helicopter.
+    public static func isSolvable(_ mission: Mission, base: String) -> Bool {
+        var m = mission
+        m.helicopters = proofStock
+        var sim = MissionSimulation(mission: m)
+        let pilot = AutoPilot(fireFirst: base == "waldbrand")
+        var t = 0.0
+        while !sim.isFinished && t < m.timeLimit + 10 { sim.step(input: pilot.input(for: sim), dt: 1.0 / 60); t += 1.0 / 60 }
+        guard let r = sim.result else { return false }
+        return r.outcome != .failed && r.stars >= 1
     }
 
     /// Like `mission`, with the ids of the building blocks that were added (for the stage card and for diagnosis).
+    ///
+    /// With `verified` the Einsatz is proven solvable before it is handed out. If the scripted pilot cannot manage it,
+    /// it is eased until he can, as little as possible: without the added blocks; with fewer people and more time;
+    /// only then one data level easier (and the same again), down to beginner.
     public static func generate(seed: UInt64, stage: Int, helicopters: Int, base forced: String? = nil,
-                                skipping skipped: Set<String> = []) throws -> (mission: Mission, blocks: [String]) {
+                                level chosen: Difficulty = .medium,
+                                skipping skipped: Set<String> = [],
+                                verified: Bool = true) throws -> (mission: Mission, blocks: [String]) {
         let stage = max(1, stage)
+        let base = forced ?? Self.baseID(seed: seed, stage: stage)
+        let none = Set(EndlessKit.blocks.map(\.id))
+        var data = level(stage: stage, chosen: chosen)
+        var last: (mission: Mission, blocks: [String])?
+        while true {
+            for step in 0..<3 {
+                var out = try build(seed: seed, stage: stage, helicopters: helicopters, base: base, data: data,
+                                    skipping: step == 0 ? skipped : none)
+                if step > 0 { out.blocks = [] }
+                if step == 2 { out.mission = relieved(out.mission) }
+                if !verified || isSolvable(out.mission, base: base) { return out }
+                last = out
+            }
+            if data == .beginner { break }
+            data = data.shifted(by: -1)
+        }
+        // Not reached in any sample; as a last resort the easiest variant with half the people.
+        var out = last!
+        out.mission = relieved(relieved(out.mission))
+        return out
+    }
+
+    /// A quarter fewer people on every rescue point (at least one stays) and a fifth more time.
+    static func relieved(_ mission: Mission) -> Mission {
+        var m = mission
+        m.rescuePoints = m.rescuePoints.map { var p = $0; p.people = max(1, Int((Double(p.people) * 0.75).rounded(.down))); return p }
+        m.timeLimit = (m.timeLimit * 1.2).rounded()
+        return m
+    }
+
+    private static func build(seed: UInt64, stage: Int, helicopters: Int, base baseID: String, data: Difficulty,
+                              skipping skipped: Set<String>) throws -> (mission: Mission, blocks: [String]) {
         var rng = SeededRandom(seed: seed &* 31 &+ UInt64(stage) &* 0x2545_F491)
-        let baseID = forced ?? Self.baseID(seed: seed, stage: stage)
         var m = try MissionLibrary.load(baseID)
         let p = pressure(stage: stage)
         let basePeople = max(1, m.totalPeople)
@@ -177,6 +244,8 @@ public enum EndlessGenerator {
         var applied: [String] = []
         while applied.count < want, !pool.isEmpty {
             let b = pool.removeFirst()
+            // Checked again: an earlier block may rule this one out (heat and icing).
+            guard b.fits(m) else { continue }
             // A block that makes the data invalid is dropped (and not counted).
             var trial = m
             b.apply(&trial, &rng, p)
@@ -188,7 +257,7 @@ public enum EndlessGenerator {
 
         // Fighting fires burns fuel far from the camp: a bigger tank there (the endless Einsätze have no outposts to land at).
         if m.fire != nil { m.fuel.capacity *= 1.35 }
-        m = m.scaled(for: level(stage: stage))
+        m = m.scaled(for: data)
         let od = overdrive(stage: stage)
         if od > 0 {
             m.timeLimit = (m.timeLimit * (1 - 0.25 * od)).rounded()
@@ -206,8 +275,12 @@ public enum EndlessGenerator {
 
 /// One run of the endless mode over many stages.
 public struct EndlessRun: Equatable, Sendable {
+    /// Stock at the start and its limit on medium.
     public static let startHelicopters = 5
     public static let maxHelicopters = 6
+
+    /// Stock at the start of a run on a level.
+    public static func startHelicopters(_ level: Difficulty) -> Int { startHelicopters - (level.rank - Difficulty.medium.rank) }
     /// Every this many cleared stages one helicopter joins the stock.
     public static let bonusEvery = 3
     public static let stageBonusPerStage = 50
@@ -219,6 +292,9 @@ public struct EndlessRun: Equatable, Sendable {
     }
 
     public let seed: UInt64
+    public let level: Difficulty
+    public var startStock: Int { Self.startHelicopters(level) }
+    public var stockLimit: Int { startStock + (Self.maxHelicopters - Self.startHelicopters) }
     /// The stage that is flown now (or was flown last when the run is over).
     public private(set) var stage = 1
     public private(set) var helicopters = EndlessRun.startHelicopters
@@ -227,10 +303,14 @@ public struct EndlessRun: Equatable, Sendable {
     public private(set) var stagesCleared = 0
     public private(set) var isOver = false
 
-    public init(seed: UInt64) { self.seed = seed }
+    public init(seed: UInt64, level: Difficulty = .medium) {
+        self.seed = seed
+        self.level = level
+        self.helicopters = Self.startHelicopters(level)
+    }
 
     public func mission() throws -> Mission {
-        try EndlessGenerator.mission(seed: seed, stage: stage, helicopters: helicopters)
+        try EndlessGenerator.mission(seed: seed, stage: stage, helicopters: helicopters, level: level)
     }
 
     /// A stage is cleared with at least one star (half of the people rescued) and a helicopter left.
@@ -244,7 +324,7 @@ public struct EndlessRun: Equatable, Sendable {
         score += Self.stageBonusPerStage * stage
         stage += 1
         var bonus = false
-        if stagesCleared % Self.bonusEvery == 0, helicopters < Self.maxHelicopters { helicopters += 1; bonus = true }
+        if stagesCleared % Self.bonusEvery == 0, helicopters < stockLimit { helicopters += 1; bonus = true }
         return .next(bonusHelicopter: bonus)
     }
 }

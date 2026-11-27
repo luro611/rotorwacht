@@ -1,10 +1,11 @@
 import Foundation
 
-/// A simple scripted pilot. Used by tests to prove a mission can be won, and by the screenshot helper.
-/// Not part of normal play.
+/// A simple scripted pilot. Used by tests to prove a mission can be won, by the screenshot helper, and by the
+/// endless mode to check that a generated Einsatz is solvable. It never flies for the player.
 public struct AutoPilot {
     /// Fight fires before rescuing anybody (used for demonstration screenshots).
     public var fireFirst = false
+    private let spec = HelicopterSpec.standard
     public init(fireFirst: Bool = false) { self.fireFirst = fireFirst }
 
     /// Seconds until a ground flow (lava, avalanche) reaches a rescue point, nil if none is on its way.
@@ -32,7 +33,7 @@ public struct AutoPilot {
     }
 
     private func pickTarget(_ sim: MissionSimulation) -> (x: Double, top: Double, pointIndex: Int?) {
-        let m = sim.mission
+        let m = sim.live
         let heli = sim.heli
         // People hoisted by the cable are not counted until they are aboard (else the pilot would give up mid-hoist).
         let settled = sim.people.filter { $0.state == .aboard || $0.state == .boarding }.count
@@ -42,6 +43,11 @@ public struct AutoPilot {
             sim.people.contains { $0.pointIndex == i && ($0.state == .waiting || $0.state == .hoisting) }
         }
         let usable = open.filter { !sim.isBlocked($0.offset) }
+        // Iced up: back to a place where the ice melts.
+        if sim.ice > 0.7 {
+            let r = refuelPlace(sim, from: heli.x)
+            return (r.x, r.top, nil)
+        }
         if full || open.isEmpty {
             return refuelOr(sim, (m.base.x, m.baseSurface, nil))
         }
@@ -68,15 +74,30 @@ public struct AutoPilot {
         return refuelOr(sim, (best.element.x, best.element.top, best.offset))
     }
 
-    /// With outposts on the map the fuel is scarce: refuel first when it would not last to the target and back.
+    /// Where fuel is scarce (outposts on the map, high levels): refuel first when it would not last to the target and back.
     private func refuelOr(_ sim: MissionSimulation, _ t: (x: Double, top: Double, pointIndex: Int?)) -> (x: Double, top: Double, pointIndex: Int?) {
         let m = sim.mission
-        guard !m.outpostList.isEmpty, sim.heli.fuel < m.fuel.capacity * 0.9 else { return t }
-        let burn = m.fuel.burnPerSecond * 1.4
+        // Without outposts a normal engine has plenty: only the highest levels need the planning.
+        guard !m.outpostList.isEmpty || sim.fuelBurn > 0.63, sim.heli.fuel < m.fuel.capacity * 0.9 else { return t }
+        let burn = sim.fuelBurn * 1.4
         let toTarget = abs(t.x - sim.heli.x) / 190 * burn
         let back = refuelPlace(sim, from: t.x)
         let backCost = abs(back.x - t.x) / 190 * burn + 10
-        if sim.heli.fuel - toTarget > backCost { return t }
+        // Heat and icy rotors eat into the margin.
+        // Without outposts there is only the camp, and a thirsty engine leaves no slack: also count the hovering over a
+        // winch and waiting at shutters on the way back.
+        var work = 0.0
+        let thirsty = m.fuel.burnPerSecond > 1.25
+        if m.outpostList.isEmpty || thirsty, t.pointIndex != nil {
+            work = m.fuel.burnPerSecond * 12
+            if m.passageList.contains(where: { !$0.shutterList.isEmpty && ($0.x0 - t.x) * (back.x - t.x) < 0 }) {
+                work += m.fuel.burnPerSecond * 18
+            }
+        }
+        // A trip that does not fit into a tank with the reserve is flown without it (else the pilot would turn back for ever).
+        if toTarget + backCost + work > m.fuel.capacity * 0.85 { work = 0 }
+        if toTarget + backCost > m.fuel.capacity * 0.85 { return sim.heli.fuel > m.fuel.capacity * 0.5 ? t : (refuelPlace(sim, from: sim.heli.x).x, refuelPlace(sim, from: sim.heli.x).top, nil) }
+        if sim.heli.fuel - toTarget - work > backCost { return t }
         let r = refuelPlace(sim, from: sim.heli.x)
         return (r.x, r.top, nil)
     }
@@ -171,9 +192,15 @@ public struct AutoPilot {
             if sim.aboardCount >= m.capacity - 1 { return nil }
         }
         if h.water < 18 || (sim.filling && h.water < 90) {
-            guard let lake = m.lakeList.min(by: { abs(($0.x0 + $0.x1) / 2 - h.x) < abs(($1.x0 + $1.x1) / 2 - h.x) }) else { return nil }
-            let cx = (lake.x0 + lake.x1) / 2
-            return cruise(sim, x: cx, hoverY: lake.level + 28, maxSpeed: 200)
+            if let lake = m.lakeList.min(by: { abs(($0.x0 + $0.x1) / 2 - h.x) < abs(($1.x0 + $1.x1) / 2 - h.x) }) {
+                let cx = (lake.x0 + lake.x1) / 2
+                return cruise(sim, x: cx, hoverY: lake.level + 28, maxSpeed: 200)
+            }
+            // No lake: skim the sea, wherever there is enough open water nearest.
+            guard let sea = stride(from: 200.0, to: m.world.width - 200, by: 100)
+                .filter({ m.maxSurface(from: $0 - 130, to: $0 + 130) < sim.floodLevel - 20 })
+                .min(by: { abs($0 - h.x) < abs($1 - h.x) }) else { return nil }
+            return cruise(sim, x: sea, hoverY: sim.floodLevel + 28, maxSpeed: 200)
         }
         let tx = sim.fire.center(of: worst.cell)
         var input = cruise(sim, x: tx, hoverY: m.groundHeight(at: tx) + 85)
@@ -186,7 +213,7 @@ public struct AutoPilot {
     // MARK: Passages
 
     /// Where the pilot waits in front of a passage and how far in front of it the crossing counts as started.
-    private static let stageDistance = 170.0
+    private static let stageDistance = 160.0
     private static let commitDistance = 130.0
     private static let crossSpeed = 190.0
     private static let tailDistance = Passage.bodyHalfWidth + 30
@@ -219,7 +246,13 @@ public struct AutoPilot {
             }
             let floor = sim.passageFloor(pi)
             let limit = p.shutterList.compactMap(\.gap).min().map { floor + $0 } ?? p.roof
-            let y = p.corridorY(floor: floor, upTo: limit)
+            var y = p.corridorY(floor: floor, upTo: limit)
+            // A ground flow in front of the doors: fly and wait as high as the opening allows.
+            let hot = m.flowList.enumerated().filter { fi, f in
+                guard let s = sim.hz.flows[fi].span else { return false }
+                return (f.kind == "lava" || f.kind == "surge") && s.hi > min(entry - dir * 260, exit) && s.lo < max(entry - dir * 260, exit)
+            }
+            if let h = hot.map(\.element.clearance).max() { y = max(y, min(floor + h + 4, min(p.roof, limit) - Passage.heliHeight - 12)) }
             let inBand = h.y >= floor + 10 && h.y + Passage.heliHeight <= min(p.roof, limit) - 6
             if before <= Self.commitDistance {
                 return steer(sim, vx: dir * Self.crossSpeed, y: y)
@@ -230,10 +263,20 @@ public struct AutoPilot {
                p.canCross(in: m, flood: sim.floodLevel, from: h.x, direction: dir, at: sim.time) {
                 return steer(sim, vx: dir * Self.crossSpeed, y: y)
             }
+            // Already accelerating into a window: go on, with narrower margins (narrow windows on the highest level).
+            if p.shutterList.contains(where: { $0.open < 5 }), launching, inBand, h.vx * dir > 18, before > Self.commitDistance - 5,
+               p.canCross(in: m, flood: sim.floodLevel, from: h.x, direction: dir, at: sim.time, lead: 0.2, before: 0.85, after: 0.85) {
+                return steer(sim, vx: dir * Self.crossSpeed, y: y)
+            }
             // Wait at the staging point, descending to the corridor height once the ground allows it.
-            let lo = min(h.x, stage) - 70, hi = max(h.x, stage) + 70
-            let wantY = max(y, m.maxSurface(from: lo, to: hi) + 30)
-            let vx = max(-110, min(110, (stage - h.x) * 0.7))
+            // Close to it only the ground under the skids counts, else a roof beside the spot keeps the pilot too high.
+            let near = !p.shutterList.isEmpty && abs(h.x - stage) < 45
+            let lo = near ? h.x - spec.halfWidth - 2 : min(h.x, stage) - 70
+            let hi = near ? h.x + spec.halfWidth + 2 : max(h.x, stage) + 70
+            let wantY = max(y, m.maxSurface(from: lo, to: hi) + (near ? 4 : 30))
+            var vx = max(-110, min(110, (stage - h.x) * 0.7))
+            // Do not stop short of the spot (the controller ignores small speed differences).
+            if abs(stage - h.x) > 8, abs(vx) < 30 { vx = stage > h.x ? 30 : -30 }
             return steer(sim, vx: vx, y: wantY)
         }
         return nil
@@ -264,7 +307,7 @@ public struct AutoPilot {
     }
 
     public func input(for sim: MissionSimulation) -> PilotInput {
-        let m = sim.mission
+        let m = sim.live
         let h = sim.heli
         guard case .flying = sim.phase else { return PilotInput() }
         if let d = dodge(sim) { return d }
@@ -281,7 +324,8 @@ public struct AutoPilot {
         if h.onGround && !h.inWater {
             let busy = sim.people.contains { $0.state == .boarding || $0.state == .leaving }
             if busy { return PilotInput() }
-            if sim.outpostUnderHelicopter() != nil, h.fuel < m.fuel.capacity * 0.97 { return PilotInput() }
+            if sim.outpostUnderHelicopter() != nil, h.fuel < m.fuel.capacity * 0.97 || sim.ice > 0.1 { return PilotInput() }
+            if sim.inBaseZone, sim.ice > 0.1 { return PilotInput() }
             if sim.inBaseZone {
                 let aboard = sim.aboardCount > 0
                 let needFuel = h.fuel < m.fuel.capacity * 0.97

@@ -7,11 +7,14 @@
 
 Eigenes Hubschrauber-Rettungsspiel für den Mac (Swift, SpriteKit, SwiftUI): nach Naturkatastrophen Menschen von Dächern und Anhöhen holen und ins Lager bringen, bevor Wetter, Wasser oder Treibstoff dir einen Strich durch die Rechnung machen.
 
-**Status:** Version 0.8.0 (Feinschliff nach 0.7.0: hellere Sturmnacht, ruhigere Fernberge; alle sechs Einsätze, drei Stufen, Gamepad, Musik, Durchfahrten mit Shuttern, Bestenliste, Hindernisse, Wetterwechsel, Zeitbonus, Kombos und Endlosmodus; Grafik aus gerenderten 3D-Modellen). Nur zum eigenen Gebrauch, unnotarisiert.
+**Status:** Version 0.9.0 (zehn Einsätze, fünf Stufen, Gamepad, Musik, Durchfahrten mit Shuttern, Bestenliste, Hindernisse, Wetterwechsel, Zeitbonus, Kombos und Endlosmodus; Grafik aus gerenderten 3D-Modellen). Nur zum eigenen Gebrauch, unnotarisiert.
 
 **Lizenz:** MIT für den Code, CC BY 4.0 für eigene Grafik und Ton (siehe `LICENSE`, `LICENSE-ASSETS.md`)
 
-![Startbildschirm mit Einsätzen, Stufen, Bestenliste, Üben und Endlos](docs/bilder/start-0.8.png)
+![Startbildschirm mit zehn Einsätzen und fünf Stufen](docs/bilder/start-0.9.png)
+![Einsatz 7: Bohrinsel im Sturm](docs/bilder/bohrinsel-0.9.png)
+![Einsatz 9: Whiteout und Vereisung am Pass](docs/bilder/pass-0.9.png)
+![Einsatz 10: Wüste mit Windrad](docs/bilder/wueste-0.9.png)
 ![Sturmnacht an der Küste, heller als zuvor](docs/bilder/sturmnacht-0.8.png)
 ![Hochwasser mit ruhigeren Fernbergen](docs/bilder/hochwasser-0.8.png)
 ![Tunnel mit Shuttern im Vulkan-Einsatz](docs/bilder/tunnel-0.6.png)
@@ -40,7 +43,7 @@ scripts/build.sh --run
 
 Das baut `build/Rotorwacht.app` (ad hoc signiert) und startet sie. Beim ersten Start einer unnotarisierten App: Rechtsklick auf die App, „Öffnen“.
 
-Tests (Swift Testing, 191 Tests für Flugphysik, Landen, Ein-/Aussteigen, Tank, Feuer, Blitz, Trümmer, Lava, Lawinen, Seilwinde, Durchfahrten, Hindernisse, Wetterwechsel, Punkte, Endlosmodus, Übungsmodus, Bestenliste, Fortschritt und Autopilot-Proben aller sechs Einsätze auf allen Stufen):
+Tests (Swift Testing, 208 Tests für Flugphysik, Landen, Ein-/Aussteigen, Tank, Feuer, Blitz, Trümmer, Lava, Lawinen, Seilwinde, Durchfahrten, Hindernisse, Wetterwechsel, Punkte, Endlosmodus, Übungsmodus, Bestenliste, Fortschritt und Autopilot-Proben aller zehn Einsätze auf allen fünf Stufen):
 
 ```bash
 scripts/test.sh
@@ -61,13 +64,17 @@ Controller (Xbox, PlayStation, MFi; optional, per Bluetooth oder Kabel): linker 
 
 Landen: sanft aufsetzen (unter etwa 75 Einheiten Sinkgeschwindigkeit, wenig Seitenfahrt, gerade). Gelandet steigen Menschen von selbst ein; im Lager am rechten Rand steigen sie aus, und der Hubschrauber tankt und wird langsam repariert. Im Wasser landen kostet Haltbarkeit.
 
-Einsätze und Stufen: Auf dem Startbildschirm wählst du Leicht, Mittel oder Schwer und den Einsatz. Der erste ist offen, jeder weitere, sobald der vorige mit mindestens einem Stern geschafft ist. Sterne und Bestwerte bleiben gespeichert.
+Einsätze und Stufen: Auf dem Startbildschirm wählst du Anfänger, Leicht, Mittel, Schwer oder Profi und einen von zehn Einsätzen. Mittel ist die Grundeinstellung, Anfänger verzeiht deutlich mehr, Profi hat nur einen Hubschrauber. Der erste ist offen, jeder weitere, sobald der vorige mit mindestens einem Stern geschafft ist. Sterne und Bestwerte bleiben gespeichert.
 
 Neue Gefahren: Blitze kündigen sich mit rotem Strahl und Kreis an, dann zur Seite fliegen. Nachbeben lassen Trümmer fallen und sperren Landeplätze für eine Weile. Lavabrocken fliegen auf gestrichelten Bahnen, der Lavastrom und Lawinen nehmen Rettungspunkte. Außenposten (Symbol in der Übersichtsleiste) betanken den Hubschrauber.
 
 Durchfahrten (Einsätze 1, 4, 5, 6): Unter Brücken und durch Tunnel musst du hindurch, darüber geht es nicht. Die Decke nicht berühren, nicht von der Seite hineinfliegen. Tunnel haben Shutter, die im Takt auf- und zugehen: **grün** offen, **gelb blinkend** mit Klacken kurz vor dem Schließen, **rot** zu. Zwischen den Toren darfst du warten, aber wer im Tor getroffen wird oder stecken bleibt, verliert diesen Hubschrauber. Im Tunnel leuchtet dein Scheinwerfer.
 
-Hindernisse (alle sechs Einsätze): Hochspannungsleitungen, Kräne mit schwenkendem Ausleger, Seilbahnen mit fahrender Gondel und Windräder stehen im Weg, immer so, dass man darüber hinwegfliegen kann. Drähte und Seile berühren kostet Haltbarkeit (Funken), feste Teile (Flügel, Ausleger, Gondel, Turm) zerstören den Hubschrauber. Wer unten durch oder zwischen den Flügeln hindurch will, geht ein Risiko ein.
+Neue Einsätze 7 bis 10: Auf der Bohrinsel schwanken Schiff und Floß (sanft aufsetzen, der Hubschrauber fährt mit). In der Schlucht läuft eine Flutwelle vom gebrochenen Damm. Am Pass vereist der Hubschrauber im Flug und wird träge; im Lager oder an der Straßenmeisterei taut er ab. In der Wüste kostet Hitze Treibstoff und Steigkraft, Sandstürme nehmen die Sicht.
+
+Durchfahrten auch in den Einsätzen 8 und 9.
+
+Hindernisse (in jedem Einsatz): Hochspannungsleitungen, Kräne mit schwenkendem Ausleger, Seilbahnen mit fahrender Gondel und Windräder stehen im Weg, immer so, dass man darüber hinwegfliegen kann. Drähte und Seile berühren kostet Haltbarkeit (Funken), feste Teile (Flügel, Ausleger, Gondel, Turm) zerstören den Hubschrauber. Wer unten durch oder zwischen den Flügeln hindurch will, geht ein Risiko ein.
 
 Wetterwechsel: Im Einsatz drehen sich Wind und Wetter. Zuerst kommt die Vorwarnung (Hinweis, Signalton und der **Windsack** links unten, der vor Böen und Windwechsel mit gelbem Pfeil und Sekunden die kommende Richtung zeigt), dann Böen, ein Windwechsel, eine Nebelbank (schlechte Sicht, nur ein kleiner freier Fleck um den Hubschrauber) oder ein aufziehendes Gewitter mit Blitzen.
 
@@ -75,9 +82,9 @@ Bestenliste: Je Einsatz und Stufe die zehn besten Ergebnisse, im Startmenü (Kno
 
 Punkte: 100 je Gerettetem, dazu Zeitbonus (bis 40 je Gerettetem, je mehr Restzeit desto mehr), Kombo (je Gerettetem 5 mehr für jeden Geretteten in Folge, höchstens 50; bricht bei Schaden am Hubschrauber oder verlorenen Menschen) und Flugbonus (50 für eine volle Kabine, 300 für alle Menschen eines Einsatzes in einem Flug). Die Sterne hängen weiter nur an den Geretteten und den verlorenen Hubschraubern.
 
-Endlos: Der Knopf „Endlos“ startet einen Lauf aus zufällig zusammengesetzten Einsätzen, einer nach dem anderen und immer schwerer. Du hast 5 Hubschrauber für den ganzen Lauf (nach je 3 geschafften Stufen kommt einer dazu). Eine Stufe ist geschafft, wenn mindestens die Hälfte gerettet ist; sonst endet der Lauf. Eigene Bestenliste nach Stufen und Punkten.
+Endlos: Der Knopf „Endlos“ startet einen Lauf aus zufällig zusammengesetzten Einsätzen, einer nach dem anderen und immer schwerer. Du hast auf „mittel“ 5 Hubschrauber (je Stufe 7 bis 3) für den ganzen Lauf (nach je 3 geschafften Stufen kommt einer dazu). Eine Stufe ist geschafft, wenn mindestens die Hälfte gerettet ist; sonst endet der Lauf. Eigene Bestenliste je Stufe, nach Stufennummer und Punkten.
 
-Üben: Der Knopf „Üben“ im Startmenü bietet neun kurze Strecken (Unterführung, Tunnel, Galerie, Brücke, Blitze, Trümmer, Lava, Lawinen mit Seilwinde, Löschen) mit Stufenwahl und „Langsamer“. Unbegrenzt Hubschrauber, sofort weiter am Start, keine Wertung und keine Bestenliste.
+Üben: Der Knopf „Üben“ im Startmenü bietet dreizehn kurze Strecken (Unterführung, Tunnel, Galerie, Brücke, Blitze, Trümmer, Lava, Lawinen mit Seilwinde, Flutwelle, Vereisung, schwankende Decks, Sandsturm, Löschen) mit Stufenwahl und „Langsamer“. Unbegrenzt Hubschrauber, sofort weiter am Start, keine Wertung und keine Bestenliste.
 
 Seilwinde (Einsatz 6): Auf Felsvorsprüngen nicht landen. Schwebe ruhig über dem Vorsprung, nicht höher als das Seil (Pfeil runter holt es näher): Die Winde zieht eine Person nach der anderen hoch. Zu viel Bewegung lässt das Seil die Person wieder verlieren.
 

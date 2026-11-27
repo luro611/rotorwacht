@@ -65,6 +65,9 @@ public enum SimEvent: Equatable, Sendable {
     case flightBonus(points: Int, people: Int, all: Bool)
     // Obstacles and weather
     case obstacleHit(kind: String, damage: Double, x: Double, y: Double)
+    /// Half a coat of ice has built up / the helicopter is free of ice again.
+    case iced
+    case deiced
     case weatherWarning(kind: String, seconds: Double)
 }
 
@@ -125,6 +128,12 @@ public struct MissionSimulation {
     public static let heatDamagePerSecond = 16.0
 
     public let mission: Mission
+    /// The mission with swaying decks where they are now (the same as `mission` if nothing sways).
+    public private(set) var live: Mission
+    /// Coat of ice on the helicopter, 0...1.
+    public internal(set) var ice = 0.0
+    /// Heat of the day, 0...1.
+    public internal(set) var swelter = 0.0
     public let spec: HelicopterSpec
     public internal(set) var heli: HelicopterState
     public internal(set) var people: [Person]
@@ -165,6 +174,8 @@ public struct MissionSimulation {
 
     public init(mission: Mission, spec: HelicopterSpec = .standard) {
         self.mission = mission
+        self.live = mission.swayed(at: 0)
+        self.swelter = mission.swelter(at: 0)
         self.spec = spec
         self.floodLevel = mission.floodLevel(at: 0)
         self.fire = FireField(mission: mission)
@@ -227,6 +238,8 @@ public struct MissionSimulation {
         time += dt
         floodLevel = mission.floodLevel(at: time)
         wind = mission.windAcceleration(at: time)
+        if mission.heaves { rideDeck() }
+        stepClimate(dt: dt, &events)
 
         updateFlood(&events)
         updateFire(dt: dt, &events)
@@ -250,11 +263,20 @@ public struct MissionSimulation {
         return events
     }
 
+    /// Moves the swaying decks; a helicopter standing on one goes up and down with it.
+    private mutating func rideDeck() {
+        let riding = heli.onGround && !heli.inWater
+            ? live.rescuePoints.firstIndex { $0.heave != nil && abs(heli.x - $0.x) <= $0.width / 2 + spec.halfWidth && abs(heli.y - $0.top) < 3 }
+            : nil
+        live = mission.swayed(at: time)
+        if let i = riding { heli.y = live.rescuePoints[i].top }
+    }
+
     private mutating func stepHelicopter(input: PilotInput, dt: Double, _ events: inout [SimEvent]) {
         let pe = HelicopterPhysics.step(
             &heli, input: input, dt: dt, wind: wind,
             waterLevel: mission.waterLevel(from: heli.x - spec.halfWidth, to: heli.x + spec.halfWidth, flood: floodLevel),
-            mission: mission, fuelBurnPerSecond: mission.fuel.burnPerSecond, spec: spec)
+            mission: live, fuelBurnPerSecond: fuelBurn, spec: flownSpec)
         events += pe.map { .physics($0) }
 
         // Out of fuel on the ground away from the camp: no way to take off again, so write it off.
@@ -505,6 +527,7 @@ public struct MissionSimulation {
             x: sx, y: mission.surfaceHeight(at: sx),
             fuel: mission.fuel.capacity, durability: spec.maxDurability)
         heli.water = mission.tankSpec.capacity
+        ice = 0
         hz.winchProgress = Array(repeating: 0, count: mission.rescuePoints.count)
         hz.winchHolding = false
         hz.winch = nil

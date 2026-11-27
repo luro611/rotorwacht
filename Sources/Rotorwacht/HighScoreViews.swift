@@ -57,9 +57,12 @@ struct HighScoreSheet: View {
                         .help(m.title)
                 }
                 Spacer()
+            }
+            HStack(spacing: 8) {
                 ForEach(Difficulty.allCases, id: \.self) { l in
                     Button(l.label) { model.scoreLevel = l }.buttonStyle(LevelButtonStyle(selected: level == l))
                 }
+                Spacer()
             }
             if let m = model.missions.first(where: { $0.id == missionID }) {
                 Text("Einsatz \(m.number ?? 1) · \(m.title)").font(Theme.mono(12)).foregroundColor(Theme.muted)
@@ -73,7 +76,7 @@ struct HighScoreSheet: View {
             .padding(.top, 6)
         }
         .padding(26)
-        .frame(width: 520)
+        .frame(width: 560)
         .background(Theme.bg)
         .onAppear { model.scoreLevel = model.difficulty; model.scoreMission = model.missions.first?.id ?? model.scoreMission }
     }
@@ -100,29 +103,39 @@ struct NameField: View {
 struct PracticeSheet: View {
     @EnvironmentObject var model: AppModel
 
+    private func courseColumn(_ courses: [PracticeCourse]) -> some View {
+        VStack(spacing: 0) {
+            ForEach(courses, id: \.id) { c in
+                let on = model.practiceCourse == c.id
+                Button { model.practiceCourse = c.id } label: {
+                    Text(c.title).font(on ? Theme.textMedium(14) : Theme.text(14)).foregroundColor(on ? Theme.accentStrong : Theme.ink)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(.vertical, 7).padding(.horizontal, 6)
+                        .background(on ? Theme.soft : Color.clear)
+                        .overlay(Rectangle().fill(Theme.line).frame(height: 1), alignment: .bottom)
+                        .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .help(c.hint)
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .top)
+    }
+
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
             Eyebrow("Üben · ohne Wertung")
             AccentTitle(plain: "Gefahren ", accent: "üben", size: 34)
             Text("Unbegrenzt Hubschrauber, nach einem Verlust geht es sofort am Start weiter. Kein Punktestand, keine Bestenliste, der Fortschritt bleibt unverändert.")
                 .font(Theme.text(12)).foregroundColor(Theme.muted).fixedSize(horizontal: false, vertical: true)
-            VStack(spacing: 0) {
-                ForEach(Practice.courses, id: \.id) { c in
-                    let on = model.practiceCourse == c.id
-                    Button { model.practiceCourse = c.id } label: {
-                        HStack(alignment: .firstTextBaseline, spacing: 10) {
-                            Text(c.title).font(on ? Theme.textMedium(14) : Theme.text(14)).foregroundColor(on ? Theme.accentStrong : Theme.ink)
-                            Spacer()
-                            Text(c.hint).font(Theme.text(11)).foregroundColor(Theme.muted).lineLimit(1)
-                        }
-                        .padding(.vertical, 7).padding(.horizontal, 6)
-                        .background(on ? Theme.soft : Color.clear)
-                        .overlay(Rectangle().fill(Theme.line).frame(height: 1), alignment: .bottom)
-                        .contentShape(Rectangle())
-                    }
-                    .buttonStyle(.plain)
-                }
+            // Two columns, so all courses are visible without scrolling; the hint of the chosen one stands below.
+            HStack(alignment: .top, spacing: 14) {
+                let half = (Practice.courses.count + 1) / 2
+                courseColumn(Array(Practice.courses.prefix(half)))
+                courseColumn(Array(Practice.courses.dropFirst(half)))
             }
+            Text(Practice.course(model.practiceCourse)?.hint ?? "")
+                .font(Theme.text(12)).foregroundColor(Theme.muted).frame(maxWidth: .infinity, minHeight: 18, alignment: .leading)
             HStack(spacing: 10) {
                 Eyebrow("Stufe")
                 ForEach(Difficulty.allCases, id: \.self) { l in
@@ -131,7 +144,7 @@ struct PracticeSheet: View {
                 Spacer()
                 Button(model.practiceSlow ? "Langsamer: an" : "Langsamer: aus") { model.practiceSlow.toggle() }
                     .buttonStyle(LevelButtonStyle(selected: model.practiceSlow))
-                    .help("Shutter, Blitze, Salven, Lava und Lawinen langsamer und milder")
+                    .help("Shutter, Gefahren, Wetter, Eis, Hitze und Seegang langsamer und milder")
             }
             HStack {
                 Button("Schließen") { model.showPractice = false }.buttonStyle(QuietButtonStyle()).keyboardShortcut(.cancelAction)

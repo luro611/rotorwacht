@@ -43,12 +43,30 @@ struct StartView: View {
     @EnvironmentObject var model: AppModel
 
     var body: some View {
+        // Scrolls only when the window is too low for all rows of Einsätze.
+        GeometryReader { g in
+            ScrollViewReader { scroll in
+                ScrollView { content.frame(maxWidth: .infinity, minHeight: g.size.height) }
+                    // The controller focus takes the picture with it (levels at the top, then the card).
+                    .onChange(of: model.startFocus) { _, f in
+                        guard model.controllerName != nil else { return }
+                        withAnimation { scroll.scrollTo(f.row == 0 ? "levels" : "card-\((f.row - 1) * AppModel.columns + f.col)", anchor: .center) }
+                    }
+            }
+        }
+        .onAppear { model.loadMissionList() }
+        .sheet(isPresented: $model.showScores) { HighScoreSheet().environmentObject(model) }
+        .sheet(isPresented: $model.showPractice) { PracticeSheet().environmentObject(model) }
+        .sheet(isPresented: $model.showEndless) { EndlessSheet().environmentObject(model) }
+    }
+
+    private var content: some View {
         VStack(spacing: 0) {
             Spacer(minLength: 8)
             VStack(spacing: 12) {
-                Siegel(size: 64)
+                Siegel(size: 52)
                 Eyebrow("Rettungsstaffel · Version \(appVersion)")
-                AccentTitle(plain: "Rotor", accent: "wacht", size: 48)
+                AccentTitle(plain: "Rotor", accent: "wacht", size: 42)
             }
 
             HStack(spacing: 10) {
@@ -70,9 +88,13 @@ struct StartView: View {
                     .accessibilityLabel("Endlosmodus")
             }
             .padding(.top, 16)
+            .id("levels")
 
-            LazyVGrid(columns: Array(repeating: GridItem(.fixed(300), spacing: 16, alignment: .top), count: 3), spacing: 16) {
-                ForEach(Array(model.missions.enumerated()), id: \.element.id) { i, m in missionCard(m, focused: padFocused(row: 1 + i / 3, col: i % 3)) }
+            LazyVGrid(columns: Array(repeating: GridItem(.flexible(minimum: 164, maximum: 236), spacing: 12, alignment: .top), count: AppModel.columns), spacing: 12) {
+                ForEach(Array(model.missions.enumerated()), id: \.element.id) { i, m in
+                    missionCard(m, focused: padFocused(row: 1 + i / AppModel.columns, col: i % AppModel.columns))
+                        .id("card-\(i)")
+                }
             }
             .padding(.top, 14)
 
@@ -88,11 +110,6 @@ struct StartView: View {
             footer
         }
         .padding(.horizontal, 32)
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .onAppear { model.loadMissionList() }
-        .sheet(isPresented: $model.showScores) { HighScoreSheet().environmentObject(model) }
-        .sheet(isPresented: $model.showPractice) { PracticeSheet().environmentObject(model) }
-        .sheet(isPresented: $model.showEndless) { EndlessSheet().environmentObject(model) }
     }
 
     /// Title with the last word as the accent word, as on the website.
@@ -122,19 +139,22 @@ struct StartView: View {
         let (plain, accent) = split(m.title)
         let open = model.isUnlocked(m.id)
         let best = model.best(m.id)
-        return VStack(alignment: .leading, spacing: 8) {
+        return VStack(alignment: .leading, spacing: 6) {
             Eyebrow("Einsatz \(m.number ?? 1) · \(m.tagline ?? "")")
-            AccentTitle(plain: plain, accent: accent, size: 24)
+                .lineLimit(2).fixedSize(horizontal: false, vertical: true)
+            AccentTitle(plain: plain, accent: accent, size: 20)
+                .lineLimit(2).minimumScaleFactor(0.8)
             Text(m.summary ?? m.briefing)
-                .font(Theme.text(12)).foregroundColor(Theme.muted).fixedSize(horizontal: false, vertical: true)
+                .font(Theme.text(11)).foregroundColor(Theme.muted)
                 .lineLimit(4)
+                .help(m.summary ?? m.briefing)
             Spacer(minLength: 0)
             HStack {
                 if open {
-                    Button("Einsatz starten") { model.startMission(m.id) }
+                    Button("Starten") { model.startMission(m.id) }
                         .buttonStyle(PrimaryButtonStyle())
                         .modifier(DefaultActionIf(first))
-                    if first { Text("Eingabetaste").font(Theme.mono(10)).foregroundColor(Theme.muted) }
+
                 } else {
                     Text("Gesperrt · schaffe zuerst Einsatz \((m.number ?? 2) - 1)")
                         .font(Theme.mono(10)).foregroundColor(Theme.muted)
@@ -149,8 +169,8 @@ struct StartView: View {
                 }
             }
         }
-        .padding(18)
-        .frame(width: 300, height: 180, alignment: .leading)
+        .padding(14)
+        .frame(maxWidth: .infinity, minHeight: 192, maxHeight: 192, alignment: .leading)
         .background(Theme.surface)
         .opacity(open ? 1 : 0.55)
         .overlay(RoundedRectangle(cornerRadius: Theme.radius).stroke(focused ? Theme.accent : Theme.line, lineWidth: focused ? 2 : 1))

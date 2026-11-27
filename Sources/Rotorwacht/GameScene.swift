@@ -59,6 +59,7 @@ final class GameScene: SKScene {
     private var atmosphere: AtmosphereLayer?
     private let cable = SKShapeNode()
     private var beacons: [Int: SKSpriteNode] = [:]
+    private var padNodes: [Int: SKSpriteNode] = [:]
     private var said: Set<String> = []
     private var surfTimer = 0.0
     private var cableHint = 0.0
@@ -148,6 +149,10 @@ final class GameScene: SKScene {
     /// First hint of a newer Einsatz, shown on the ground before take-off.
     private func introMessage() -> String? {
         switch mission.hazard {
+        case "rig": return "Pfeil hoch startet. Feuer an Deck: Tank tief über dem Meer füllen, Leertaste löscht. Schiff und Floß schwanken, sanft aufsetzen."
+        case "surge": return "Pfeil hoch startet. Der Damm ist gebrochen: Eine Flutwelle läuft durch die Schlucht. Hole zuerst die Tiefsten, und flieg unter den Brücken durch."
+        case "blizzard": return "Pfeil hoch startet. Der Hubschrauber vereist im Flug: Im Lager oder am Außenposten taut er wieder auf. Die Sicht wird schlecht."
+        case "sandstorm": return "Pfeil hoch startet. Hitze kostet Treibstoff: Tanke an den Außenposten. Sandstürme nehmen die Sicht."
         case "storm": return "Pfeil hoch startet. Dein Scheinwerfer leuchtet nach vorn. Ein roter Strahl kündigt einen Blitz an: flieg zur Seite."
         case "quake": return "Pfeil hoch startet. Die Gassen sind eng: flieg über die Häuser und lande senkrecht auf den Plätzen."
         case "volcano": return "Pfeil hoch startet. Lavabrocken fliegen auf gestrichelten Bahnen. Außenposten tanken: lande auf einem."
@@ -270,6 +275,7 @@ final class GameScene: SKScene {
                 n.position = CGPoint(x: p.x, y: p.top)
                 n.zPosition = p.kind == "boat" ? 4.9 : -10
                 addChild(n)
+                padNodes[i] = n
             }
             let m = SKSpriteNode(texture: Art.marker())
             m.position = CGPoint(x: p.x, y: p.top + 110)
@@ -494,7 +500,8 @@ final class GameScene: SKScene {
                 }
             case .fireStarted:
                 audio.play(.ignite)
-                say(fireSaid ? "Ein neues Feuer ist ausgebrochen." : "Feuer! Es läuft bergauf auf die Wartenden zu. Lösche mit der Leertaste.", seconds: 7)
+                let first = mission.hazard == "rig" ? "Feuer an Deck! Es läuft auf die Wartenden zu. Lösche mit der Leertaste." : "Feuer! Es läuft bergauf auf die Wartenden zu. Lösche mit der Leertaste."
+                say(fireSaid ? "Ein neues Feuer ist ausgebrochen." : first, seconds: 7)
                 fireSaid = true
             case .fireWarning(let pi):
                 audio.play(.warn)
@@ -511,7 +518,7 @@ final class GameScene: SKScene {
                 audio.play(.ding)
                 say("Tank voll.", seconds: 2)
             case .tankEmpty:
-                say("Tank leer. Tief über See oder Fluss füllen, oder im Lager.", seconds: 5)
+                say(mission.hazard == "rig" ? "Tank leer. Tief über dem Meer füllen, oder im Lager." : "Tank leer. Tief über See oder Fluss füllen, oder im Lager.", seconds: 5)
             case .boarded: audio.play(.ding)
             case .rescued: audio.play(.rescued)
             case .lost(_, let pi):
@@ -521,6 +528,7 @@ final class GameScene: SKScene {
                 switch mission.hazard {
                 case "volcano": say("Die Lava hat \(name) erreicht. Menschen verloren.", seconds: 6)
                 case "avalanche": say("Die Lawine hat \(name) erfasst. Menschen verloren.", seconds: 6)
+                case "surge": say("Die Flutwelle hat \(name) erreicht. Menschen verloren.", seconds: 6)
                 default: say("Das Wasser hat \(name) erreicht. Menschen verloren.", seconds: 6)
                 }
             case .floodWarning(let pi):
@@ -566,19 +574,28 @@ final class GameScene: SKScene {
                 if mission.flowList[fi].kind == "avalanche" { say("Eine Lawine geht ab!", seconds: 4) }
             case .flowWarning(let fi, let pi):
                 audio.play(.warn)
-                let lava = mission.flowList[fi].kind == "lava"
+                let kind = mission.flowList[fi].kind
                 if let pi = pi {
-                    say(lava ? "Lava nähert sich: \(mission.rescuePoints[pi].name)!" : "Lawine auf Kurs: \(mission.rescuePoints[pi].name)!", seconds: 6)
+                    let name = mission.rescuePoints[pi].name
+                    say(kind == "lava" ? "Lava nähert sich: \(name)!" : (kind == "surge" ? "Die Flutwelle nähert sich: \(name)!" : "Lawine auf Kurs: \(name)!"), seconds: 6)
                 } else {
-                    say(lava ? "Ein Lavastrom setzt sich in Bewegung. Hole die Menschen weiter oben zuerst." : "Eine Lawine löst sich gleich. Wen sie erreicht, ist verloren.", seconds: 7)
+                    say(kind == "lava" ? "Ein Lavastrom setzt sich in Bewegung. Hole die Menschen weiter oben zuerst."
+                        : (kind == "surge" ? "Der Damm bricht: Die Flutwelle läuft los. Hole die Menschen am Damm zuerst." : "Eine Lawine löst sich gleich. Wen sie erreicht, ist verloren."), seconds: 7)
                 }
             case .flowScorched(let fi):
                 shake = max(shake, 5)
-                say(mission.flowList[fi].kind == "lava" ? "Hitze der Lava! Flieg höher." : "Die Lawine reißt am Hubschrauber! Flieg höher.", seconds: 4)
+                let kind = mission.flowList[fi].kind
+                say(kind == "lava" ? "Hitze der Lava! Flieg höher." : (kind == "surge" ? "Die Flutwelle reißt am Hubschrauber! Flieg höher." : "Die Lawine reißt am Hubschrauber! Flieg höher."), seconds: 4)
             case .winchStarted:
                 sayOnce("winch", "Seilwinde läuft: Halte den Hubschrauber ruhig über dem Vorsprung.", seconds: 5)
             case .winchSlipped:
                 if clock - cableHint > 8 { cableHint = clock; say("Zu unruhig: Das Seil verliert die Person. Ruhig halten, nicht höher als das Seil.", seconds: 5) }
+            case .iced:
+                audio.play(.warn)
+                say("Vereisung! Der Hubschrauber wird träge. Im Lager oder am Außenposten taut er ab.", seconds: 7)
+            case .deiced:
+                audio.play(.ding)
+                say("Eisfrei.", seconds: 3)
             case .refueling:
                 say("Außenposten: Der Hubschrauber tankt.", seconds: 4)
             case .shutterWarning(let pi, let si):
@@ -636,7 +653,8 @@ final class GameScene: SKScene {
         spool += ((engineOn ? 1 : 0) - spool) * CGFloat(min(1, dt * (engineOn ? 1.6 : 0.5)))
         heliSprite.update(facing: h.facing, engineOn: engineOn, spool: spool, time: clock)
         // Shadow on whatever is below: stays on the surface, fades and widens with height.
-        let under = max(mission.maxSurface(from: h.x - 40, to: h.x + 40), mission.waterLevel(from: h.x - 40, to: h.x + 40, flood: sim.floodLevel))
+        syncDecks()
+        let under = max(sim.live.maxSurface(from: h.x - 40, to: h.x + 40), mission.waterLevel(from: h.x - 40, to: h.x + 40, flood: sim.floodLevel))
         let alt = max(0, h.y - under)
         heliShadow.position = CGPoint(x: h.x, y: under + 1)
         heliShadow.size = CGSize(width: 150 + alt * 0.25, height: 16 + alt * 0.03)
@@ -684,7 +702,7 @@ final class GameScene: SKScene {
         // People: feet always on the surface of their pad
         for p in sim.people {
             guard let node = personNodes[p.id] else { continue }
-            let gy = CGFloat(mission.surfaceHeight(at: p.spotX))
+            let gy = CGFloat(sim.live.surfaceHeight(at: p.spotX))
             let fig = node.fig
             switch p.state {
             case .waiting:
@@ -770,7 +788,7 @@ final class GameScene: SKScene {
 
         // Rotor wash near the floor
         spawnTimer -= dt
-        let surfaceUnder = mission.maxSurface(from: h.x - 40, to: h.x + 40)
+        let surfaceUnder = sim.live.maxSurface(from: h.x - 40, to: h.x + 40)
         let waterUnder = mission.waterLevel(from: h.x - 40, to: h.x + 40, flood: sim.floodLevel)
         let floor = max(surfaceUnder, waterUnder)
         let above = h.y - floor
@@ -815,6 +833,15 @@ final class GameScene: SKScene {
             say("Treibstoff knapp. Zurück ins Lager!")
         }
         if h.fuel > mission.fuel.capacity * 0.5 { lowFuelWarned = false }
+    }
+
+    /// Swaying decks (ship, raft) with their marker and light.
+    private func syncDecks() {
+        for (i, p) in sim.live.rescuePoints.enumerated() where p.heave != nil {
+            padNodes[i]?.position.y = CGFloat(p.top)
+            markers[i]?.position.y = CGFloat(p.top + 110)
+            beacons[i]?.position.y = CGFloat(p.top + 14)
+        }
     }
 
     // MARK: Lakes, fire, water drops
@@ -1073,6 +1100,8 @@ final class GameScene: SKScene {
         snap.filling = sim.filling
         snap.smoke = sim.smoke
         snap.heat = sim.heat
+        snap.ice = mission.icing == nil ? -1 : sim.ice
+        snap.swelter = mission.heatwave == nil ? -1 : sim.swelter
         snap.fires = sim.fire.cells.indices.filter { sim.fire.cells[$0].burning }.map { sim.fire.center(of: $0) }
         snap.points = mission.rescuePoints.enumerated().map { i, p in
             let waiting = sim.people.filter { $0.pointIndex == i && $0.state == .waiting }.count

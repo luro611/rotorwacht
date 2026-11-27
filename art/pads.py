@@ -96,6 +96,21 @@ def building(p, seed, below_m, palette=None):
     return dict(above=3.0)
 
 
+def rig(p, below_m):
+    """Helideck of an offshore platform: steel deck on short struts, safety net, lamps."""
+    w = p["width"] * U
+    steel, dark = M("rigsteel", 0x8a949c, 0.5, metal=0.6), M("rigdark", 0x3a4248, 0.7)
+    deck(w, DEPTH - 0.8, 0.3, M("rigdeck", 0x34503f, 0.85), M("rigedge", 0xe9c85a, 0.5))
+    helipad_marks(w, DEPTH - 0.8)
+    railing_back(w, DEPTH - 0.8, col=0xe9c85a)
+    corner_lights(w, DEPTH - 0.8)
+    for sx in (-1, -0.35, 0.35, 1):
+        tube("strut", [(sx * w * 0.42, -2.6, -below_m), (sx * w * 0.48, -3.2, -0.3)], 0.14, steel, 6)
+    slab("under", (0, 0, -0.5), (w * 0.96, DEPTH - 1.6, 0.3), dark, 0.02)
+    prim("cyl", "mast", (w / 2 - 0.6, DEPTH / 2 - 1.2, 1.5), (0.1, 0.1, 3.0), mats=[M("rigr", 0xc75d3b, 0.6)])
+    return dict(above=3.2)
+
+
 def wood_tower(p, below_m, hunting=False):
     w = p["width"] * U
     wood = M("wood", 0x8a6240, 0.85)
@@ -194,7 +209,7 @@ def island_deck(p, mission, kind_id):
     """Flat ground pads: a low slab with painted H, plus props to the sides."""
     w = p["width"] * U
     d = 7.0
-    grass = {"wiese": 0x6e8a4e, "kies": 0x9a948a, "pflaster": 0x8d8780, "fels": 0x77736c, "sand": 0xb7a888, "asche": 0x4a4745, "wald": 0x6a7a48}
+    grass = {"wiese": 0x6e8a4e, "kies": 0x9a948a, "pflaster": 0x8d8780, "fels": 0x77736c, "sand": 0xb7a888, "asche": 0x4a4745, "wald": 0x6a7a48, "schnee": 0xe9eef4}
     style = STYLE.get((mission, p["id"]), "wiese")
     top = M("padtop_" + style, grass[style], 0.95)
     slab("pad", (0, 0, -0.1), (w, d, 0.2), top, 0.05)
@@ -216,9 +231,25 @@ def island_deck(p, mission, kind_id):
             above = 2.2
         elif style == "pflaster":
             prim("cyl", "bollard", (x, -2.5, 0.3), (0.25, 0.25, 0.6), mats=[M("bol", 0x3c3a38, 0.5)])
-        elif style == "sand":
+        elif style == "sand" and kind_id == "brunnen":
             prim("cone", "palmtrunk", (x, 1.0, 1.6), (0.3, 0.3, 3.2), mats=[M("trunk", 0x8a6a40, 0.9)], r2=0.7)
-    if kind_id == "zelt":
+            for k in range(5):
+                a = k * 2 * math.pi / 5
+                o = slab("leaf", (x + math.cos(a) * 0.7, 1.0 + math.sin(a) * 0.4, 3.2), (1.5, 0.35, 0.08), M("palm", 0x4f7a3a, 0.8), 0.02)
+                o.rotation_euler = (0, math.radians(18 * math.cos(a)), a)
+            above = 4.0
+        elif style in ("schnee", "sand"):
+            # stranded vehicles half buried beside the cleared spot
+            body = M("car%d" % (sx + 1), 0xc75d3b if sx < 0 else (0x41607a if style == "schnee" else 0x6a7350), 0.5)
+            cx = x + sx * 0.5
+            slab("carbody", (cx, 0.2, 0.55), (2.2, 1.4, 0.8), body, 0.15)
+            slab("carroof", (cx - sx * 0.2, 0.2, 1.15), (1.2, 1.3, 0.55), body, 0.2)
+            slab("carwin", (cx - sx * 0.2, -0.47, 1.17), (1.0, 0.05, 0.36), M("carglass", 0x2d3f4c, 0.1), 0.02)
+            drift = M("drift" + style, 0xf4f7fa if style == "schnee" else 0xdcb878, 0.95)
+            prim("sphere", "drift", (cx + sx * 0.3, -0.5, 0.05), (2.8, 1.6, 0.8), mats=[drift], seg=12, rings=8)
+            prim("sphere", "drifttop", (cx - sx * 0.2, 0.2, 1.45), (1.1, 1.1, 0.3), mats=[drift], seg=10, rings=6)
+            above = 2.2
+    if kind_id in ("zelt", "zeltplatz"):
         for sx in (-1, 1):
             prim("cone", "tent", (sx * (w / 2 + 2.4), 1.5, 1.0), (2.8, 2.8, 2.0), mats=[M("tent", 0xe8e0cf if sx < 0 else 0xc75d3b, 0.8)], r2=0.0, seg=4)
         above = 3.0
@@ -244,7 +275,9 @@ STYLE = {
     ("hochwasser", "insel"): "wiese", ("hochwasser", "huegel"): "kies",
     ("waldbrand", "lichtung"): "wald", ("waldbrand", "zelt"): "wiese",
     ("kueste", "klippe1"): "fels", ("kueste", "klippe2"): "fels",
-    ("vulkan", "hafen"): "pflaster", ("altstadt", "platz1"): "pflaster", ("altstadt", "gasse1"): "pflaster",
+    ("vulkan", "hafen"): "pflaster", ("staudamm", "zeltplatz"): "wiese", ("staudamm", "weiler"): "kies",
+    ("pass", "autos1"): "schnee", ("pass", "autos2"): "schnee",
+    ("wueste", "karawane"): "sand", ("wueste", "jeep"): "sand", ("wueste", "brunnen"): "sand", ("altstadt", "platz1"): "pflaster", ("altstadt", "gasse1"): "pflaster",
     ("altstadt", "platz2"): "pflaster", ("altstadt", "gasse2"): "pflaster",
 }
 
@@ -254,6 +287,8 @@ def build_point(mission, p, below_m):
     seed = sum(ord(c) for c in mission["id"] + pid)
     if p.get("access") == "winch":
         return ledge_marker(p)
+    if kind == "rig":
+        return rig(p, below_m)
     if kind == "boat":
         return boat(p, below_m)
     if kind == "lighthouse":

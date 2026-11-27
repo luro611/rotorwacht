@@ -15,8 +15,9 @@ import Foundation
 
     @Test func theBasesRotateAndNeverRepeatBackToBack() {
         for seed in UInt64(1)...40 {
-            let ids = (1...18).map { EndlessGenerator.baseID(seed: seed, stage: $0) }
-            for round in 0..<3 { #expect(Set(ids[(round * 6)..<(round * 6 + 6)]) == Set(EndlessKit.bases)) }
+            let n = EndlessKit.bases.count
+            let ids = (1...(3 * n)).map { EndlessGenerator.baseID(seed: seed, stage: $0) }
+            for round in 0..<3 { #expect(Set(ids[(round * n)..<(round * n + n)]) == Set(EndlessKit.bases)) }
             for (a, b) in zip(ids, ids.dropFirst()) { #expect(a != b) }
         }
     }
@@ -30,6 +31,26 @@ import Foundation
             #expect(m.timeLimit >= 150)
             // Hazards from the sky never sit in a passage.
             for s in m.stormList { #expect(!m.passageList.contains { $0.x1 + 100 > s.x0 && $0.x0 - 100 < s.x1 } || EndlessKit.bases.contains(m.id)) }
+        }
+    }
+
+    @Test func heatAndIcingNeverComeTogether() throws {
+        for seed in UInt64(1)...150 {
+            for stage in [5, 8, 12] {
+                let m = try EndlessGenerator.generate(seed: seed, stage: stage, helicopters: 3, verified: false).mission
+                #expect(m.icing == nil || m.heatwave == nil, "seed \(seed) stage \(stage)")
+            }
+        }
+    }
+
+    /// More seeds of the later stages on Profi, where the review found Einsätze that could not be managed.
+    @Test(arguments: ["vulkan", "hochwasser", "pass", "gebirge"])
+    func profiCasesOfTheReviewAreSolvable(base: String) throws {
+        for stage in [8, 13, 20] {
+            for seed in UInt64(7)...12 {
+                let m = try EndlessGenerator.mission(seed: seed &* 977 &+ UInt64(stage), stage: stage, helicopters: 3, base: base, level: .pro)
+                #expect(EndlessGenerator.isSolvable(m, base: base), "\(base) stage \(stage) seed \(seed)")
+            }
         }
     }
 
@@ -134,20 +155,22 @@ import Foundation
 
     /// The generator must always give a solvable Einsatz: the scripted pilot saves at least half of the people (one star,
     /// which is what a stage needs to go on) on every ground and stage, with the stock of helicopters not used up.
-    @Test(arguments: EndlessKit.bases, [1, 4, 8, 13, 20])
-    func autopilotSolvesGeneratedEinsaetze(base: String, stage: Int) throws {
+    @Test(arguments: EndlessKit.bases, Difficulty.allCases)
+    func autopilotSolvesGeneratedEinsaetze(base: String, level: Difficulty) throws {
         var failures: [String] = []
+        for stage in [1, 4, 8, 13, 20] {
         for seed in UInt64(1)...6 {
-            let m = try EndlessGenerator.mission(seed: seed &* 977 &+ UInt64(stage), stage: stage, helicopters: 3, base: base)
+            let m = try EndlessGenerator.mission(seed: seed &* 977 &+ UInt64(stage), stage: stage, helicopters: 3, base: base, level: level)
             var sim = MissionSimulation(mission: m)
             let pilot = AutoPilot(fireFirst: base == "waldbrand")
             var t = 0.0
             while !sim.isFinished && t < m.timeLimit + 10 { sim.step(input: pilot.input(for: sim), dt: 1.0 / 60); t += 1.0 / 60 }
-            guard let r = sim.result else { failures.append("seed \(seed): no result"); continue }
+            guard let r = sim.result else { failures.append("stage \(stage) seed \(seed): no result"); continue }
             if r.outcome == .failed || Double(r.rescued) < Double(r.total) * 0.5 {
-                failures.append("seed \(seed): \(r.outcome) \(r.rescued)/\(r.total) heliLost \(r.helicoptersLost)")
+                failures.append("stage \(stage) seed \(seed): \(r.outcome) \(r.rescued)/\(r.total) heliLost \(r.helicoptersLost)")
             }
         }
-        #expect(failures.isEmpty, "\(base) stage \(stage): \(failures.joined(separator: "; "))")
+        }
+        #expect(failures.isEmpty, "\(base) \(level): \(failures.joined(separator: "; "))")
     }
 }

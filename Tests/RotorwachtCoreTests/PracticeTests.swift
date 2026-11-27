@@ -14,6 +14,7 @@ import Testing
             // Not inside a passage and not under water at the start.
             #expect(m.passageIndex(at: c.startX) == nil)
             #expect(m.surfaceHeight(at: c.startX) > m.floodLevel(at: 0) - 1 || m.flood.risePerSecond == 0)
+            #expect(m.surfaceHeight(at: c.startX) > m.floodLevel(at: 0), "Start im Wasser: \(c.id)")
             let sim = MissionSimulation(mission: m)
             #expect(sim.heli.x == c.startX && sim.heli.y == m.surfaceHeight(at: c.startX))
         }
@@ -42,6 +43,16 @@ import Testing
         #expect(sv.volleys![0].interval > v.volleys![0].interval)
         #expect(sk.storms![0].interval > k.storms![0].interval && sk.storms![0].damage < k.storms![0].damage)
         try sv.validate(); try sg.validate(); try sk.validate()
+    }
+
+    @Test func slowedAlsoEasesIceSandAndSway() throws {
+        let p = try MissionLibrary.load("pass"), d = try MissionLibrary.load("wueste"), r = try MissionLibrary.load("bohrinsel")
+        let sp = p.slowed(), sd = d.slowed(), sr = r.slowed()
+        #expect(sp.icing!.rate < p.icing!.rate && sp.icing!.thaw > p.icing!.thaw)
+        #expect(sd.weatherList[0].density! < d.weatherList[0].density! && abs(sd.weatherList[1].strength!) < abs(d.weatherList[1].strength!))
+        #expect(sd.heatwave!.base < d.heatwave!.base)
+        #expect(sr.rescuePoints[1].heave!.amplitude < r.rescuePoints[1].heave!.amplitude)
+        try sp.validate(); try sd.validate(); try sr.validate()
     }
 
     @Test func practiceNeverEndsInDefeat() throws {

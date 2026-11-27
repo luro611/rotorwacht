@@ -22,6 +22,10 @@ public enum Practice {
         PracticeCourse(id: "salven", title: "Trümmer und Nachbeben", hint: "Trümmer fallen, Plätze werden gesperrt.", missionID: "altstadt", startX: 2300),
         PracticeCourse(id: "lava", title: "Lava und Lavabrocken", hint: "Gestrichelte Bahnen zeigen die Brocken.", missionID: "vulkan", startX: 4400),
         PracticeCourse(id: "lawine", title: "Lawinen und Seilwinde", hint: "Schwebe ruhig über dem Vorsprung, das Seil zieht hoch.", missionID: "gebirge", startX: 3700),
+        PracticeCourse(id: "flutwelle", title: "Flutwelle und Brücken", hint: "Unter den Brücken hindurch, die Welle kommt von hinten.", missionID: "staudamm", startX: 2800),
+        PracticeCourse(id: "eis", title: "Vereisung", hint: "Eis macht träge, an der Straßenmeisterei taut es ab.", missionID: "pass", startX: 3300),
+        PracticeCourse(id: "sandsturm", title: "Sandsturm", hint: "Wenig Sicht, starker Wind: ruhig und hoch fliegen.", missionID: "wueste", startX: 4800),
+        PracticeCourse(id: "deck", title: "Schwankende Decks", hint: "Sanft aufsetzen, der Hubschrauber fährt mit der Fläche.", missionID: "bohrinsel", startX: 6500),
         PracticeCourse(id: "feuer", title: "Löschen", hint: "Tank über dem See füllen, Leertaste wirft Wasser ab.", missionID: "waldbrand", startX: 600),
     ]
 
@@ -31,13 +35,27 @@ public enum Practice {
 extension Mission {
     public var isPractice: Bool { practice ?? false }
 
-    /// Gentler hazards: longer open and warning times, fewer and slower strikes, flood and lava slower.
+    /// Gentler hazards: longer open and warning times, fewer and slower strikes, flood and flows slower, less wind,
+    /// fog, ice, heat and sway.
     public func slowed() -> Mission {
         var m = self
         m.flood.risePerSecond *= 0.5
         m.storms = m.storms?.map { var s = $0; s.interval *= 1.5; s.warn *= 1.6; s.damage *= 0.7; return s }
         m.volleys = m.volleys?.map { var v = $0; v.interval *= 1.5; v.warn *= 1.6; v.damage *= 0.7; return v }
         m.flows = m.flows?.map { var f = $0; f.speed *= 0.6; f.warn *= 1.6; f.damagePerSecond *= 0.7; return f }
+        if var i = m.icing { i.rate *= 0.5; i.thaw *= 1.5; m.icing = i }
+        if var h = m.heatwave { h.base *= 0.6; h.pulses = h.pulses.map { var g = $0; g.strength *= 0.6; return g }; m.heatwave = h }
+        m.rescuePoints = m.rescuePoints.map { var r = $0; if var h = r.heave { h.amplitude *= 0.5; h.period *= 1.4; r.heave = h }; return r }
+        m.wind.base *= 0.7
+        m.wind.gusts = m.wind.gusts.map { var g = $0; g.strength *= 0.7; return g }
+        m.weather = m.weather?.map { e in
+            var w = e
+            w.warn *= 1.6
+            w.strength = e.strength.map { $0 * 0.6 }
+            w.density = e.density.map { $0 * 0.7 }
+            w.damage = e.damage.map { $0 * 0.7 }
+            return w
+        }
         m.passages = m.passages?.map { p in
             var q = p
             q.shutters = p.shutters?.map { s in

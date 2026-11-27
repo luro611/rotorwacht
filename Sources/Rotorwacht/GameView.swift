@@ -70,6 +70,8 @@ struct HUDView: View {
                         Bar(label: "Treibstoff", value: hud.fuel)
                         Bar(label: "Haltbarkeit", value: hud.durability)
                         Bar(label: hud.filling ? "Wasser · füllt" : "Wasser", value: hud.water, warnBelow: 0.12, tint: Theme.ink)
+                        if hud.ice >= 0 { Bar(label: "Eis", value: hud.ice, warnBelow: 0, tint: hud.ice > 0.5 ? Theme.accentStrong : Theme.muted) }
+                        if hud.swelter >= 0 { Bar(label: "Hitze", value: hud.swelter, warnBelow: 0, tint: Theme.accentStrong) }
                     }
                 }
                 panel {
@@ -197,7 +199,8 @@ struct ResultOverlay: View {
         case "fire": return nil
         case "volcano": return "Von der Lava erreicht"
         case "avalanche": return "Von Lawinen erfasst"
-        case "storm", "quake": return nil
+        case "surge": return "Von der Flutwelle erreicht"
+        case "storm", "quake", "rig", "blizzard", "sandstorm": return nil
         default: return "Vom Wasser erreicht"
         }
     }
@@ -229,7 +232,7 @@ struct ResultOverlay: View {
                     Eyebrow("Endlos · Stufe \(mission?.number ?? run.stage) · \(mission?.title ?? "")")
                     AccentTitle(plain: run.isOver ? "Der Lauf ist " : "Stufe ", accent: run.isOver ? "zu Ende" : "geschafft", size: 44)
                 } else {
-                    Eyebrow("Einsatz \(mission?.number ?? 1) · \(mission?.title ?? "Hochwasser im Flusstal") · \(model.difficulty.label)")
+                    Eyebrow("Einsatz \(mission?.number ?? 1) · \(mission?.title ?? "Hochwasser im Flusstal") · \(model.playedLevel.label)")
                     AccentTitle(plain: headline.0, accent: headline.1, size: 44)
                 }
                 HStack(spacing: 4) {
@@ -267,8 +270,8 @@ struct ResultOverlay: View {
                 if let run = model.endless {
                     EndlessSidePanel(run: run, next: model.endlessNext)
                 } else {
-                Eyebrow("Bestenliste · \(model.difficulty.label)")
-                ScoreListView(entries: model.scores(model.missionID, model.difficulty), highlight: model.lastEntry, compact: true)
+                Eyebrow("Bestenliste · \(model.playedLevel.label)")
+                ScoreListView(entries: model.scores(model.missionID, model.playedLevel), highlight: model.lastEntry, compact: true)
                 }
                 if model.lastEntry != nil || model.lastEndlessEntry != nil {
                     Text("Neuer Eintrag: Platz \(((model.lastEntry?.place ?? model.lastEndlessEntry?.place) ?? 0) + 1)").font(Theme.mono(11)).foregroundColor(Theme.accentStrong)

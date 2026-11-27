@@ -1,0 +1,54 @@
+{
+ "id": "pass",
+ "number": 9,
+ "hazard": "blizzard",
+ "look": "blizzard",
+ "tagline": "Whiteout und Eis",
+ "summary": "Eingeschneite Autos und Hütten am Pass. Der Hubschrauber vereist, Whiteout nimmt die Sicht, eine Galerie hat Shutter.",
+ "title": "Schneesturm am Pass",
+ "briefing": "Der Pass ist eingeschneit: Menschen warten in Autos und Berghütten. Im Flug setzt sich Eis an, der Hubschrauber wird träge. Im Lager oder an der Straßenmeisterei taut er auf und tankt. Whiteout nimmt die Sicht, und vor dem Lager führt der Weg durch eine Lawinengalerie mit Shuttern.",
+ "world": {"width": 7800, "ceiling": 1050},
+ "terrain": [
+  [0, 480], [500, 380], [760, 260], [1040, 260],
+  [1400, 420], [1750, 450], [2050, 430], [2300, 360], [2700, 300],
+  [3100, 300], [3500, 420], [3780, 380], [4020, 380],
+  [4400, 500], [4700, 520], [4900, 520], [5200, 330], [5600, 200],
+  [7800, 200]
+ ],
+ "base": {"x": 6950, "width": 420},
+ "rescuePoints": [
+  {"id": "autos1", "name": "Autos am Talschluss", "kind": "island", "x": 900, "width": 200, "top": 260, "people": 4},
+  {"id": "huette1", "name": "Jagdhütte", "kind": "roof", "x": 1800, "width": 160, "top": 490, "people": 3},
+  {"id": "autos2", "name": "Autos an der Kehre", "kind": "island", "x": 3900, "width": 200, "top": 380, "people": 4},
+  {"id": "passhaus", "name": "Passhaus", "kind": "roof", "x": 4800, "width": 160, "top": 560, "people": 3}
+ ],
+ "helicopters": 3,
+ "capacity": 12,
+ "timeLimit": 600,
+ "fuel": {"capacity": 100, "burnPerSecond": 0.5, "refuelPerSecond": 12},
+ "flood": {"startLevel": -200, "risePerSecond": 0, "maxLevel": -200},
+ "icing": {"rate": 0.011, "thaw": 0.2, "start": 15},
+ "wind": {"base": -30, "gusts": [
+  {"start": 40, "duration": 10, "strength": -100},
+  {"start": 130, "duration": 10, "strength": 110},
+  {"start": 240, "duration": 10, "strength": -100},
+  {"start": 360, "duration": 10, "strength": 100}
+ ]},
+ "atmosphere": {"sky": "alpine", "precipitation": "snow"},
+ "outposts": [{"name": "Straßenmeisterei", "x": 2900, "width": 140}],
+ "passages": [
+  {"id": "galerie", "kind": "tunnel", "x0": 5850, "x1": 6400, "roof": 370, "shutters": [
+   {"x": 5875, "period": 11, "open": 6.5, "phase": 0, "warn": 1.5},
+   {"x": 6375, "period": 11, "open": 6.5, "phase": 5.0, "warn": 1.5}
+  ]}
+ ],
+ "obstacles": [
+  {"id": "materialbahn", "kind": "cablecar", "x": 2120, "x1": 2600, "height": 130, "height1": 140, "period": 26}
+ ],
+ "weather": [
+  {"kind": "fog", "start": 60, "duration": 50, "warn": 8, "density": 0.75, "tint": "snow"},
+  {"kind": "windShift", "start": 170, "duration": 50, "warn": 8, "strength": 80},
+  {"kind": "fog", "start": 260, "duration": 70, "warn": 10, "density": 0.8, "tint": "snow"},
+  {"kind": "fog", "start": 420, "duration": 60, "warn": 8, "density": 0.75, "tint": "snow"}
+ ]
+}

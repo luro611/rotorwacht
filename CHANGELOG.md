@@ -2,6 +2,51 @@
 
 Versionen: 0.x bis zum ersten fertigen Stand, dann 1.0.0.
 
+## [0.9.0] – 2026-11-27
+
+Neue Einsätze und fünf Stufen (Entscheidung von Lutz am 27.11.2026): Planung `docs/planung/08 Neue Einsätze 0.9.md`.
+
+### Fünf Stufen
+
+- **Anfänger, leicht, mittel, schwer, Profi.** Mittel ist unverändert (Wert der Einsatzdatei), die Werte der alten drei Stufen bleiben. Anfänger hat 6 Hubschrauber, mehr Zeit und lange Vorwarnung; Profi 1 Hubschrauber, wenig Zeit, knappen Treibstoff, kurze Vorwarnung und schnelle Shutter.
+- Alte `progress.json`, Bestenlisten und die Endlos-Liste werden weiter geladen (Tests mit Dateien im Format von 0.8).
+- **Endlosmodus** folgt jetzt der gewählten Stufe: Die Rampe verschiebt sich um bis zu zwei Schritte, der Bestand zu Beginn ist 7 bis 3 Hubschrauber, die Bestenliste gibt es je Stufe (die bisherige Liste ist die von „mittel“).
+- Startmenü mit fünf Einsatzkarten je Reihe (scrollt, wenn das Fenster zu niedrig ist); Bestenliste und Endlos-Fenster mit allen fünf Stufen.
+
+### Vier neue Einsätze (7 bis 10)
+
+- **Bohrinsel im Sturm:** Brand auf zwei Plattformen (Tank über dem Meer füllen), schwankendes Schiff und Rettungsfloß, Seilwinde am Kranmast, Gewitter, Kran.
+- **Schlucht und Staudamm:** Flutwelle vom gebrochenen Damm, Felsnadeln, zwei Brücken zum Unterfliegen, Seilwinde am Felsturm.
+- **Schneesturm am Pass:** Autos und Hütten, Whiteout mit Schneetreiben, Vereisung, Straßenmeisterei zum Enteisen und Tanken, Lawinengalerie mit Shuttern.
+- **Wüste mit Sandsturm:** Karawane, Forschungsstation, Sandstürme mit treibendem Sand, Hitze, Außenposten, Windrad.
+- Jeder mit eigenem Gelände, Panorama und Landeplätzen (Blender), eigenem Musikthema, Bestenliste und einer Übungsstrecke. Freischalten der Reihe nach.
+
+### Neue Bausteine (`RotorwachtCore/Climate.swift`)
+
+- Schwankende Landefläche (`heave`), Vereisung (`icing`, Anzeige „Eis“), Hitze (`heatwave`, Anzeige „Hitze“), Flutwelle (`flows`, Art `surge`). Ohne Lake füllt der Autopilot den Tank im Meer.
+- Der Endlosmodus hat die Bausteine Vereisung und Hitze und nimmt die neuen Einsätze als Grundlagen.
+
+### Autopilot und Tests
+
+- Der Autopilot plant auf den hohen Stufen Treibstoff, Wartezeit an Shuttern und den Rückweg ein und enteist.
+- Alle zehn Einsätze sind auf allen fünf Stufen per Autopilot lösbar (ohne Ausfall, mindestens 66 % gerettet). 208 Tests.
+- `scripts/test.sh` baut jetzt mit `-O`: Die Tests selbst laufen in Sekunden statt Minuten.
+- `scripts/render-art.sh` reicht `--only=<Einsatz>` an die Skripte durch (bisher wurde immer alles neu gerendert).
+- Übungsfenster mit zwei Spalten; die Kartenüberschriften im Startmenü brechen um.
+
+### Nach der Prüfung (Opus, 27.11.2026)
+
+- **Endlosmodus immer schaffbar:** Der Generator lässt den Autopiloten jeden erzeugten Einsatz einmal fliegen (mindestens ein Stern, mit zwei Hubschraubern). Gelingt es nicht, wird so wenig wie möglich entschärft: zuerst ohne Zusatzbausteine, dann mit weniger Menschen und mehr Zeit, erst dann eine Datenstufe leichter. In einer Probe mit je 500 Einsätzen blieb Anfänger bis Mittel unverändert, Schwer und Profi wurden in rund 6 % entschärft, keiner blieb unlösbar; die Erzeugung dauert im Mittel 0,1 s, höchstens 0,5 s. `EndlessTests` prüfen jetzt alle fünf Stufen.
+- Hitze und Vereisung kommen nicht mehr zusammen in einen Endlos-Einsatz.
+- Unter Brücken ist man vor der Flutwelle nicht mehr sicher (nur Tunnel schützen); die Welle wird so hoch gezeichnet, wie sie schadet.
+- „Langsamer“ im Übungsmodus mildert auch Wind, Wetter, Eis, Hitze und Seegang.
+- Startmenü: Der Controller-Fokus scrollt mit.
+- Bohrinsel: Der Hinweis beim leeren Tank nennt das Meer.
+
+### Ungeprüft
+
+Spielgefühl der neuen Einsätze und Stufen mit echter Hand, Klang der neuen Musik, Menü und Darstellung bei kleinen Fenstern und mit Controller.
+
 ## [0.8.1] – 2026-11-21
 
 - **Fehler behoben:** Beim Ausschalten der Musik (und bei jeder Änderung der Tonregler) stürzte die App ab. Ursache: `AppModel.sound.didSet` setzte den Wert bei jedem Aufruf erneut und rief sich damit endlos selbst auf (Stacküberlauf). Jetzt wird nur noch neu gesetzt, wenn der Wert wirklich außerhalb des Bereichs liegt.

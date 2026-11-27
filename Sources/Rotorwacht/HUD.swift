@@ -32,6 +32,9 @@ struct HUDSnapshot: Equatable {
     var water = 0.0
     var smoke = 0.0
     var heat = 0.0
+    /// Ice on the helicopter and heat of the day, 0...1; -1 where the Einsatz has none.
+    var ice = -1.0
+    var swelter = -1.0
     var filling = false
     var points: [MiniMapPoint] = []
     /// x positions of burning stretches, for the overview bar.

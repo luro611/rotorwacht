@@ -1,0 +1,52 @@
+{
+ "id": "staudamm",
+ "number": 8,
+ "hazard": "surge",
+ "look": "canyon",
+ "tagline": "Dammbruch",
+ "summary": "Der Damm ist gebrochen. Die Flutwelle läuft durch die Schlucht, Felsnadeln und Brücken stehen im Weg.",
+ "title": "Schlucht und Staudamm",
+ "briefing": "Der Staudamm am Ende der Schlucht ist gebrochen. Eine Flutwelle schiebt sich von hinten durch das Tal und nimmt alles mit, was sie erreicht. Hole zuerst die Menschen, die dem Damm am nächsten sind. Felsnadeln musst du überfliegen, unter den Brücken geht es nur hindurch. Am Felsturm hilft nur die Seilwinde.",
+ "world": {"width": 7800, "ceiling": 950},
+ "terrain": [
+  [0, 560], [480, 560], [520, 470], [640, 80],
+  [1450, 80], [1470, 380], [1530, 380], [1550, 80],
+  [2990, 80], [3000, 330], [3100, 330], [3110, 80],
+  [3260, 80], [3280, 390], [3340, 390], [3360, 80],
+  [5060, 80], [5090, 100], [5310, 100], [5340, 80],
+  [5800, 80], [6400, 330], [7800, 330]
+ ],
+ "base": {"x": 6950, "width": 420},
+ "rescuePoints": [
+  {"id": "muehle", "name": "Sägemühle", "kind": "roof", "x": 1100, "width": 160, "top": 170, "people": 3},
+  {"id": "zeltplatz", "name": "Zeltplatz", "kind": "island", "x": 1900, "width": 200, "top": 80, "people": 4},
+  {"id": "felsturm", "name": "Felsturm", "kind": "ledge", "x": 3050, "width": 100, "top": 330, "people": 2, "access": "winch", "cable": 130},
+  {"id": "gasthof", "name": "Gasthof", "kind": "roof", "x": 3600, "width": 160, "top": 180, "people": 4},
+  {"id": "weiler", "name": "Weiler", "kind": "island", "x": 5200, "width": 200, "top": 100, "people": 3}
+ ],
+ "helicopters": 3,
+ "capacity": 12,
+ "timeLimit": 540,
+ "fuel": {"capacity": 100, "burnPerSecond": 0.5, "refuelPerSecond": 12},
+ "flood": {"startLevel": -200, "risePerSecond": 0, "maxLevel": -200},
+ "wind": {"base": 15, "gusts": [
+  {"start": 40, "duration": 9, "strength": 70},
+  {"start": 150, "duration": 10, "strength": -80},
+  {"start": 280, "duration": 10, "strength": 70}
+ ]},
+ "atmosphere": {"sky": "dusk", "precipitation": "rain"},
+ "flows": [
+  {"id": "welle", "kind": "surge", "start": 50, "warn": 10, "x0": 640, "x1": 5800, "speed": 18, "damagePerSecond": 24, "clearance": 70}
+ ],
+ "passages": [
+  {"id": "holzbruecke", "kind": "bridge", "x0": 2320, "x1": 2560, "roof": 270},
+  {"id": "eisenbahnbruecke", "kind": "bridge", "x0": 4320, "x1": 4560, "roof": 265}
+ ],
+ "obstacles": [
+  {"id": "leitung", "kind": "powerline", "x": 5750, "x1": 6050, "height": 150, "height1": 150}
+ ],
+ "weather": [
+  {"kind": "gust", "start": 100, "duration": 10, "warn": 8, "strength": -90},
+  {"kind": "fog", "start": 210, "duration": 60, "warn": 10, "density": 0.55, "x0": 3200, "x1": 5200, "tint": "fog"}
+ ]
+}
