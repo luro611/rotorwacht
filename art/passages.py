@@ -1,15 +1,16 @@
-"""Passages: mountain and rock above a tunnel, the tunnel's inside and portals, viaducts above an underpass,
+"""Passages: mountain and rock above a tunnel, the tunnel's inside and portals, bridges above an underpass,
 shutter parts and signal lamps.
 
 Scale: 1 world unit = 1/16 m, rendered at 2 px per unit (like the pads). Straight-on view with a low sun so the relief reads.
 Outputs in Renders/passages/:
-  mass-<mission>-<passage>.png      the solid above the roof (x0-24..x1+24, roof..ceiling+12), bottom edge = underside of the roof
+  mass-<mission>-<passage>.png      the solid above the roof (tunnel x0-24..x1+24, bridge x0-16..x1+16, roof..ceiling+12)
+  pier-<mission>-<passage>.png      the support at both ends of a bridge (44 units wide, roof+40 high)
   flank-<mission>-<passage>.png     the mountain behind a tunnel (x0-300..x1+300, floor-140..ceiling+40), behind the terrain
   interior-<mission>-<passage>.png  the lit back wall of a tunnel (x0..x1, floor..roof)
   jamb-<mission>-<passage>.png      portal frame at a tunnel end (26 units wide, floor..roof)
   shutter-door/bar/post/housing.png, signal-green/amber/red.png, beacon.png
 
-Usage: blender -b -P art/passages.py [-- --preview] [--masses] [--parts] [--only=<mission>]
+Usage: blender -b -P art/passages.py [-- --preview] [--masses] [--parts] [--bridges] [--only=<mission>]
 """
 import sys, os
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -99,9 +100,6 @@ ROCKS = {
     "gebirge": dict(rock=(0x464b52, 0x9c9a94), cover=0xf2f6fa, amount=0.8, conc=0xa9a69e, haze=0xa9bccd, lava=False),
     "pass": dict(rock=(0x434a55, 0x8b929c), cover=0xeef3f8, amount=1.0, conc=0x9ca1a8, haze=0xb4c1cf, lava=False),
 }
-BRIDGES = {"hochwasser": ((0x8c877d, 0xc3beb2), 0xcfcabd), "altstadt": ((0x9a8f80, 0xcdbfa8), 0xd6cdbd),
-           "staudamm": ((0x8a5a40, 0xc08a64), 0xc7b29a)}
-
 
 def smoothstep(a, b, x):
     t = min(1.0, max(0.0, (x - a) / (b - a)))
@@ -357,33 +355,260 @@ def jamb(h_u, pal):
     slab("foot", (0, -0.05, 0.18), (1.6, 0.85, 0.36), conc, 0.05)
 
 
-def viaduct(w_u, h_u, pal):
+# ---------------------------------------------------------------- bridges
+
+# Over an underpass there is no way (the span is solid up to the flight ceiling), so each bridge is a structure that
+# visibly closes the sky above its deck: tiers of blind arches (masonry) or a tall braced truss with netting behind.
+
+MASONRY = {
+    "stone": dict(block=((0x8f7f68, 0xc9b999), 0xd9cdb2), mortar=0x6e6252, infill=(0x6d6050, 0x93826a), brick=False),
+    "brick": dict(block=((0x6e3526, 0xa8583a), 0xc7b29a), mortar=0x8a735f, infill=(0x4a281f, 0x71402e), brick=True),
+}
+BRIDGE_KIND = {("altstadt", "viadukt"): "stone", ("staudamm", "eisenbahnbruecke"): "brick",
+               ("staudamm", "holzbruecke"): "timber", ("hochwasser", "bruecke"): "steel"}
+ARCH_TIER = 8.4          # metres from cornice to cornice
+
+
+def ashlar(name, c1, c2, bw, bh, mortar):
+    """masonry: courses of blocks with mortar joints and weathering"""
+    m = textured(name, c1, c2, scale=1.1, bump=0.5, rough=0.92, detail=10.0)
+    nt = m.node_tree
+    p = nt.nodes["Principled BSDF"]
+    base = p.inputs["Base Color"].links[0].from_socket
+    tc = nt.nodes.new("ShaderNodeTexCoord")
+    sep = nt.nodes.new("ShaderNodeSeparateXYZ")
+    nt.links.new(tc.outputs["Object"], sep.inputs[0])
+    comb = nt.nodes.new("ShaderNodeCombineXYZ")
+    nt.links.new(sep.outputs["X"], comb.inputs["X"])
+    nt.links.new(sep.outputs["Z"], comb.inputs["Y"])
+    br = nt.nodes.new("ShaderNodeTexBrick")
+    br.inputs["Scale"].default_value = 1.0
+    br.inputs["Brick Width"].default_value = bw
+    br.inputs["Row Height"].default_value = bh
+    br.inputs["Mortar Size"].default_value = 0.03
+    br.inputs["Color1"].default_value = (1.0, 1.0, 1.0, 1)
+    br.inputs["Color2"].default_value = (0.68, 0.66, 0.64, 1)
+    br.inputs["Mortar"].default_value = srgb(mortar)
+    nt.links.new(comb.outputs[0], br.inputs["Vector"])
+    mx = nt.nodes.new("ShaderNodeMix"); mx.data_type = "RGBA"; mx.blend_type = "MULTIPLY"
+    mx.inputs[0].default_value = 0.9
+    nt.links.new(base, mx.inputs[6])
+    nt.links.new(br.outputs["Color"], mx.inputs[7])
+    nt.links.new(mx.outputs[2], p.inputs["Base Color"])
+    return m
+
+
+def poly_slab(name, pts, y, depth, material):
+    """flat shape in x/z, extruded towards the back"""
+    bm = bmesh.new()
+    face = bm.faces.new([bm.verts.new((x, y, z)) for x, z in pts])
+    ext = bmesh.ops.extrude_face_region(bm, geom=[face])
+    bmesh.ops.translate(bm, verts=[v for v in ext["geom"] if isinstance(v, bmesh.types.BMVert)], vec=(0, depth, 0))
+    bmesh.ops.recalc_face_normals(bm, faces=bm.faces)
+    return mesh_obj(name, bm, [material])
+
+
+def arch_ring(cx, spring, r, ring, y, depth, material, stones=11):
+    """the voussoirs of a round arch"""
+    for i in range(stones):
+        a0, a1 = math.pi * i / stones + 0.006, math.pi * (i + 1) / stones - 0.006
+        pts = [(cx + math.cos(a) * rr, spring + math.sin(a) * rr)
+               for a, rr in ((a0, r), (a0, r + ring), (a1, r + ring), (a1, r))]
+        poly_slab("voussoir", pts, y - (0.06 if i == stones // 2 else 0.0), depth, material)
+
+
+def masonry_bridge(w_u, h_u, kind):
+    st = MASONRY[kind]
     w, h = w_u * U, h_u * U
-    dark = M("beton-dark", 0x56524b, 0.9)
-    slab("core", (0, 0.5, h / 2), (w, 1.0, h), dark, 0.0)
-    # girder band at the underside with ribs
-    girder = textured("girder", 0x7d786f, 0xa9a398, scale=9.0, bump=0.5, rough=0.8)
-    slab("girder", (0, -0.1, 1.3), (w, 0.9, 2.6), girder, 0.04)
-    n = max(3, int(w / 2.4))
+    c1, c2 = st["block"][0]
+    bw, bh = (0.42, 0.14) if st["brick"] else (1.1, 0.5)
+    face = ashlar("face", c1, c2, bw, bh, st["mortar"])
+    infill = ashlar("infill", st["infill"][0], st["infill"][1], bw, bh, st["mortar"])
+    trim = textured("trim", c1, st["block"][1], scale=2.0, bump=0.4, rough=0.85)
+    slab("wall", (0, 0.45, h / 2), (w - 0.1, 0.5, h), infill, 0.0)          # closed wall behind every arch
+    deck_h = 2.0
+    slab("deck", (0, -0.1, deck_h / 2), (w, 1.1, deck_h), face, 0.05)
+    slab("deckcap", (0, -0.35, deck_h + 0.18), (w, 1.3, 0.36), trim, 0.06)
+    slab("decklip", (0, -0.45, 0.14), (w, 0.9, 0.28), trim, 0.04)
+    n = max(2, int(round(w / 6.5)))
+    bay = w / n
+    pier = 1.15
+    r = (bay - pier) / 2 - 0.35
+    z = deck_h + 0.36
+    tier = 0
+    while z < h:
+        top = z + ARCH_TIER
+        spring = top - 0.9 - r - 0.55
+        for i in range(n + 1):
+            x = -w / 2 + i * bay
+            half = pier / 2
+            px = max(-w / 2 + half, min(w / 2 - half, x))
+            slab("pier", (px, -0.15, z + ARCH_TIER / 2), (pier, 0.8, ARCH_TIER), face, 0.05)
+            slab("impost", (px, -0.3, spring), (pier + 0.35, 0.95, 0.28), trim, 0.04)
+        for i in range(n):
+            cx = -w / 2 + (i + 0.5) * bay
+            arch_ring(cx, spring, r, 0.55, -0.63, 0.75, trim)
+            # spandrel: everything above the arch up to the cornice
+            outer = r + 0.55
+            arc = [(cx + math.cos(math.pi * k / 24) * outer, spring + math.sin(math.pi * k / 24) * outer) for k in range(25)]
+            pts = [(cx + bay / 2, spring), (cx + bay / 2, top), (cx - bay / 2, top), (cx - bay / 2, spring)] + arc[::-1]
+            poly_slab("spandrel", pts, -0.3, 0.55, face)
+            if tier % 2 == 1:        # a few small windows in the infill, for scale
+                slab("slit", (cx, 0.18, spring - 0.5), (0.45, 0.1, 1.4), M("slit", 0x1e1a16, 0.9), 0.03)
+        slab("cornice", (0, -0.45, top - 0.18), (w, 1.2, 0.36), trim, 0.06)
+        z = top
+        tier += 1
+
+
+def beam(name, a, b, size, y, depth, material):
+    """straight member from a to b (x, z) with width `size`"""
+    dx, dz = b[0] - a[0], b[1] - a[1]
+    L = math.hypot(dx, dz) or 1.0
+    nx, nz = -dz / L * size / 2, dx / L * size / 2
+    pts = [(a[0] + nx, a[1] + nz), (b[0] + nx, b[1] + nz), (b[0] - nx, b[1] - nz), (a[0] - nx, a[1] - nz)]
+    return poly_slab(name, pts, y, depth, material)
+
+
+def netting(w, z0, z1, colour):
+    """a thin veil behind the truss, so it reads as one closed structure"""
+    m = mat("veil%x" % colour, colour, rough=1.0, alpha=0.5)
+    poly_slab("veil", [(-w / 2 + 0.15, z0), (w / 2 - 0.15, z0), (w / 2 - 0.15, z1), (-w / 2 + 0.15, z1)], 1.4, 0.02, m)
+
+
+def rivets(x, z, material):
+    prim("sphere", "rivet", (x, -0.75, z), (0.13, 0.08, 0.13), mats=[material], seg=8, rings=6)
+
+
+def steel_bridge(w_u, h_u):
+    w, h = w_u * U, h_u * U
+    paint = textured("paint", 0x466058, 0x6f8c80, scale=0.9, bump=0.15, rough=0.5)
+    back = M("paint-back", 0x2f423d, 0.6, metal=0.2)
+    plate = textured("plate", 0x3c544c, 0x607c71, scale=1.4, bump=0.2, rough=0.55)
+    knob = M("knob", 0x8da297, 0.35, metal=0.6)
+    rust = M("rust", 0x7a4a30, 0.8)
+    netting(w, 2.2, h, 0x34453f)
+    # plate girder under the roadway
+    slab("web", (0, -0.1, 1.15), (w, 0.8, 2.1), plate, 0.02)
+    for z in (0.12, 2.22):
+        slab("flange", (0, -0.35, z), (w, 1.1, 0.24), paint, 0.03)
+    n = int(w / 1.3)
     for i in range(n + 1):
-        x = -w / 2 + i * w / n
-        slab("rib", (x, -0.5, 1.3), (0.28, 0.3, 2.3), M("rib", 0x5f5b54, 0.8), 0.02)
-    # tall wall: concrete storeys of different height, with projecting slab edges, columns and dark recesses
-    rng = hexrand(11)
-    z = 2.8
-    conc = textured("beton", 0x8c877d, 0xbab5a9, scale=5.0, bump=0.7, rough=0.85)
-    while z < h - 0.6:
-        sh = min(rng.choice([3.4, 4.2, 5.0]), h - z)
-        slab("storey", (0, -0.05, z + sh / 2), (w, 0.6, sh - 0.35), conc, 0.03)
-        slab("edge", (0, -0.4, z + sh - 0.1), (w, 0.7, 0.35), girder, 0.03)
-        k = max(2, int(w / rng.choice([5.0, 6.5])))
-        for c in range(k):
-            x = -w / 2 + (c + 0.5) * w / k
-            slab("recess", (x, -0.36, z + sh * 0.5), (w / k * 0.42, 0.04, sh * 0.45), M("rec", 0x2f2d2a, 0.8), 0.01)
-        z += sh
-    for sx in (-1, 1):
-        slab("column", (sx * (w / 2 - 0.5), -0.55, h / 2), (0.7, 0.4, h), girder, 0.03)
-    slab("strip", (0, -0.58, 2.7), (w, 0.08, 0.16), M("yel", 0xe9c85a, 0.5), 0.0)
+        x = -w / 2 + 0.1 + (w - 0.2) * i / n
+        slab("stiffener", (x, -0.55, 1.15), (0.16, 0.14, 1.9), paint, 0.01)
+        for z in (0.12, 2.22):
+            rivets(x, z, knob)
+    rng = hexrand(8)
+    for i in range(9):
+        slab("run", (rng.uniform(-w / 2 + 0.4, w / 2 - 0.4), -0.52, rng.uniform(0.6, 1.3)), (rng.uniform(0.05, 0.14), 0.02, rng.uniform(0.5, 1.1)), rust, 0.0)
+    # truss above the roadway
+    cols = max(2, int(round(w / 5.0)))
+    xs = [-w / 2 + 0.35 + (w - 0.7) * i / cols for i in range(cols + 1)]
+    tier = 5.2
+    z = 2.34
+    while z < h:
+        top = z + tier
+        for a, b in zip(xs, xs[1:]):
+            beam("d1", (a, z), (b, top), 0.34, -0.45, 0.28, paint)
+            beam("d2", (a, top), (b, z), 0.34, -0.15, 0.28, paint)
+            mx = (a + b) / 2
+            poly_slab("gusset", [(mx - 0.4, z + tier / 2), (mx, z + tier / 2 - 0.4), (mx + 0.4, z + tier / 2), (mx, z + tier / 2 + 0.4)], -0.62, 0.15, plate)
+            rivets(mx, z + tier / 2, knob)
+            # a second truss further back, half a bay over: depth
+            beam("b1", (mx, z), (mx + (b - a) / 2, z + tier / 2), 0.22, 0.8, 0.2, back)
+            beam("b2", (mx, z), (mx - (b - a) / 2, z + tier / 2), 0.22, 0.8, 0.2, back)
+            beam("b3", (mx - (b - a) / 2, z + tier / 2), (mx, top), 0.22, 0.8, 0.2, back)
+            beam("b4", (mx + (b - a) / 2, z + tier / 2), (mx, top), 0.22, 0.8, 0.2, back)
+        slab("chord", (0, -0.35, top), (w, 0.6, 0.36), paint, 0.03)
+        for x in xs:
+            slab("post", (x, -0.4, z + tier / 2), (0.55, 0.55, tier), paint, 0.04)
+            poly_slab("joint", [(x - 0.55, top - 0.4), (x + 0.55, top - 0.4), (x + 0.3, top + 0.45), (x - 0.3, top + 0.45)], -0.72, 0.1, plate)
+            for dz in (-0.2, 0.2):
+                rivets(x - 0.18, top + dz, knob)
+                rivets(x + 0.18, top + dz, knob)
+        z = top
+
+
+def timber_bridge(w_u, h_u):
+    w, h = w_u * U, h_u * U
+    woods = [textured("wood%d" % i, c1, c2, scale=2.0, stretch=(2.4, 2.4, 0.5), bump=0.5, rough=0.9, detail=9.0)
+             for i, (c1, c2) in enumerate(((0x4e3522, 0x86603c), (0x5a3f29, 0x9a734a)))]
+    back = M("wood-back", 0x33241a, 0.95)
+    iron = M("iron", 0x3a3633, 0.5, metal=0.7)
+    netting(w, 2.0, h, 0x34261c)
+    rng = hexrand(21)
+    # deck: two stringers and the plank ends
+    slab("stringer", (0, -0.25, 0.42), (w, 0.7, 0.84), woods[0], 0.08)
+    x = -w / 2 + 0.2
+    while x < w / 2 - 0.2:
+        slab("plank", (x, -0.55, 1.08 + rng.uniform(-0.03, 0.03)), (0.34, 0.7, 0.46), woods[rng.randrange(2)], 0.04)
+        x += 0.4
+    slab("rail", (0, -0.35, 1.5), (w, 0.55, 0.38), woods[1], 0.06)
+    cols = max(2, int(round(w / 3.8)))
+    xs = [-w / 2 + 0.35 + (w - 0.7) * i / cols for i in range(cols + 1)]
+    tier = 4.4
+    z = 1.7
+    k = 0
+    while z < h:
+        top = z + tier
+        for i, (a, b) in enumerate(zip(xs, xs[1:])):
+            beam("brace", (a, z + 0.15), (b, top - 0.15), 0.3, -0.3 - 0.02 * i, 0.2, woods[(i + k) % 2])
+            beam("brace2", (a, top - 0.15), (b, z + 0.15), 0.3, -0.02 + 0.01 * i, 0.2, woods[(i + k + 1) % 2])
+            beam("back", ((a + b) / 2, z), ((a + b) / 2 + rng.uniform(-0.2, 0.2), top), 0.3, 0.8, 0.3, back)
+            beam("backh", (a, z + tier / 2), (b, z + tier / 2 + rng.uniform(-0.15, 0.15)), 0.22, 0.9, 0.2, back)
+            prim("sphere", "bolt", ((a + b) / 2, -0.52, z + tier / 2), (0.2, 0.1, 0.2), mats=[iron], seg=8, rings=6)
+        slab("cap", (0, -0.45, top), (w, 0.5, 0.42), woods[k % 2], 0.07)
+        for x in xs:
+            prim("cyl", "post", (x + rng.uniform(-0.04, 0.04), -0.35, z + tier / 2), (0.56, 0.56, tier), mats=[woods[rng.randrange(2)]], seg=10)
+            slab("strap", (x, -0.72, top), (0.62, 0.06, 0.5), iron, 0.01)
+        z = top
+        k += 1
+
+
+def bridge(w_u, h_u, kind):
+    if kind in MASONRY:
+        masonry_bridge(w_u, h_u, kind)
+    elif kind == "timber":
+        timber_bridge(w_u, h_u)
+    else:
+        steel_bridge(w_u, h_u)
+
+
+def bridge_pier(w_u, h_u, kind):
+    """the support below the deck, top edge = underside of the roof"""
+    w, h = w_u * U, h_u * U
+    if kind in MASONRY:
+        st = MASONRY[kind]
+        bw, bh = (0.42, 0.14) if st["brick"] else (1.1, 0.5)
+        face = ashlar("pface", st["block"][0][0], st["block"][0][1], bw, bh, st["mortar"])
+        trim = textured("ptrim", st["block"][0][0], st["block"][1], scale=2.0, bump=0.4, rough=0.85)
+        poly_slab("shaft", [(-1.0, 0), (1.0, 0), (0.78, h), (-0.78, h)], -0.2, 0.7, face)
+        slab("capital", (0, -0.3, h - 0.9), (2.0, 0.9, 0.36), trim, 0.05)
+        poly_slab("haunch", [(-1.2, h), (1.2, h), (0.8, h - 0.75), (-0.8, h - 0.75)], -0.25, 0.7, trim)
+        z = h - 5.5
+        while z > 0:
+            slab("band", (0, -0.3, z), (2.0, 0.85, 0.26), trim, 0.04)
+            z -= 4.6
+    elif kind == "timber":
+        wood = textured("pwood", 0x4e3522, 0x8f6a43, scale=2.0, stretch=(2.4, 2.4, 0.5), bump=0.5, rough=0.9, detail=9.0)
+        iron = M("iron", 0x3a3633, 0.5, metal=0.7)
+        for sx in (-1, 1):
+            tube("leg", [(sx * 1.05, 0, 0), (sx * 0.65, 0, h)], 0.24, wood, 5)
+        z = h
+        while z > 0.3:
+            slab("tie", (0, -0.2, z - 0.15), (2.1, 0.2, 0.28), wood, 0.05)
+            beam("x1", (-0.8, z), (0.9, z - 3.0), 0.2, -0.32, 0.14, wood)
+            beam("x2", (0.8, z), (-0.9, z - 3.0), 0.2, -0.18, 0.14, wood)
+            slab("strap", (0, -0.44, z - 1.5), (0.3, 0.05, 0.3), iron, 0.01)
+            z -= 3.0
+    else:
+        conc = textured("pconc", 0x6d6a63, 0xaaa69c, scale=1.3, bump=0.4, rough=0.9, detail=10.0)
+        dark = M("pdark", 0x45423d, 0.9)
+        poly_slab("shaft", [(-1.05, 0), (1.05, 0), (0.8, h - 0.5), (-0.8, h - 0.5)], -0.2, 0.8, conc)
+        slab("bearing", (0, -0.35, h - 0.2), (2.3, 1.0, 0.4), conc, 0.07)
+        z = h - 2.6
+        while z > 0:
+            slab("joint", (0, -0.22, z), (2.0, 0.05, 0.06), dark, 0.0)
+            z -= 2.4
 
 
 def build_masses(preview):
@@ -396,15 +621,19 @@ def build_masses(preview):
     only = [a.split("=")[1] for a in argv() if a.startswith("--only=")]
     smp = 16 if preview else 40
     for m, p in from_missions:
+        if "--bridges" in argv() and p["kind"] == "tunnel":
+            continue
         if only and m["id"] not in only:
             continue
         key = "%s-%s" % (m["id"], p["id"])
         w = p["x1"] - p["x0"]
         h_u = m["world"]["ceiling"] - p["roof"] + 12
         if p["kind"] != "tunnel":
-            pal = BRIDGES.get(m["id"], BRIDGES["hochwasser"])
-            shoot(os.path.join(DIR, "mass-%s.png" % key), w + 32, h_u,
-                  lambda: viaduct(w + 32, h_u, pal), samples=smp)
+            kind = BRIDGE_KIND.get((m["id"], p["id"]), "stone")
+            shoot(os.path.join(DIR, "mass-%s.png" % key), w + 32, h_u, lambda: bridge(w + 32, h_u, kind),
+                  samples=smp, key_rot=(55, 0, -42), key_energy=3.8, fill=0.9, sky=0.9)
+            shoot(os.path.join(DIR, "pier-%s.png" % key), 44, p["roof"] + 40, lambda: bridge_pier(44, p["roof"] + 40, kind),
+                  samples=smp, key_rot=(60, 0, -42), key_energy=3.4, sky=0.9)
             continue
         pal = ROCKS.get(m["id"], ROCKS["gebirge"])
         seed = 1.3 + len(m["id"]) * 0.77
@@ -527,7 +756,7 @@ def build_parts(preview):
 def main():
     preview = "--preview" in argv()
     os.makedirs(DIR, exist_ok=True)
-    if "--masses" not in argv():
+    if "--masses" not in argv() and "--bridges" not in argv():
         build_parts(preview)
     if "--parts" not in argv():
         build_masses(preview)

@@ -7,13 +7,14 @@
 
 Eigenes Hubschrauber-Rettungsspiel für den Mac (Swift, SpriteKit, SwiftUI): nach Naturkatastrophen Menschen von Dächern und Anhöhen holen und ins Lager bringen, bevor Wetter, Wasser oder Treibstoff dir einen Strich durch die Rechnung machen.
 
-**Status:** Version 0.10.0 (zehn Einsätze, fünf Stufen, Gamepad, Musik, Durchfahrten mit Shuttern, Bestenliste, Hindernisse, Wetterwechsel, Zeitbonus, Kombos und Endlosmodus; Grafik aus gerenderten 3D-Modellen, in 0.10 neu: Hintergründe, Tunnel, Shutter, größere Personen). Nur zum eigenen Gebrauch, unnotarisiert.
+**Status:** Version 0.10.0 (zehn Einsätze, fünf Stufen, Gamepad, Musik, Durchfahrten mit Shuttern, Bestenliste, Hindernisse, Wetterwechsel, Zeitbonus, Kombos und Endlosmodus; Grafik aus gerenderten 3D-Modellen, in 0.10 neu: Hintergründe, Tunnel, Brücken, Shutter, größere Personen). Nur zum eigenen Gebrauch, unnotarisiert.
 
 **Lizenz:** MIT für den Code, CC BY 4.0 für eigene Grafik und Ton (siehe `LICENSE`, `LICENSE-ASSETS.md`)
 
 ![Startbildschirm mit zehn Einsätzen und fünf Stufen](docs/bilder/start-0.9.png)
 ![Tunnel durch den Berg mit Shutter und Ampeln](docs/bilder/tunnel-0.10.png)
 ![Hochwasser: neue Berge, Wolken und größere Personen](docs/bilder/hochwasser-0.10.png)
+![Aquädukt als Unterführung in der Altstadt](docs/bilder/bruecke-0.10.png)
 ![Vulkan mit Aschewolke](docs/bilder/vulkan-0.10.png)
 ![Nacht an der Küste](docs/bilder/kueste-0.10.png)
 ![Bohrinsel im Sturm](docs/bilder/bohrinsel-0.10.png)

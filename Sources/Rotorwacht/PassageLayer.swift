@@ -65,18 +65,19 @@ final class PassageLayer: SKNode {
             } else {
                 interiors.append(nil)
                 ceilingGlow.append([])
-                // Piers at both ends, behind the helicopter, so the viaduct does not hang in the air.
-                for side in [-1.0, 1.0] {
-                    let pier = SKSpriteNode(color: SKColor(red: 0.52, green: 0.5, blue: 0.46, alpha: 1), size: CGSize(width: 26, height: roof + 40))
+                // Piers at both ends, behind the helicopter, so the bridge does not hang in the air.
+                for x in [p.x0 - 6, p.x1 + 6] {
+                    let size = CGSize(width: 44, height: roof + 40)
+                    let pier: SKSpriteNode
+                    if let t = Render.texture("passages", "pier-\(mission.id)-\(p.id)") {
+                        pier = SKSpriteNode(texture: t, size: size)
+                    } else {
+                        pier = SKSpriteNode(color: SKColor(red: 0.52, green: 0.5, blue: 0.46, alpha: 1), size: CGSize(width: 26, height: roof + 40))
+                    }
                     pier.anchorPoint = CGPoint(x: 0.5, y: 1)
-                    pier.position = CGPoint(x: side < 0 ? p.x0 - 6 : p.x1 + 6, y: Double(roof))
+                    pier.position = CGPoint(x: x, y: Double(roof))
                     pier.zPosition = -1
                     addChild(pier)
-                    let shade = SKSpriteNode(color: SKColor(white: 0, alpha: 0.18), size: CGSize(width: 9, height: roof + 40))
-                    shade.anchorPoint = CGPoint(x: 0.5, y: 1)
-                    shade.position = CGPoint(x: pier.position.x + (side < 0 ? 8 : -8), y: Double(roof))
-                    shade.zPosition = -0.9
-                    addChild(shade)
                 }
             }
 

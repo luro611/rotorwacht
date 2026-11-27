@@ -8,13 +8,14 @@ Nur Grafik (Rückmeldung zu 0.9, Planung `docs/planung/09 Grafik 0.10.md`). Spie
 
 - **Tunnel** (Vulkan, Gebirge, Pass): statt eines Kastens ein Berg. Felswand mit Vorsprüngen, Klüften und Schnee oder Asche, unregelmäßiger Umriss, Berghänge dahinter, die im Gelände verschwinden, gemauerte Portale mit Pfeilern, beleuchteter Innenraum (Betonröhre mit Rippen, Nischen, Notausgangsschildern und Lampen; am Vulkan roher Fels mit Stahlbögen).
 - **Shutter:** breiteres Rolltor mit Warnstreifen und roten Kanten, Kasten und Führungspfosten gestreift, auf beiden Seiten eine große Ampel mit Leuchtschein, farbiger Schein am Boden, Warnleuchten, die beim Gelb und während der Torbewegung blinken. Der Treffbereich ist gleich geblieben.
+- **Brücken** (Unterführungen) statt der Hochhaus-Klötze als erkennbare Bauwerke: Steinaquädukt in der Altstadt, genietetes Stahlfachwerk im Hochwasser, in der Schlucht eine hölzerne Gerüstbrücke und ein Ziegelviadukt; passende Pfeiler. Sie reichen weiter bis an die Flughöhe, weil man nicht darüber hinweg kann.
 - **Personen** 1,3-fach größer; die Füße stehen wie bisher auf der Fläche.
 - **Hintergründe** aller zehn Einsätze neu: Berge mit Erosionsrinnen, Fels, Wald und Schnee, Dunst und Tiefe, tiefes Seitenlicht; je Einsatz eigene Landschaft (Flutebene mit Höfen und Kirche, Waldbrand mit Rauchsäulen, nächtliche Küste mit Leuchtturm und Dörfern, Stadt mit Türmen und Kuppeln, Vulkan mit Aschewolke und Lava, Hochgebirge, Meer mit Förderplattformen, Schlucht mit gebrochenem Damm, verschneiter Pass, Dünen und Oasen). Neue gerenderte Wolken (`art/clouds.py`) statt weicher Flecken.
 - Entwicklungshilfe: `ROTORWACHT_CAMERA=x,…` und `scripts/shots.sh` fotografieren feste Stellen aller Einsätze.
 
 ### Ungeprüft
 
-Wirkung im laufenden Spiel mit echter Hand (Lesbarkeit von Hubschrauber, Wartenden und Gefahren vor den neuen Hintergründen, Warnlichter in Bewegung), Bildrate auf anderen Macs, Fenstergrößen. Die Unterführungen und Brücken (Hochwasser, Altstadt, Schlucht) sind unverändert.
+Wirkung im laufenden Spiel mit echter Hand (Lesbarkeit von Hubschrauber, Wartenden und Gefahren vor den neuen Hintergründen, Warnlichter in Bewegung), Bildrate auf anderen Macs, Fenstergrößen.
 
 ## [0.9.0] – 2026-11-27
 
