@@ -66,7 +66,11 @@ enum DebugShots {
             for (i, c) in places.enumerated() {
                 let at = 4.0 + Double(i) * 0.8
                 DispatchQueue.main.asyncAfter(deadline: .now() + 3.0 + at) { cameraOverride = CGPoint(x: c[0], y: c.count > 1 ? c[1] : 440) }
-                DispatchQueue.main.asyncAfter(deadline: .now() + 3.0 + at + 0.7) { snap(dir, "\(missionID)-x\(Int(c[0]))", window: false, model: model) }
+                DispatchQueue.main.asyncAfter(deadline: .now() + 3.0 + at + 0.7) {
+                    // A locked or dark screen stops SpriteKit's own clock: tick the scene by hand before the picture.
+                    if let scene = model.scene { let now = CACurrentMediaTime(); for k in 0..<30 { scene.update(now + Double(k) / 60) } }
+                    snap(dir, "\(missionID)-x\(Int(c[0]))", window: false, model: model)
+                }
             }
             DispatchQueue.main.asyncAfter(deadline: .now() + 3.0 + 6.0 + Double(places.count) * 0.8) { NSApp.terminate(nil) }
             return
