@@ -17,6 +17,8 @@ struct Look {
     var edgeWide: CGFloat = 9
     var trees = true
     var town = false
+    /// Clouds over the landscape: number, tint (multiplied with the white sprites), opacity, flat banks only.
+    var clouds: (count: Int, tint: UInt32, alpha: CGFloat, flat: Bool) = (8, 0xf2f3f2, 0.85, false)
 
     static let valley = Look(
         sky: [(0, 0x5e7388, 1), (0.45, 0x93a6b4, 1), (0.78, 0xcdd0cb, 1), (1, 0xe9dcc6, 1)],
@@ -117,6 +119,19 @@ struct Look {
             l.stars = true
             l.far = [0x2e3d52, 0x25344a]; l.mist = 0x3a4d66
             l.hill = [(0, 0x1f2d3b, 1), (0.6, 0x2c3c4d, 1), (1, 0x3a4c5e, 1)]
+        default: break
+        }
+        switch m.id {
+        case "hochwasser": l.clouds = (10, 0xd9dee2, 0.85, false)
+        case "waldbrand": l.clouds = (6, 0xe6d3bc, 0.7, false)
+        case "kueste": l.clouds = (9, 0x3c4a62, 0.75, true)
+        case "altstadt": l.clouds = (6, 0xead3b2, 0.6, true)
+        case "vulkan": l.clouds = (9, 0x6a4c40, 0.8, false)
+        case "gebirge": l.clouds = (7, 0xffffff, 0.85, false)
+        case "bohrinsel": l.clouds = (14, 0x6c7884, 0.92, false)
+        case "staudamm": l.clouds = (10, 0xd7a98c, 0.8, false)
+        case "pass": l.clouds = (12, 0xc7d0da, 0.85, true)
+        case "wueste": l.clouds = (4, 0xf6dfb6, 0.55, true)
         default: break
         }
         return l

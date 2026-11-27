@@ -12,19 +12,25 @@ final class PassageLayer: SKNode {
     private var ceilingGlow: [[SKSpriteNode]] = []
     private let spot = SKSpriteNode()
     private var clock = 0.0
-    private lazy var lampTextures: [ShutterLight: SKTexture?] = [
-        .green: Render.texture("passages", "lamp-green"), .amber: Render.texture("passages", "lamp-amber"),
-        .red: Render.texture("passages", "lamp-red")]
+    private lazy var signalTextures: [ShutterLight: SKTexture?] = [
+        .green: Render.texture("passages", "signal-green"), .amber: Render.texture("passages", "signal-amber"),
+        .red: Render.texture("passages", "signal-red")]
 
     private struct DoorNodes {
         let door = SKSpriteNode(), bar = SKSpriteNode(), housing = SKSpriteNode()
-        let lampL = SKSpriteNode(), lampR = SKSpriteNode(), glow = SKSpriteNode()
+        let posts = [SKSpriteNode(), SKSpriteNode()], signals = [SKSpriteNode(), SKSpriteNode()]
+        let beacons = [SKSpriteNode(), SKSpriteNode()], flashes = [SKSpriteNode(), SKSpriteNode()]
+        let glows = [SKSpriteNode(), SKSpriteNode()], floorGlow = SKSpriteNode()
     }
 
-    /// Height of the full door picture in world units (see art/passages.py).
+    /// Sizes of the pictures in world units (see art/passages.py). The hit box of a door is `Shutter.halfThickness`;
+    /// the picture is only a little wider than that, the rest of the frame stands behind the helicopter.
     private static let doorPictureHeight: CGFloat = 200
-    private static let barHeight: CGFloat = 8
-    private static let housingHeight: CGFloat = 14
+    private static let doorWidth: CGFloat = 22
+    private static let barSize = CGSize(width: 38, height: 16)
+    private static let housingSize = CGSize(width: 66, height: 26)
+    private static let postOffset: CGFloat = 24
+    private static let signalOffset: CGFloat = 44
 
     init(mission: Mission) {
         self.mission = mission
@@ -37,7 +43,7 @@ final class PassageLayer: SKNode {
             let h = CGFloat(mission.world.ceiling) - roof + 12
             let mass: SKSpriteNode
             if let t = Render.texture("passages", "mass-\(mission.id)-\(p.id)") {
-                mass = SKSpriteNode(texture: t, size: CGSize(width: w + 32, height: h))
+                mass = SKSpriteNode(texture: t, size: CGSize(width: w + (p.isTunnel ? 48 : 32), height: h))
             } else {
                 mass = SKSpriteNode(color: p.isTunnel ? SKColor(white: 0.22, alpha: 1) : SKColor(white: 0.6, alpha: 1), size: CGSize(width: w, height: h))
             }
@@ -55,79 +61,27 @@ final class PassageLayer: SKNode {
             shades.append(sh)
 
             if p.isTunnel {
-                let dark = SKSpriteNode(color: SKColor(red: 0.02, green: 0.02, blue: 0.03, alpha: 0.62), size: CGSize(width: w, height: roof - floor))
-                dark.anchorPoint = CGPoint(x: 0.5, y: 0)
-                dark.position = CGPoint(x: cx, y: floor)
-                dark.zPosition = 0.4
-                addChild(dark)
-                interiors.append(dark)
-                // Back wall behind the helicopter: ribs and lamps, so the tunnel does not look empty.
-                let back = SKSpriteNode(texture: Self.tunnelWall(width: w, height: roof - floor), size: CGSize(width: w, height: roof - floor))
-                back.anchorPoint = CGPoint(x: 0.5, y: 0)
-                back.position = CGPoint(x: cx, y: floor)
-                back.zPosition = -3.5
-                addChild(back)
-                var lights: [SKSpriteNode] = []
-                var x = p.x0 + 60
-                while x < p.x1 - 20 {
-                    let g = SKSpriteNode(texture: Art.beaconGlow(), size: CGSize(width: 130, height: 60))
-                    g.position = CGPoint(x: x, y: Double(roof) - 14)
-                    g.zPosition = 0.6
-                    g.blendMode = .add
-                    g.alpha = 0.55
-                    addChild(g)
-                    lights.append(g)
-                    x += 120
-                }
-                ceilingGlow.append(lights)
+                addTunnel(p, floor: floor, roof: roof)
             } else {
                 interiors.append(nil)
                 ceilingGlow.append([])
-                // Piers at both ends, behind the helicopter, so the viaduct does not hang in the air.
-                for side in [-1.0, 1.0] {
-                    let pier = SKSpriteNode(color: SKColor(red: 0.52, green: 0.5, blue: 0.46, alpha: 1), size: CGSize(width: 26, height: roof + 40))
+                // Piers at both ends, behind the helicopter, so the bridge does not hang in the air.
+                for x in [p.x0 - 6, p.x1 + 6] {
+                    let size = CGSize(width: 44, height: roof + 40)
+                    let pier: SKSpriteNode
+                    if let t = Render.texture("passages", "pier-\(mission.id)-\(p.id)") {
+                        pier = SKSpriteNode(texture: t, size: size)
+                    } else {
+                        pier = SKSpriteNode(color: SKColor(red: 0.52, green: 0.5, blue: 0.46, alpha: 1), size: CGSize(width: 26, height: roof + 40))
+                    }
                     pier.anchorPoint = CGPoint(x: 0.5, y: 1)
-                    pier.position = CGPoint(x: side < 0 ? p.x0 - 6 : p.x1 + 6, y: Double(roof))
+                    pier.position = CGPoint(x: x, y: Double(roof))
                     pier.zPosition = -1
                     addChild(pier)
-                    let shade = SKSpriteNode(color: SKColor(white: 0, alpha: 0.18), size: CGSize(width: 9, height: roof + 40))
-                    shade.anchorPoint = CGPoint(x: 0.5, y: 1)
-                    shade.position = CGPoint(x: pier.position.x + (side < 0 ? 8 : -8), y: Double(roof))
-                    shade.zPosition = -0.9
-                    addChild(shade)
                 }
             }
 
-            var list: [DoorNodes] = []
-            for s in p.shutterList {
-                let d = DoorNodes()
-                d.door.anchorPoint = CGPoint(x: 0.5, y: 1)
-                d.door.zPosition = 0.2
-                d.bar.texture = Render.texture("passages", "shutter-bar")
-                d.bar.size = CGSize(width: 24, height: Self.barHeight)
-                d.bar.anchorPoint = CGPoint(x: 0.5, y: 0)
-                d.bar.zPosition = 0.21
-                d.housing.texture = Render.texture("passages", "shutter-housing")
-                d.housing.size = CGSize(width: 38, height: Self.housingHeight)
-                d.housing.anchorPoint = CGPoint(x: 0.5, y: 1)
-                d.housing.position = CGPoint(x: s.x, y: Double(roof))
-                d.housing.zPosition = 0.25
-                for lamp in [d.lampL, d.lampR] {
-                    lamp.size = CGSize(width: 26, height: 26)
-                    lamp.zPosition = 0.3
-                }
-                d.lampL.position = CGPoint(x: s.x - 30, y: Double(roof) - 30)
-                d.lampR.position = CGPoint(x: s.x + 30, y: Double(roof) - 30)
-                d.glow.texture = Art.beaconGlow()
-                d.glow.size = CGSize(width: 150, height: 150)
-                d.glow.blendMode = .add
-                d.glow.colorBlendFactor = 1
-                d.glow.zPosition = 0.35
-                d.glow.position = CGPoint(x: s.x, y: Double(roof) - 30)
-                for n in [d.door, d.bar, d.housing, d.lampL, d.lampR, d.glow] { addChild(n) }
-                list.append(d)
-            }
-            doors.append(list)
+            doors.append(p.shutterList.map { addShutter($0, floor: floor, roof: roof) })
         }
         spot.texture = Art.beaconGlow()
         spot.blendMode = .add
@@ -140,21 +94,98 @@ final class PassageLayer: SKNode {
     }
     required init?(coder: NSCoder) { fatalError() }
 
-    private static let roofShadow: SKTexture = Art.texture(CGSize(width: 8, height: 46)) { ctx in
-        Art.fillVertical(ctx, CGRect(x: 0, y: 0, width: 8, height: 46), [(0, 0x000000, 0.5), (1, 0x000000, 0)])
+    /// The inside of a tunnel: the mountain behind it, the lit back wall, the dark film over the helicopter, the portals.
+    private func addTunnel(_ p: Passage, floor: CGFloat, roof: CGFloat) {
+        let cx = CGFloat(p.x0 + p.x1) / 2, w = CGFloat(p.x1 - p.x0), gap = roof - floor
+        if let t = Render.texture("passages", "flank-\(mission.id)-\(p.id)") {
+            // Behind the terrain (absolute z -25), so the ground hides its foot and the tunnel sits in the landscape.
+            let flank = SKSpriteNode(texture: t, size: CGSize(width: w + 600, height: CGFloat(mission.world.ceiling) + 40 - (floor - 140)))
+            flank.anchorPoint = CGPoint(x: 0.5, y: 0)
+            flank.position = CGPoint(x: cx, y: floor - 140)
+            flank.zPosition = -35
+            addChild(flank)
+        }
+        let dark = SKSpriteNode(color: SKColor(red: 0.02, green: 0.02, blue: 0.03, alpha: 0.3), size: CGSize(width: w, height: gap))
+        dark.anchorPoint = CGPoint(x: 0.5, y: 0)
+        dark.position = CGPoint(x: cx, y: floor)
+        dark.zPosition = 0.4
+        addChild(dark)
+        interiors.append(dark)
+        let back: SKSpriteNode
+        if let t = Render.texture("passages", "interior-\(mission.id)-\(p.id)") {
+            back = SKSpriteNode(texture: t, size: CGSize(width: w, height: gap))
+        } else {
+            back = SKSpriteNode(color: SKColor(white: 0.18, alpha: 1), size: CGSize(width: w, height: gap))
+        }
+        back.anchorPoint = CGPoint(x: 0.5, y: 0)
+        back.position = CGPoint(x: cx, y: floor)
+        back.zPosition = -3.5
+        addChild(back)
+        for x in [p.x0, p.x1] {
+            guard let t = Render.texture("passages", "jamb-\(mission.id)-\(p.id)") else { break }
+            let jamb = SKSpriteNode(texture: t, size: CGSize(width: 26, height: gap))
+            jamb.anchorPoint = CGPoint(x: 0.5, y: 0)
+            jamb.position = CGPoint(x: x, y: Double(floor))
+            jamb.zPosition = -3.4
+            addChild(jamb)
+        }
+        var lights: [SKSpriteNode] = []
+        var x = p.x0 + 60
+        while x < p.x1 - 20 {
+            let g = SKSpriteNode(texture: Art.beaconGlow(), size: CGSize(width: 130, height: 60))
+            g.position = CGPoint(x: x, y: Double(roof) - 14)
+            g.zPosition = 0.6
+            g.blendMode = .add
+            g.alpha = 0.3
+            addChild(g)
+            lights.append(g)
+            x += 80
+        }
+        ceilingGlow.append(lights)
     }
 
-    private static func tunnelWall(width: CGFloat, height: CGFloat) -> SKTexture {
-        Art.texture(CGSize(width: width, height: height)) { ctx in
-            Art.fillVertical(ctx, CGRect(x: 0, y: 0, width: width, height: height), [(0, 0x4b4742, 1), (1, 0x2c2a27, 1)])
-            ctx.setFillColor(Art.c(0x211f1d, 0.9))
-            var x: CGFloat = 20
-            while x < width { ctx.fill(CGRect(x: x, y: 0, width: 10, height: height)); x += 60 }
-            ctx.setFillColor(Art.c(0x1b1a18, 1))
-            ctx.fill(CGRect(x: 0, y: 0, width: width, height: 6))
-            ctx.setFillColor(Art.c(0xe9c85a, 0.9))
-            ctx.fill(CGRect(x: 0, y: 12, width: width, height: 3))
+    /// A roll-up door with its frame, two traffic lights, two warning beacons and the glow that shows it in the dark.
+    private func addShutter(_ s: Shutter, floor: CGFloat, roof: CGFloat) -> DoorNodes {
+        let d = DoorNodes()
+        let x = CGFloat(s.x)
+        func sprite(_ n: SKSpriteNode, _ name: String?, _ size: CGSize, _ pos: CGPoint, _ z: CGFloat, anchorY: CGFloat = 0.5) {
+            if let name { n.texture = Render.texture("passages", name) }
+            n.size = size
+            n.anchorPoint = CGPoint(x: 0.5, y: anchorY)
+            n.position = pos
+            n.zPosition = z
+            addChild(n)
         }
+        func glow(_ n: SKSpriteNode, _ size: CGSize, _ pos: CGPoint, _ z: CGFloat) {
+            sprite(n, nil, size, pos, z)
+            n.texture = Art.beaconGlow()
+            n.blendMode = .add
+            n.colorBlendFactor = 1
+        }
+        for (i, side) in [CGFloat(-1), 1].enumerated() {
+            // Posts and signals stand behind the helicopter (z below its 10), only the door itself is in front.
+            sprite(d.posts[i], "shutter-post", CGSize(width: 10, height: roof - floor), CGPoint(x: x + side * Self.postOffset, y: floor), -0.3, anchorY: 0)
+            if let t = d.posts[i].texture {
+                d.posts[i].texture = SKTexture(rect: CGRect(x: 0, y: 0, width: 1, height: min(1, (roof - floor) / Self.doorPictureHeight)), in: t)
+            }
+            let signal = CGPoint(x: x + side * Self.signalOffset, y: roof - Self.housingSize.height - 30)
+            sprite(d.signals[i], "signal-green", CGSize(width: 20, height: 48), signal, -0.25)
+            glow(d.glows[i], CGSize(width: 90, height: 90), signal, 0.32)
+            let beacon = CGPoint(x: x + side * 25, y: roof - Self.housingSize.height - 4)
+            sprite(d.beacons[i], "beacon", CGSize(width: 12, height: 12), beacon, 0.28)
+            d.beacons[i].yScale = -1   // hangs under the housing
+            glow(d.flashes[i], CGSize(width: 110, height: 110), beacon, 0.33)
+            d.flashes[i].color = SKColor(red: 1, green: 0.66, blue: 0.1, alpha: 1)
+        }
+        sprite(d.door, nil, CGSize(width: Self.doorWidth, height: 1), CGPoint(x: x, y: roof), 0.2, anchorY: 1)
+        sprite(d.bar, "shutter-bar", Self.barSize, CGPoint(x: x, y: roof), 0.22, anchorY: 0)
+        sprite(d.housing, "shutter-housing", Self.housingSize, CGPoint(x: x, y: roof), 0.25, anchorY: 1)
+        glow(d.floorGlow, CGSize(width: 130, height: 34), CGPoint(x: x, y: floor + 6), 0.31)
+        return d
+    }
+
+    private static let roofShadow: SKTexture = Art.texture(CGSize(width: 8, height: 46)) { ctx in
+        Art.fillVertical(ctx, CGRect(x: 0, y: 0, width: 8, height: 46), [(0, 0x000000, 0.5), (1, 0x000000, 0)])
     }
 
     /// Whether the helicopter is inside a tunnel (its middle between both ends).
@@ -173,31 +204,42 @@ final class PassageLayer: SKNode {
                 let open = sim.shutterOpenness(passage: pi, shutter: si)
                 let bottom = floor + CGFloat(min(s.gap ?? Double(roof - floor), Double(roof - floor))) * CGFloat(open)
                 let full = roof - bottom
-                let showDoor = full > Self.barHeight + 1
+                let barHeight = Self.barSize.height
+                let showDoor = full > barHeight + 1
                 n.door.isHidden = !showDoor
-                n.bar.isHidden = !showDoor
-                if showDoor, let t = Render.texture("passages", "shutter-door") {
-                    let vis = min(Self.doorPictureHeight, full - Self.barHeight)
-                    n.door.texture = SKTexture(rect: CGRect(x: 0, y: 1 - vis / Self.doorPictureHeight, width: 1, height: vis / Self.doorPictureHeight), in: t)
-                    n.door.size = CGSize(width: 16, height: full - Self.barHeight)
-                    n.door.position = CGPoint(x: s.x, y: Double(roof))
-                    // Beyond the picture height the slats simply continue: stretch is fine, the door is hidden in the housing.
-                } else if showDoor {
-                    n.door.color = SKColor(red: 0.55, green: 0.6, blue: 0.64, alpha: 1)
-                    n.door.size = CGSize(width: 16, height: full - Self.barHeight)
-                    n.door.position = CGPoint(x: s.x, y: Double(roof))
+                if showDoor {
+                    let length = full - barHeight
+                    if let t = Render.texture("passages", "shutter-door") {
+                        // The lower part of the curtain: it comes out of the housing.
+                        n.door.texture = SKTexture(rect: CGRect(x: 0, y: 0, width: 1, height: min(1, length / Self.doorPictureHeight)), in: t)
+                    } else {
+                        n.door.color = SKColor(red: 0.95, green: 0.76, blue: 0.2, alpha: 1)
+                    }
+                    n.door.size = CGSize(width: Self.doorWidth, height: length)
                 }
-                n.bar.position = CGPoint(x: s.x, y: Double(bottom))
+                // Fully open, the bar stays just under the housing so the door can be seen from afar.
+                n.bar.position = CGPoint(x: s.x, y: Double(min(bottom, roof - Self.housingSize.height - barHeight)))
+                if showDoor { n.bar.position.y = bottom }
                 let light = sim.shutterLight(passage: pi, shutter: si)
-                let on: Bool = light == .amber ? Int(clock * 5) % 2 == 0 : true
-                for lamp in [n.lampL, n.lampR] {
-                    lamp.texture = lampTextures[light] ?? nil
-                    lamp.isHidden = false
-                    lamp.alpha = on ? 1 : 0.35
+                let blink = Int(clock * 5) % 2 == 0
+                let on: Bool = light == .amber ? blink : true
+                let color = light == .green ? SKColor(red: 0.2, green: 1, blue: 0.45, alpha: 1)
+                    : (light == .amber ? SKColor(red: 1, green: 0.7, blue: 0.15, alpha: 1) : SKColor(red: 1, green: 0.2, blue: 0.14, alpha: 1))
+                // Warning beacons turn from the amber phase on and as long as the curtain moves.
+                let closing = light == .amber || (open > 0.001 && open < 0.999)
+                for i in 0..<2 {
+                    n.signals[i].texture = signalTextures[light] ?? nil
+                    n.signals[i].alpha = on ? 1 : 0.7
+                    // The glow sits on the lit lamp: red on top, green at the bottom.
+                    let lampY: CGFloat = light == .red ? 14 : (light == .amber ? 0 : -14)
+                    n.glows[i].position.y = n.signals[i].position.y + lampY
+                    n.glows[i].color = color
+                    n.glows[i].alpha = on ? 0.85 : 0.15
+                    let turn = CGFloat(max(0, sin(clock * 13 + Double(i) * .pi)))
+                    n.flashes[i].alpha = closing ? 0.25 + 0.75 * turn : 0
                 }
-                n.glow.color = light == .green ? SKColor(red: 0.2, green: 1, blue: 0.4, alpha: 1)
-                    : (light == .amber ? SKColor(red: 1, green: 0.7, blue: 0.2, alpha: 1) : SKColor(red: 1, green: 0.25, blue: 0.2, alpha: 1))
-                n.glow.alpha = (on ? 0.7 : 0.15) * (light == .green ? 0.5 : 1)
+                n.floorGlow.color = color
+                n.floorGlow.alpha = light == .green ? 0.4 : (on ? 0.8 : 0.2)
             }
         }
         // The searchlight of the helicopter lights its surroundings inside.

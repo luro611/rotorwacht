@@ -135,7 +135,9 @@ final class FigureSprite: SKNode {
     private let sprite = SKSpriteNode()
     private let type: String
     private var shown = ""
-    private let size = CGSize(width: 1.9 * Render.pt, height: 2.5 * Render.pt)
+    /// People are drawn larger than the helicopter's scale, so they can be seen well (looks only, no rule uses it).
+    static let scale: CGFloat = 1.3
+    private let size = CGSize(width: 1.9 * Render.pt * FigureSprite.scale, height: 2.5 * Render.pt * FigureSprite.scale)
     private let footV: CGFloat = 0.02
 
     init(id: Int) {
