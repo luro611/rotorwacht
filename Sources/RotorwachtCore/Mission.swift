@@ -305,7 +305,7 @@ extension Mission {
 
 public enum MissionLibrary {
     /// Missions offered in the start menu, in order.
-    public static let all = ["hochwasser", "waldbrand", "kueste", "altstadt", "vulkan", "gebirge", "bohrinsel", "staudamm", "pass"]
+    public static let all = ["hochwasser", "waldbrand", "kueste", "altstadt", "vulkan", "gebirge", "bohrinsel", "staudamm", "pass", "wueste"]
 
     public enum LoadError: Error { case notFound(String) }
 

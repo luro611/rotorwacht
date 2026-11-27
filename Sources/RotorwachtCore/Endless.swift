@@ -99,6 +99,10 @@ public enum EndlessKit {
         EndlessBlock(id: "icing", minStage: 5,
                      fits: { $0.icing == nil && !$0.hasClock && $0.passageList.isEmpty },
                      apply: { m, _, p in m.icing = IcingSpec(rate: 0.005 + 0.003 * p, thaw: 0.25, start: 20) }),
+        // Heat of the day: thirstier and weaker in the climb.
+        EndlessBlock(id: "heat", minStage: 4,
+                     fits: { $0.heatwave == nil && !$0.hasClock && $0.outpostList.isEmpty && $0.hazard != "avalanche" && $0.icing == nil },
+                     apply: { m, _, p in m.heatwave = HeatSpec(base: 0.06 + 0.06 * p, pulses: []) }),
         // Not where fuel is already the bottleneck (outposts, the high mountains).
         EndlessBlock(id: "thirstyEngine", minStage: 3,
                      fits: { $0.outpostList.isEmpty && $0.hazard != "avalanche" && !$0.hasClock },

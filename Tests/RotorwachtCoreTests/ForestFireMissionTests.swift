@@ -35,7 +35,7 @@ import Testing
     @Test func allMissionsInTheMenuLoad() throws {
         for id in MissionLibrary.all { let m = try MissionLibrary.load(id); #expect(m.id == id) }
         #expect(MissionLibrary.all == ["hochwasser", "waldbrand", "kueste", "altstadt", "vulkan", "gebirge",
-                                       "bohrinsel", "staudamm", "pass"])
+                                       "bohrinsel", "staudamm", "pass", "wueste"])
     }
 
     @Test func existingMissionStillHasNoFire() throws {
